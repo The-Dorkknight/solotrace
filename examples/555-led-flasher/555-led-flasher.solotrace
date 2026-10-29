@@ -1,0 +1,995 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "555 LED flasher",
+ "width": 70.0,
+ "height": 50.0,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "classes": {
+   "Signal": 0.8,
+   "Power": 2.0,
+   "High current": 5.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "C1",
+   "part": "C_ELEC_5",
+   "x": 49.52999999999998,
+   "y": 11.429999999999996,
+   "rot": 270,
+   "flip": false,
+   "value": "10u",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "C2",
+   "part": "C_DISC_5.08",
+   "x": 36.82999999999999,
+   "y": 13.970000000000002,
+   "rot": 270,
+   "flip": false,
+   "value": "10n",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "D1",
+   "part": "LED5",
+   "x": 28.08999999999999,
+   "y": 33.019999999999996,
+   "rot": 90,
+   "flip": false,
+   "value": "LED",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "J1",
+   "part": "TERM_5.08_2",
+   "x": 25.400000000000006,
+   "y": 13.97000000000001,
+   "rot": 270,
+   "flip": false,
+   "value": "9V",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "R1",
+   "part": "R_0.25W_10.16",
+   "x": 52.07,
+   "y": 39.36999999999996,
+   "rot": 270,
+   "flip": false,
+   "value": "1k",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "R2",
+   "part": "R_0.25W_10.16",
+   "x": 60.959999999999965,
+   "y": 21.590000000000007,
+   "rot": 180,
+   "flip": false,
+   "value": "47k",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "R3",
+   "part": "R_0.25W_10.16",
+   "x": 30.630000000000003,
+   "y": 24.130000000000006,
+   "rot": 180,
+   "flip": false,
+   "value": "470",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "U1",
+   "part": "DIP8_N",
+   "x": 36.83000000000002,
+   "y": 30.479999999999983,
+   "rot": 0,
+   "flip": false,
+   "value": "NE555",
+   "style": "tht",
+   "locked": false
+  }
+ ],
+ "nets": [
+  {
+   "name": "VCC",
+   "class": "Power",
+   "pins": [
+    "J1.1",
+    "U1.8",
+    "U1.4",
+    "R1.1"
+   ]
+  },
+  {
+   "name": "GND",
+   "class": "Power",
+   "pins": [
+    "J1.2",
+    "U1.1",
+    "C1.2",
+    "C2.2",
+    "D1.2"
+   ]
+  },
+  {
+   "name": "DIS",
+   "class": "Signal",
+   "pins": [
+    "R1.2",
+    "R2.1",
+    "U1.7"
+   ]
+  },
+  {
+   "name": "THR",
+   "class": "Signal",
+   "pins": [
+    "R2.2",
+    "U1.6",
+    "U1.2",
+    "C1.1"
+   ]
+  },
+  {
+   "name": "CV",
+   "class": "Signal",
+   "pins": [
+    "U1.5",
+    "C2.1"
+   ]
+  },
+  {
+   "name": "OUT",
+   "class": "Signal",
+   "pins": [
+    "U1.3",
+    "R3.1"
+   ]
+  },
+  {
+   "name": "LEDA",
+   "class": "Signal",
+   "pins": [
+    "R3.2",
+    "D1.1"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "net": "VCC",
+   "points": [
+    [
+     36.83,
+     22.86
+    ],
+    [
+     39.58,
+     22.86
+    ],
+    [
+     41.7,
+     24.98
+    ],
+    [
+     41.7,
+     28.8025
+    ],
+    [
+     43.3775,
+     30.48
+    ],
+    [
+     44.45,
+     30.48
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "VCC",
+   "points": [
+    [
+     52.07,
+     38.735
+    ],
+    [
+     44.45,
+     31.115
+    ]
+   ],
+   "widths": [
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "VCC",
+   "points": [
+    [
+     25.4,
+     13.97
+    ],
+    [
+     34.08,
+     22.65
+    ],
+    [
+     34.08,
+     22.755
+    ],
+    [
+     34.185,
+     22.86
+    ],
+    [
+     36.83,
+     22.86
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     28.09,
+     35.56
+    ],
+    [
+     28.09,
+     38.3975
+    ],
+    [
+     28.1525,
+     38.46
+    ],
+    [
+     28.215,
+     38.46
+    ],
+    [
+     35.18,
+     31.495
+    ],
+    [
+     35.18,
+     31.2159
+    ],
+    [
+     35.9159,
+     30.48
+    ],
+    [
+     36.83,
+     30.48
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     36.83,
+     8.89
+    ],
+    [
+     25.4,
+     8.89
+    ]
+   ],
+   "widths": [
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     49.53,
+     6.43
+    ],
+    [
+     47.07,
+     8.89
+    ],
+    [
+     36.83,
+     8.89
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     25.4,
+     8.89
+    ],
+    [
+     24.025,
+     8.89
+    ],
+    [
+     22.1,
+     10.815
+    ],
+    [
+     22.1,
+     20.195
+    ],
+    [
+     34.29,
+     32.385
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "OUT",
+   "points": [
+    [
+     30.63,
+     24.13
+    ],
+    [
+     31.9,
+     25.4
+    ],
+    [
+     36.83,
+     25.4
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "LEDA",
+   "points": [
+    [
+     28.09,
+     33.02
+    ],
+    [
+     28.09,
+     31.75
+    ],
+    [
+     20.47,
+     24.13
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "CV",
+   "points": [
+    [
+     36.83,
+     13.97
+    ],
+    [
+     36.83,
+     15.24
+    ],
+    [
+     44.45,
+     22.86
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "DIS",
+   "points": [
+    [
+     52.07,
+     29.21
+    ],
+    [
+     50.8,
+     27.94
+    ],
+    [
+     44.45,
+     27.94
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "DIS",
+   "points": [
+    [
+     52.07,
+     29.21
+    ],
+    [
+     53.34,
+     29.21
+    ],
+    [
+     60.96,
+     21.59
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "THR",
+   "points": [
+    [
+     50.8,
+     21.59
+    ],
+    [
+     46.99,
+     25.4
+    ],
+    [
+     44.45,
+     25.4
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "THR",
+   "points": [
+    [
+     50.8,
+     21.59
+    ],
+    [
+     52.705,
+     19.685
+    ],
+    [
+     62.23,
+     19.685
+    ],
+    [
+     62.865,
+     20.32
+    ],
+    [
+     62.865,
+     31.75
+    ],
+    [
+     53.34,
+     41.275
+    ],
+    [
+     50.165,
+     41.275
+    ],
+    [
+     36.83,
+     27.94
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "THR",
+   "points": [
+    [
+     49.53,
+     11.43
+    ],
+    [
+     49.53,
+     20.32
+    ],
+    [
+     50.8,
+     21.59
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  }
+ ],
+ "jumpers": [],
+ "defs": {
+  "C_DISC_5.08": {
+   "id": "C_DISC_5.08",
+   "name": "Ceramic disc cap, 5.08 mm",
+   "category": "Capacitors",
+   "prefix": "C",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.0,
+     -1.75,
+     6.08,
+     1.75
+    ]
+   ],
+   "court": [
+    -1.0,
+    -1.75,
+    6.08,
+    1.75
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  },
+  "C_ELEC_5": {
+   "id": "C_ELEC_5",
+   "name": "Electrolytic cap, 5 mm pitch (body up to 10 mm)",
+   "category": "Capacitors",
+   "prefix": "C",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "circle",
+     2.5,
+     0.0,
+     5.0
+    ],
+    [
+     "line",
+     -2.4,
+     1.5,
+     -1.4,
+     1.5
+    ],
+    [
+     "line",
+     -1.9,
+     1.0,
+     -1.9,
+     2.0
+    ]
+   ],
+   "court": [
+    -2.5,
+    -5.0,
+    7.5,
+    5.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Pin 1 (square pad) is the positive lead."
+  },
+  "DIP8_N": {
+   "id": "DIP8_N",
+   "name": "DIP-8 narrow (7.62 mm rows)",
+   "category": "ICs (DIP)",
+   "prefix": "U",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": -0.0,
+     "shape": "rect",
+     "w": 1.5,
+     "h": 1.5,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 0.0,
+     "y": -2.54,
+     "shape": "round",
+     "w": 1.5,
+     "h": 1.5,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 0.0,
+     "y": -5.08,
+     "shape": "round",
+     "w": 1.5,
+     "h": 1.5,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "4",
+     "x": 0.0,
+     "y": -7.62,
+     "shape": "round",
+     "w": 1.5,
+     "h": 1.5,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "5",
+     "x": 7.62,
+     "y": -7.62,
+     "shape": "round",
+     "w": 1.5,
+     "h": 1.5,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "6",
+     "x": 7.62,
+     "y": -5.08,
+     "shape": "round",
+     "w": 1.5,
+     "h": 1.5,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "7",
+     "x": 7.62,
+     "y": -2.54,
+     "shape": "round",
+     "w": 1.5,
+     "h": 1.5,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "8",
+     "x": 7.62,
+     "y": -0.0,
+     "shape": "round",
+     "w": 1.5,
+     "h": 1.5,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     0.6350000000000002,
+     -8.89,
+     6.984999999999999,
+     1.27
+    ],
+    [
+     "circle",
+     3.81,
+     1.27,
+     0.8
+    ],
+    [
+     "circle",
+     1.5350000000000001,
+     0.37,
+     0.3
+    ]
+   ],
+   "court": [
+    0.6350000000000002,
+    -8.89,
+    6.984999999999999,
+    1.27
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Pin 1 is the square pad at the top left; pins run down the left side and up the right side, viewed from the component side."
+  },
+  "LED5": {
+   "id": "LED5",
+   "name": "LED 5 mm, 2.54 mm pitch",
+   "category": "Transistors & LEDs",
+   "prefix": "LED",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "circle",
+     1.27,
+     0.0,
+     2.5
+    ],
+    [
+     "line",
+     -1.23,
+     -1.75,
+     -1.23,
+     1.75
+    ]
+   ],
+   "court": [
+    -1.23,
+    -2.5,
+    3.77,
+    2.5
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Pin 1 (square pad, flat side of the lens) is the cathode (-), pin 2 the anode (+)."
+  },
+  "R_0.25W_10.16": {
+   "id": "R_0.25W_10.16",
+   "name": "Resistor 0.25 W, 10.16 mm",
+   "category": "Resistors",
+   "prefix": "R",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 10.16,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "line",
+     0.9,
+     0.0,
+     1.9300000000000002,
+     0.0
+    ],
+    [
+     "line",
+     8.23,
+     0.0,
+     9.26,
+     0.0
+    ],
+    [
+     "rect",
+     1.9300000000000002,
+     -1.15,
+     8.23,
+     1.15
+    ]
+   ],
+   "court": [
+    1.9300000000000002,
+    -1.15,
+    8.23,
+    1.15
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  },
+  "TERM_5.08_2": {
+   "id": "TERM_5.08_2",
+   "name": "Screw terminal 2-way, 5.08 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.6,
+     "h": 2.6,
+     "drill": 1.3,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.6,
+     "h": 2.6,
+     "drill": 1.3,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -2.54,
+     -4.0,
+     7.62,
+     4.0
+    ]
+   ],
+   "court": [
+    -2.54,
+    -4.0,
+    7.62,
+    4.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  }
+ }
+}

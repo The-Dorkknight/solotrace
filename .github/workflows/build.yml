@@ -1,0 +1,28 @@
+name: build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tkinter, a virtual display and the optional test helper
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk xvfb
+          python3 -m pip install --user --break-system-packages gerbonara || true
+      - name: Version line
+        run: python3 src/main.py --version
+      - name: Run the tests (headless display)
+        run: xvfb-run -a python3 -W ignore -m unittest discover -s tests -v
+      - name: Export an example board end to end
+        run: |
+          python3 src/main.py demo "555 LED flasher" /tmp/demo.solotrace
+          python3 src/main.py route /tmp/demo.solotrace /tmp/demo-routed.solotrace
+          python3 src/main.py drc /tmp/demo-routed.solotrace
+          python3 src/main.py export /tmp/demo-routed.solotrace --gerber /tmp/demo-gerber.zip --laser /tmp/demo.gcode

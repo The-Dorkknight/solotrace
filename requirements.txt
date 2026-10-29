@@ -1,0 +1,6 @@
+# SoloTrace itself needs only the Python standard library (Python 3.8+ with tkinter).
+# Nothing to install to run it. The lines below are OPTIONAL and only for development.
+# gerbonara is used by one test to re-read the exported Gerber/drill files (the test skips without it).
+# Pillow is used only by tools/make_icons.py to redraw the icon set.
+gerbonara
+Pillow

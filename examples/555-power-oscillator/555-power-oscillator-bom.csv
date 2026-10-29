@@ -1,0 +1,10 @@
+References,Qty,Value,Part,Part id
+C1,1,10n,"Film / box cap, 5 mm",C_FILM_5
+D1,1,1N4007,"Diode DO-41 (1N400x), 10.16 mm",D_DO41_10.16
+J1,1,12V,"Screw terminal 2-way, 5.08 mm",TERM_5.08_2
+J2,1,Coil,"Screw terminal 2-way, 5.08 mm",TERM_5.08_2
+Q1,1,NPN power,TO-220 3-pin,TO220_3
+R1,1,1k,"Resistor 0.25 W standing, 2.54 mm",R_V_0.25W_2.54
+R2,1,10k,"Resistor 0.25 W standing, 2.54 mm",R_V_0.25W_2.54
+R3,1,220,"Resistor 0.25 W standing, 2.54 mm",R_V_0.25W_2.54
+U1,1,NE555,DIP-8 narrow (7.62 mm rows),DIP8_N

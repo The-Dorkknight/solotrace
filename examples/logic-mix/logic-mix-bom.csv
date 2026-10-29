@@ -1,0 +1,6 @@
+References,Qty,Value,Part,Part id
+J1,1,,"Pin header 1x4, 2.54 mm",HDR_1x4
+"R1, R2, R3, R4",4,10k,"Resistor 0.25 W, 10.16 mm",R_0.25W_10.16
+U1,1,74HC00,DIP-14 narrow (7.62 mm rows),DIP14_N
+U2,1,74HC14,DIP-14 narrow (7.62 mm rows),DIP14_N
+U3,1,NE555,DIP-8 narrow (7.62 mm rows),DIP8_N

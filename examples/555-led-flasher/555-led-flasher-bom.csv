@@ -1,0 +1,9 @@
+References,Qty,Value,Part,Part id
+C1,1,10u,"Electrolytic cap, 5 mm pitch (body up to 10 mm)",C_ELEC_5
+C2,1,10n,"Ceramic disc cap, 5.08 mm",C_DISC_5.08
+D1,1,LED,"LED 5 mm, 2.54 mm pitch",LED5
+J1,1,9V,"Screw terminal 2-way, 5.08 mm",TERM_5.08_2
+R1,1,1k,"Resistor 0.25 W, 10.16 mm",R_0.25W_10.16
+R2,1,47k,"Resistor 0.25 W, 10.16 mm",R_0.25W_10.16
+R3,1,470,"Resistor 0.25 W, 10.16 mm",R_0.25W_10.16
+U1,1,NE555,DIP-8 narrow (7.62 mm rows),DIP8_N

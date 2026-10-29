@@ -1,0 +1,30 @@
+# Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight)
+# Licensed under the PolyForm Noncommercial License 1.0.0. No warranty.
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solotrace"
+version = "0.3.4"
+description = "WORK IN PROGRESS: easy single-sided PCB designer for through-hole parts with chamfered traces, jumper-aware autorouter, Gerber/PDF export and laser G-code for the Elegoo Phecda"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "PolyForm-Noncommercial-1.0.0" }
+authors = [{ name = "Matthew Armstrong" }]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: X11 Applications",
+  "Intended Audience :: Education",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+]
+
+[project.urls]
+Homepage = "https://github.com/The-Dorkknight/solotrace"
+
+[project.scripts]
+solotrace = "solotrace.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

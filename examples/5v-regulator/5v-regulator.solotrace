@@ -1,0 +1,625 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "5 V regulator",
+ "width": 70.0,
+ "height": 45.0,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "classes": {
+   "Signal": 0.8,
+   "Power": 2.0,
+   "High current": 3.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "C1",
+   "part": "C_ELEC_5",
+   "x": 31.74999999999999,
+   "y": 24.13000000000002,
+   "rot": 90,
+   "flip": false,
+   "value": "470u",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "C2",
+   "part": "C_ELEC_5",
+   "x": 50.799999999999976,
+   "y": 26.670000000000005,
+   "rot": 180,
+   "flip": false,
+   "value": "100u",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "D1",
+   "part": "D_DO41_10.16",
+   "x": 12.699999999999998,
+   "y": 13.969999999999988,
+   "rot": 0,
+   "flip": false,
+   "value": "1N4007",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "J1",
+   "part": "TERM_5.08_2",
+   "x": 12.699999999999978,
+   "y": 25.400000000000013,
+   "rot": 0,
+   "flip": false,
+   "value": "12V in",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "J2",
+   "part": "TERM_5.08_2",
+   "x": 43.180000000000014,
+   "y": 7.619999999999989,
+   "rot": 90,
+   "flip": false,
+   "value": "5V out",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "U1",
+   "part": "TO220_3",
+   "x": 30.480000000000004,
+   "y": 12.700000000000006,
+   "rot": 270,
+   "flip": false,
+   "value": "7805",
+   "style": "dead",
+   "locked": false
+  }
+ ],
+ "nets": [
+  {
+   "name": "VIN",
+   "class": "Power",
+   "pins": [
+    "J1.1",
+    "D1.1"
+   ]
+  },
+  {
+   "name": "VRAW",
+   "class": "High current",
+   "pins": [
+    "D1.2",
+    "C1.1",
+    "U1.1"
+   ]
+  },
+  {
+   "name": "GND",
+   "class": "High current",
+   "pins": [
+    "J1.2",
+    "C1.2",
+    "U1.2",
+    "C2.2",
+    "J2.2"
+   ]
+  },
+  {
+   "name": "V5",
+   "class": "High current",
+   "pins": [
+    "U1.3",
+    "C2.1",
+    "J2.1"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "net": "VRAW",
+   "points": [
+    [
+     22.86,
+     13.97
+    ],
+    [
+     26.765,
+     13.97
+    ],
+    [
+     26.86,
+     13.875
+    ],
+    [
+     26.86,
+     13.78
+    ],
+    [
+     27.305,
+     13.335
+    ]
+   ],
+   "widths": [
+    3.0,
+    3.0,
+    3.0,
+    3.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "VRAW",
+   "points": [
+    [
+     31.75,
+     24.13
+    ],
+    [
+     31.75,
+     13.97
+    ],
+    [
+     31.115,
+     13.335
+    ]
+   ],
+   "widths": [
+    3.0,
+    3.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "V5",
+   "points": [
+    [
+     43.18,
+     7.62
+    ],
+    [
+     31.75,
+     7.62
+    ],
+    [
+     31.115,
+     6.985
+    ]
+   ],
+   "widths": [
+    3.0,
+    3.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "V5",
+   "points": [
+    [
+     50.8,
+     26.67
+    ],
+    [
+     50.8,
+     10.94
+    ],
+    [
+     47.48,
+     7.62
+    ],
+    [
+     43.18,
+     7.62
+    ]
+   ],
+   "widths": [
+    3.0,
+    3.0,
+    3.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "VIN",
+   "points": [
+    [
+     12.7,
+     13.97
+    ],
+    [
+     12.7,
+     25.4
+    ]
+   ],
+   "widths": [
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     43.18,
+     12.7
+    ],
+    [
+     43.18,
+     17.78
+    ]
+   ],
+   "widths": [
+    3.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     45.8,
+     26.67
+    ],
+    [
+     43.2739,
+     26.67
+    ],
+    [
+     42.476,
+     25.8721
+    ],
+    [
+     42.476,
+     24.199
+    ],
+    [
+     43.18,
+     23.495
+    ],
+    [
+     43.18,
+     17.78
+    ]
+   ],
+   "widths": [
+    3.0,
+    3.0,
+    3.0,
+    3.0,
+    3.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     31.75,
+     29.13
+    ],
+    [
+     37.545,
+     29.13
+    ],
+    [
+     43.18,
+     23.495
+    ]
+   ],
+   "widths": [
+    3.0,
+    3.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     31.75,
+     29.13
+    ],
+    [
+     28.02,
+     25.4
+    ],
+    [
+     17.78,
+     25.4
+    ]
+   ],
+   "widths": [
+    3.0,
+    3.0
+   ],
+   "manual": false
+  }
+ ],
+ "jumpers": [
+  {
+   "net": "GND",
+   "a": [
+    43.18,
+    17.78
+   ],
+   "b": [
+    27.94,
+    17.78
+   ],
+   "auto": true
+  },
+  {
+   "net": "GND",
+   "a": [
+    27.94,
+    17.78
+   ],
+   "b": [
+    27.94,
+    10.16
+   ],
+   "auto": true
+  }
+ ],
+ "defs": {
+  "C_ELEC_5": {
+   "id": "C_ELEC_5",
+   "name": "Electrolytic cap, 5 mm pitch (body up to 10 mm)",
+   "category": "Capacitors",
+   "prefix": "C",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "circle",
+     2.5,
+     0.0,
+     5.0
+    ],
+    [
+     "line",
+     -2.4,
+     1.5,
+     -1.4,
+     1.5
+    ],
+    [
+     "line",
+     -1.9,
+     1.0,
+     -1.9,
+     2.0
+    ]
+   ],
+   "court": [
+    -2.5,
+    -5.0,
+    7.5,
+    5.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Pin 1 (square pad) is the positive lead."
+  },
+  "D_DO41_10.16": {
+   "id": "D_DO41_10.16",
+   "name": "Diode DO-41 (1N400x), 10.16 mm",
+   "category": "Diodes",
+   "prefix": "D",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 10.16,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "line",
+     1.0,
+     0.0,
+     2.48,
+     0.0
+    ],
+    [
+     "line",
+     7.68,
+     0.0,
+     9.16,
+     0.0
+    ],
+    [
+     "rect",
+     2.48,
+     -1.35,
+     7.68,
+     1.35
+    ],
+    [
+     "line",
+     3.6799999999999997,
+     -1.35,
+     3.6799999999999997,
+     1.35
+    ]
+   ],
+   "court": [
+    2.48,
+    -1.35,
+    7.68,
+    1.35
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  },
+  "TERM_5.08_2": {
+   "id": "TERM_5.08_2",
+   "name": "Screw terminal 2-way, 5.08 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.6,
+     "h": 2.6,
+     "drill": 1.3,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.6,
+     "h": 2.6,
+     "drill": 1.3,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -2.54,
+     -4.0,
+     7.62,
+     4.0
+    ]
+   ],
+   "court": [
+    -2.54,
+    -4.0,
+    7.62,
+    4.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  },
+  "TO220_3": {
+   "id": "TO220_3",
+   "name": "TO-220 3-pin",
+   "category": "Power semiconductors",
+   "prefix": "Q",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.0,
+     "h": 2.5,
+     "drill": 1.1,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "oval",
+     "w": 2.0,
+     "h": 2.5,
+     "drill": 1.1,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "oval",
+     "w": 2.0,
+     "h": 2.5,
+     "drill": 1.1,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -2.5599999999999996,
+     -1.5,
+     7.64,
+     3.0
+    ]
+   ],
+   "court": [
+    -2.5599999999999996,
+    -1.5,
+    7.64,
+    3.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Pins 1-2-3 left to right viewed from the front (printed face). Pin 1 is square. Standing upright, tab away from you."
+  }
+ }
+}

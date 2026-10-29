@@ -1,0 +1,15 @@
+# Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight)
+__pycache__/
+*.pyc
+*.log
+logs/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+*.jks
+*.keystore
+.DS_Store
+Thumbs.db
+*.tmp

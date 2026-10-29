@@ -1,0 +1,39 @@
+name: Bug report
+description: Something is broken or looks wrong (this is a work-in-progress project, so expect some)
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: SoloTrace version
+      description: Help > About, or run `python3 src/main.py --version`
+      placeholder: "SoloTrace v0.3.4-wip (Built ...)"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and Python version
+      placeholder: "Linux Mint 22, Python 3.12 / Windows 11, Python 3.12 / macOS 14, python.org Python 3.12"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where did it go wrong?
+      options: [Editor / placing, Wiring or traces, Auto-place, Auto-route, DRC, Gerber export, PDF / SVG print, Laser G-code, Footprint wizard, Launcher script, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: Steps to repeat it help most. Attach the `.solotrace` file (drag it into this box, you may need to zip it) and a screenshot if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Error text
+      description: Anything printed in the terminal window, or the laser settings you used.
+      render: text

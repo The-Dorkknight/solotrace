@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoloTrace: easy single-sided PCB designer (work in progress)</title>
+<meta name="description" content="Source-available, non-commercial. Work in progress: a simple single-sided through-hole PCB designer with chamfered traces, a jumper-aware autorouter and laser G-code for the Elegoo Phecda.">
+<link rel="icon" href="images/favicon-64.png">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<!-- Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight) -->
+<!-- Licensed under the PolyForm Noncommercial License 1.0.0. No warranty. -->
+<style>
+:root{
+  --bg:#f6f4ee; --card:#ffffff; --ink:#1d2a22; --muted:#55645b; --line:#d9d5c7;
+  --accent:#8a5a2b; --accent-ink:#ffffff; --copper:#b87333; --board:#17331f;
+  --banner:#b7791f; --banner-ink:#ffffff; --code:#efece1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121a15; --card:#1b261f; --ink:#e8ede9; --muted:#9db0a4; --line:#2f4036;
+    --accent:#d99a5b; --accent-ink:#1a1209; --code:#16211a; --banner:#c98a24;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121a15; --card:#1b261f; --ink:#e8ede9; --muted:#9db0a4; --line:#2f4036;
+  --accent:#d99a5b; --accent-ink:#1a1209; --code:#16211a; --banner:#c98a24;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden}
+a{color:var(--accent)}
+img{max-width:100%;height:auto;display:block}
+.banner{background:var(--banner);color:var(--banner-ink);text-align:center;font-weight:700;padding:.6rem 1rem;letter-spacing:.02em}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header.hero{padding:2.2rem 0 1.4rem;display:grid;gap:1.4rem;grid-template-columns:1fr}
+.hero .id{display:flex;gap:1rem;align-items:center}
+.hero .id img{width:72px;height:72px;border-radius:16px}
+h1{font-size:clamp(1.9rem,6vw,2.8rem);margin:0;line-height:1.1}
+.tag{color:var(--muted);margin:.2rem 0 0}
+.lead{font-size:1.1rem;max-width:62ch}
+.shot{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--board)}
+.btns{display:flex;flex-wrap:wrap;gap:.6rem;margin:.4rem 0 0}
+.btn{display:inline-block;padding:.65rem 1rem;border-radius:10px;border:1px solid var(--accent);text-decoration:none;font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+section{padding:1.4rem 0}
+h2{font-size:1.5rem;margin:0 0 .8rem}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem}
+.card h3{margin:.1rem 0 .4rem;font-size:1.05rem}
+.card p{margin:0;color:var(--muted)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:block;overflow-x:auto}
+th,td{text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--code)}
+code,pre{background:var(--code);border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em}
+code{padding:.08rem .3rem}
+pre{padding:.8rem;overflow-x:auto;margin:.5rem 0}
+.two{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.warn{border-left:5px solid var(--banner)}
+footer{border-top:1px solid var(--line);margin-top:1.5rem;padding:1.4rem 0 2.2rem;color:var(--muted);font-size:.93rem}
+@media (min-width:860px){header.hero{grid-template-columns:5fr 6fr;align-items:center}}
+</style>
+</head>
+<body>
+<div class="banner">WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN &middot; v0.3.4-wip</div>
+
+<div class="wrap">
+<header class="hero">
+  <div>
+    <div class="id"><img src="images/icon-512.png" alt="SoloTrace icon" width="72" height="72">
+      <div><h1>SoloTrace</h1><p class="tag">Easy single-sided PCBs for quick prototypes</p></div></div>
+    <p class="lead">Real full-size parts, traces up to 10 mm wide with a slider, every corner chamfered, an autorouter that avoids the tangled-string look, and output for toner transfer, Gerber fabs and a gantry diode laser (Elegoo Phecda) with a negative option and adjustable trace gap.</p>
+    <div class="btns">
+      <a class="btn primary" id="dl" href="https://github.com/The-Dorkknight/solotrace/releases">Download (pre-release)</a>
+      <a class="btn" id="repo" href="https://github.com/The-Dorkknight/solotrace">Source on GitHub</a>
+    </div>
+  </div>
+  <a class="shot" href="images/gui-routed.webp"><img src="images/gui-routed.webp" alt="SoloTrace window showing a routed 555 LED flasher board" width="1280" height="840"></a>
+</header>
+
+<section>
+  <h2>What it does</h2>
+  <div class="grid">
+    <div class="card"><h3>90 real parts, by shape</h3><p>Chips, transistors &amp; regulators, resistors (flat and standing), diodes, inductors, caps, pots, connectors. A tree with expand arrows and a live drawing of the part in the sidebar.</p></div>
+    <div class="card"><h3>Make your own</h3><p>A footprint wizard (pad table, click-to-add, DIP and header presets) and KiCad <code>.kicad_mod</code> import.</p></div>
+    <div class="card"><h3>Trace width 0.4 to 10 mm</h3><p>Click a trace section or a whole net, drag the slider. Shows roughly how many amps it carries.</p></div>
+    <div class="card"><h3>No 90&deg; corners</h3><p>Every corner is chamfered by construction, and the checker flags anything sharper than 45&deg;.</p></div>
+    <div class="card"><h3>Deadbug pads</h3><p>No hole, extra copper to bend a lead flat and solder on the copper side. Per part or per pad.</p></div>
+    <div class="card"><h3>Calmer autorouter</h3><p>Prefers straight runs and clean 45&deg; bends, rips up and retries, then adds wire-link jumpers instead of tangles.</p></div>
+    <div class="card"><h3>Print, fab or laser</h3><p>Gerber + drill zip, 1:1 mirrored PDF/SVG, BOM, and G-code for the Elegoo Phecda.</p></div>
+    <div class="card"><h3>Edit traces by hand</h3><p>Drag a section sideways and its neighbours follow at 45&deg;. Trim a section out, split a trace, tidy it. Right-click anything for its menu.</p></div>
+    <div class="card"><h3>Rigid power trunks</h3><p>Shift + wire two pins and the router joins them with a direct trunk first; the rest of the net branches off it. Drawn in orange.</p></div>
+    <div class="card"><h3>Pin labels and values</h3><p>B C E, G D S, K A, IN GND OUT, optocoupler and 555 / op-amp layouts beside the pads, and the part value on the board.</p></div>
+    <div class="card"><h3>Neat wide traces</h3><p>Wide traces leave pads straight and land on the pad centre, and the panel says how wide a trace can go and still fit.</p></div>
+    <div class="card"><h3>Laser: negative and gap</h3><p>Negative, isolation and positive modes, trace adjust, gap, line interval, speed, power, passes, crosshatch, test cards, frame file.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Screens</h2>
+  <div class="two">
+    <a class="shot" href="images/gui-pin-labels.webp"><img src="images/gui-pin-labels.webp" alt="Pin labels and a rigid power trunk" loading="lazy" width="1280" height="840"></a>
+    <a class="shot" href="images/gui-context-menu.webp"><img src="images/gui-context-menu.webp" alt="Right-click menu on a trace" loading="lazy" width="1280" height="840"></a>
+    <a class="shot" href="images/wide-trace-tidy.webp"><img src="images/wide-trace-tidy.webp" alt="A 2 mm trace before and after tidying" loading="lazy" width="1394" height="625"></a>
+    <a class="shot" href="images/gui-deadbug.webp"><img src="images/gui-deadbug.webp" alt="Deadbug pads on a DIP-8" loading="lazy" width="1280" height="840"></a>
+    <a class="shot" href="images/gui-copper-side.webp"><img src="images/gui-copper-side.webp" alt="Copper-side view" loading="lazy" width="1280" height="840"></a>
+    <a class="shot" href="images/laser-negative.webp"><img src="images/laser-negative.webp" alt="Laser export dialog in negative mode" loading="lazy" width="1040" height="700"></a>
+    <a class="shot" href="images/footprint-wizard.webp"><img src="images/footprint-wizard.webp" alt="Footprint wizard" loading="lazy" width="860" height="560"></a>
+  </div>
+  <p style="color:var(--muted)">Screenshots are the real program on a Linux test machine with the built-in example boards.</p>
+</section>
+
+<section>
+  <h2>What does not exist yet</h2>
+  <table>
+    <tr><th>Item</th><th>Status</th></tr>
+    <tr><td>Laser G-code on a real Elegoo Phecda</td><td><strong>Never run on a real machine.</strong> Speeds, powers and spot sizes are starting guesses; use the test cards.</td></tr>
+    <tr><td>Windows and macOS launchers, GitHub workflows</td><td>Written, not run.</td></tr>
+    <tr><td>Floating slider pop-up</td><td>Not built: the slider is in the right-hand panel (preset widths are also on the right-click menu).</td></tr>
+    <tr><td>Push-and-shove when dragging traces</td><td>Not built: a dragged trace can end up too close to others; the clash is marked in red.</td></tr>
+    <tr><td>Full negotiated-congestion or topological router, C++ speed-up</td><td>Not built. The router is pure Python and can be slow on big boards.</td></tr>
+    <tr><td>Soldermask, copper pours, multi-layer, SMD</td><td>Out of scope.</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Install</h2>
+  <div class="two">
+    <div class="card">
+      <h3>1. Double-click</h3>
+      <p>Download the zip, unzip it, and double-click the file for your system:</p>
+      <ul>
+        <li><code>SoloTrace-Linux.sh</code> (needs <code>python3-tk</code>)</li>
+        <li><code>SoloTrace-Windows.bat</code> (Python from python.org, tcl/tk ticked)</li>
+        <li><code>SoloTrace-Mac.command</code> (Python from python.org; first time right-click &gt; Open)</li>
+      </ul>
+      <p>If something is missing, the launcher says exactly what to install.</p>
+    </div>
+    <div class="card">
+      <h3>2. Or from a terminal</h3>
+<pre>python3 src/main.py
+python3 src/main.py --version</pre>
+      <p>Needs Python 3.8+ with tkinter and nothing else.</p>
+    </div>
+  </div>
+  <div class="card warn" style="margin-top:14px">
+    <h3>Safety</h3>
+    <p>A diode laser can blind you and start fires, and etchant and burnt-paint fumes are harmful. Wear laser safety glasses rated for your module, ventilate, never leave it running unattended, and check every print against your real parts before etching. A diode laser cannot remove bare copper: paint, burn the paint away, then etch.</p>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p><strong>Licence:</strong> Copyright Matthew Armstrong. <a id="lic" href="https://github.com/The-Dorkknight/solotrace/blob/main/LICENSE.md">PolyForm Noncommercial 1.0.0</a>: source-available, free for non-commercial use, not open source. Provided as is, with no warranty and no liability. Not legal advice. Not affiliated with Elegoo or anyone else named; third-party parts keep their own licences.</p>
+    <p><a id="readme" href="https://github.com/The-Dorkknight/solotrace#readme">README</a> &middot; <a id="notes" href="https://github.com/The-Dorkknight/solotrace/blob/main/DESIGN_NOTES.md">Design notes</a> &middot; <a id="issues" href="https://github.com/The-Dorkknight/solotrace/issues">Report a bug</a></p>
+  </div>
+</footer>
+
+<script>
+// Work out owner/repo from the Pages address so links survive renames and forks; default to The-Dorkknight/solotrace.
+(function(){
+  var owner="The-Dorkknight", repo="solotrace";
+  try{
+    var h=location.hostname, m=h.match(/^([^.]+)\.github\.io$/i);
+    if(m){ owner=m[1]; var seg=location.pathname.split("/").filter(Boolean)[0]; if(seg && seg.indexOf(".")<0) repo=seg; }
+  }catch(e){}
+  var base="https://github.com/"+owner+"/"+repo;
+  var set=function(id,url){var el=document.getElementById(id); if(el) el.href=url;};
+  set("dl",base+"/releases"); set("repo",base); set("lic",base+"/blob/main/LICENSE.md");
+  set("readme",base+"#readme"); set("notes",base+"/blob/main/DESIGN_NOTES.md"); set("issues",base+"/issues");
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+References,Qty,Value,Part,Part id
+C1,1,470u,"Electrolytic cap, 5 mm pitch (body up to 10 mm)",C_ELEC_5
+C2,1,100u,"Electrolytic cap, 5 mm pitch (body up to 10 mm)",C_ELEC_5
+D1,1,1N4007,"Diode DO-41 (1N400x), 10.16 mm",D_DO41_10.16
+J1,1,12V in,"Screw terminal 2-way, 5.08 mm",TERM_5.08_2
+J2,1,5V out,"Screw terminal 2-way, 5.08 mm",TERM_5.08_2
+U1,1,7805,TO-220 3-pin,TO220_3
