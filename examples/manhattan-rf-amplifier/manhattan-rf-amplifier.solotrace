@@ -1,0 +1,535 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "Manhattan RF amplifier",
+ "width": 60.0,
+ "height": 36.0,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "island_mode": true,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 0.0,
+  "island_drop_floating": true,
+  "classes": {
+   "Signal": 0.8,
+   "Power": 2.0,
+   "High current": 5.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "C1",
+   "part": "C_DISC_5.08",
+   "x": 11.43,
+   "y": 11.43,
+   "rot": 0,
+   "flip": false,
+   "value": "1n",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "C2",
+   "part": "C_DISC_5.08",
+   "x": 43.18,
+   "y": 27.94,
+   "rot": 0,
+   "flip": false,
+   "value": "1n",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "C3",
+   "part": "C_DISC_5.08",
+   "x": 34.29,
+   "y": 5.08,
+   "rot": 90,
+   "flip": false,
+   "value": "100n",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "L1",
+   "part": "L_RAD_5",
+   "x": 40.64,
+   "y": 5.08,
+   "rot": 90,
+   "flip": false,
+   "value": "10uH",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "P1",
+   "part": "PAD_2.5",
+   "x": 6.35,
+   "y": 11.43,
+   "rot": 0,
+   "flip": false,
+   "value": "RF in",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "P2",
+   "part": "PAD_2.5",
+   "x": 53.34,
+   "y": 27.94,
+   "rot": 0,
+   "flip": false,
+   "value": "RF out",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "P3",
+   "part": "PAD_2.5",
+   "x": 25.4,
+   "y": 5.08,
+   "rot": 0,
+   "flip": false,
+   "value": "+9V",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "P4",
+   "part": "PAD_2.5",
+   "x": 8.89,
+   "y": 30.48,
+   "rot": 0,
+   "flip": false,
+   "value": "GND",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "Q1",
+   "part": "TO92",
+   "x": 25.4,
+   "y": 22.86,
+   "rot": 0,
+   "flip": false,
+   "value": "2N3904",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "R1",
+   "part": "R_V_0.25W_5.08",
+   "x": 23.495,
+   "y": 11.43,
+   "rot": 270,
+   "flip": false,
+   "value": "47k",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "R2",
+   "part": "R_V_0.25W_5.08",
+   "x": 19.05,
+   "y": 11.43,
+   "rot": 90,
+   "flip": false,
+   "value": "10k",
+   "style": "dead",
+   "locked": false
+  }
+ ],
+ "nets": [
+  {
+   "name": "IN",
+   "class": "Signal",
+   "pins": [
+    "P1.1",
+    "C1.1"
+   ]
+  },
+  {
+   "name": "BASE",
+   "class": "Signal",
+   "pins": [
+    "C1.2",
+    "R2.1",
+    "R1.1",
+    "Q1.2"
+   ]
+  },
+  {
+   "name": "VCC",
+   "class": "Signal",
+   "pins": [
+    "P3.1",
+    "R1.2",
+    "L1.1",
+    "C3.1"
+   ]
+  },
+  {
+   "name": "COLL",
+   "class": "Signal",
+   "pins": [
+    "Q1.3",
+    "L1.2",
+    "C2.1"
+   ]
+  },
+  {
+   "name": "OUT",
+   "class": "Signal",
+   "pins": [
+    "C2.2",
+    "P2.1"
+   ]
+  },
+  {
+   "name": "GND",
+   "class": "Signal",
+   "pins": [
+    "Q1.1",
+    "R2.2",
+    "C3.2",
+    "P4.1"
+   ]
+  }
+ ],
+ "traces": [],
+ "jumpers": [],
+ "islands": [
+  {
+   "x": 8.89,
+   "y": 11.43,
+   "w": 8.89,
+   "h": 3.81,
+   "shape": "rect",
+   "corner": 0.5
+  },
+  {
+   "x": 21.59,
+   "y": 11.43,
+   "w": 11.43,
+   "h": 3.81,
+   "shape": "rect",
+   "corner": 0.5
+  },
+  {
+   "x": 27.94,
+   "y": 17.15,
+   "w": 1.8,
+   "h": 12.7,
+   "shape": "rect",
+   "corner": 0.5
+  },
+  {
+   "x": 31.75,
+   "y": 5.08,
+   "w": 20.32,
+   "h": 3.81,
+   "shape": "rect",
+   "corner": 0.5
+  },
+  {
+   "x": 30.48,
+   "y": 25.4,
+   "w": 1.8,
+   "h": 6.35,
+   "shape": "rect",
+   "corner": 0.5
+  },
+  {
+   "x": 38.1,
+   "y": 27.94,
+   "w": 15.24,
+   "h": 3.81,
+   "shape": "rect",
+   "corner": 0.5
+  },
+  {
+   "x": 40.64,
+   "y": 18.0,
+   "w": 3.81,
+   "h": 17.0,
+   "shape": "rect",
+   "corner": 0.5
+  },
+  {
+   "x": 51.5,
+   "y": 27.94,
+   "w": 9.0,
+   "h": 3.81,
+   "shape": "rect",
+   "corner": 0.5
+  }
+ ],
+ "defs": {
+  "C_DISC_5.08": {
+   "id": "C_DISC_5.08",
+   "name": "Ceramic disc cap, 5.08 mm",
+   "category": "Capacitors",
+   "prefix": "C",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.0,
+     -1.75,
+     6.08,
+     1.75
+    ]
+   ],
+   "court": [
+    -1.0,
+    -1.75,
+    6.08,
+    1.75
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  },
+  "L_RAD_5": {
+   "id": "L_RAD_5",
+   "name": "Inductor radial, 5 mm pitch (body up to 10 mm)",
+   "category": "Inductors",
+   "prefix": "L",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "circle",
+     2.5,
+     0.0,
+     5.0
+    ]
+   ],
+   "court": [
+    -2.5,
+    -5.0,
+    7.5,
+    5.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Generic radial (drum core) inductor. Check the pitch on your part."
+  },
+  "PAD_2.5": {
+   "id": "PAD_2.5",
+   "name": "Solder pad 2.5 mm with hole",
+   "category": "Board",
+   "prefix": "TP",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.5,
+     "h": 2.5,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [],
+   "court": [
+    -1.25,
+    -1.25,
+    1.25,
+    1.25
+   ],
+   "kind": "pad",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  },
+  "R_V_0.25W_5.08": {
+   "id": "R_V_0.25W_5.08",
+   "name": "Resistor 0.25 W standing, 5.08 mm",
+   "category": "Resistors",
+   "prefix": "R",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "circle",
+     0.0,
+     0.0,
+     1.25
+    ],
+    [
+     "line",
+     1.25,
+     0.0,
+     4.28,
+     0.0
+    ]
+   ],
+   "court": [
+    -1.25,
+    -1.25,
+    5.88,
+    1.25
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Standing (vertical) mounting: the body stands on pin 1, the other lead folds back down to pin 2. Saves board space."
+  },
+  "TO92": {
+   "id": "TO92",
+   "name": "Transistor TO-92 (3 pins, 2.54 mm)",
+   "category": "Transistors & LEDs",
+   "prefix": "Q",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "line",
+     0.2883339501604594,
+     -0.9,
+     4.791666049839541,
+     -0.9
+    ],
+    [
+     "arc",
+     2.54,
+     0.4,
+     2.6,
+     -30.0,
+     210.0
+    ]
+   ],
+   "court": [
+    0.2883339501604594,
+    -0.9,
+    4.791666049839541,
+    3.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Pins are in order 1-2-3 left to right with the flat face towards you. Pin names depend on the part (BC547: C-B-E vs 2N3904: E-B-C), check the datasheet."
+  }
+ }
+}

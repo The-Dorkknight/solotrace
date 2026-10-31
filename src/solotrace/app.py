@@ -16,23 +16,29 @@ from typing import Dict, List, Optional, Tuple
 
 from . import APP_NAME, __build_date__, __version__, title as app_title
 from . import demos, gerber, library, render
-from .board import (Board, MAX_WIDTH, MIN_WIDTH, Placed, Trace, clamp_width, current_capacity)
+from .board import (Board, Island, ISLAND_MAX, ISLAND_MIN, MAX_WIDTH, MIN_WIDTH, Placed, Trace, clamp_island,
+                    clamp_width, current_capacity)
 from .drc import run_drc, summarize
 from .geom import Cap, dist, seg_point_dist, shape_dist
 from .placer import Placer
 from .router import AutoRouter, RouteOptions
 from . import theme
+from .islands import plan as island_plan, guess_ground, make_pads_deadbug
 from .theme import FONT, FONT_B, FONT_S, UI, Tooltip
-from .tidy import (apply_drag, cut_between, piece_bounds, project_on_trace, split_trace, tidy_trace,
-                   tidy_traces, trim_piece, trim_segment, violation_set, _sub_polyline)
+from .tidy import (apply_drag, attached_ends, cut_between, follow_trunk, piece_bounds, project_on_trace,
+                   settle_branch_ends, split_trace, tidy_trace, tidy_traces, trim_piece, trim_segment,
+                   violation_set, _sub_polyline)
 
 COL = {
     "bg": "#16301c", "board": "#1b3d24", "grid": "#27502f", "copper": "#d79a4e", "copper_dim": "#8a6a3c",
     "hole": "#16301c", "outline": "#e8f0e8", "outline_dim": "#6f8f77", "sel": "#35d0ff", "air": "#f2e24a",
     "rigid": "#ff6b3d", "rigid_dim": "#b0563a", "air_shadow": "#0b1a0f", "pinlabel": "#ffe08a",
     "jump": "#6fb7ff", "drc": "#ff4040", "ghost": "#9fe0ff", "text": "#ffffff", "hover": "#6f8f5a",
+    "fill": "#a8783a", "fill_dim": "#5c4a2d",
 }
 WIDTH_PRESETS = (0.4, 0.8, 1.5, 2.5, 5.0, 10.0)
+ISLAND_SIZES = (2.54, 3.81, 5.08, 6.35, 7.62, 10.16, 12.7, 15.24)
+ISLAND_GRID = 0.635            # islands snap to a quarter of 2.54 mm so they can sit under pins
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".solotrace")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 AUTOSAVE_FILE = os.path.join(CONFIG_DIR, "autosave.solotrace")
@@ -84,10 +90,15 @@ HELP_TEXT = """SoloTrace quick guide
    Trim tool (X) removes a whole straight section.  Right-click anything for its menu
    (trim, split, tidy, width, rotate, duplicate, wire from a pin, route one net...).
 7. Pads: choose Through-hole, Deadbug (no hole, long copper for surface soldering) or Both.
-8. Check with DRC, then export: Gerber, 1:1 PDF/SVG for toner transfer, or Laser G-code.
+8. Island tool (I): click to drop a rectangular copper pad, drag to draw one any size, Shift + click
+   to switch round / rectangle. Drag an island to move it, drag its white corner squares to resize.
+   A part's pins sitting on an island join it (Manhattan / deadbug building, no traces needed).
+   Board > Ground fill turns the rest of the board into ground copper, with a gap round every
+   other net: quick and dirty RF. The ground net is then joined by the fill, not routed.
+9. Check with DRC, then export: Gerber, 1:1 PDF/SVG for toner transfer, or Laser G-code.
 
 Mouse: wheel = zoom, right or middle drag = pan, right-click = menu, left = tool.
-Keys: S select, P place, W wire, T trace, X trim, C cut, J jumper, R / Shift+R rotate, arrows nudge
+Keys: S select, P place, W wire, T trace, X trim, C cut, J jumper, I island, R / Shift+R rotate, arrows nudge
 (Shift = 2.54 mm), Ctrl+D duplicate, Delete, Ctrl+Z / Ctrl+Y, F fit, M flip view.
 Your board is autosaved every 2 minutes while it has unsaved changes (File > Recover autosave).
 """
@@ -173,10 +184,12 @@ class App:
         self.auto_tidy = tk.BooleanVar(value=True)
         self.jumpers_var = tk.BooleanVar(value=self.board.settings.allow_jumpers)
         self.keepout_var = tk.BooleanVar(value=self.board.settings.keep_out_under_parts)
+        self.island_var = tk.BooleanVar(value=self.board.settings.island_mode)
         self.hover_net: Optional[str] = None
         self.menu_preview = None
         self.cut_start: Optional[Tuple[int, Tuple[float, float]]] = None
         self.rigid_next = False
+        self.island_new = {"shape": "rect", "w": 5.08, "h": 5.08}    # size and shape of the next island
         self._wire_press = None
         self._shift = False
         self._autosave_id = None
@@ -209,15 +222,18 @@ class App:
                 "trim": "Click a trace section to remove that whole section; the rest stays.",
                 "cut": "Click a trace: that piece goes, up to the nearest joints (pads, branches). The rest of the net stays. "
                        "Shift + click two points to cut between them.",
-                "jumper": "Add a wire-link jumper by hand."}
+                "jumper": "Add a wire-link jumper by hand.",
+                "island": "Copper islands (Manhattan / deadbug pads): click to drop one, or drag out a rectangle. "
+                          "Shift + click switches round / rectangle. Put a part's pins on an island to join them."}
         for key, label in (("select", "Select"), ("place", "Place"), ("wire", "Wire"),
-                           ("trace", "Trace"), ("trim", "Trim"), ("cut", "Cut"), ("jumper", "Jumper")):
+                           ("trace", "Trace"), ("trim", "Trim"), ("cut", "Cut"), ("jumper", "Jumper"),
+                           ("island", "Island")):
             b = ttk.Radiobutton(bar, text=label, value=key, variable=self.tool_var, style="Tool.TRadiobutton",
                                 command=lambda k=key: self.set_tool(k))
             b.pack(side="left", padx=1)
             self.tool_btns[key] = b
             Tooltip(b, tips[key] + "  Key: %s" % {"select": "S", "place": "P", "wire": "W", "trace": "T",
-                                                    "trim": "X", "cut": "C", "jumper": "J"}[key])
+                                                    "trim": "X", "cut": "C", "jumper": "J", "island": "I"}[key])
         ttk.Separator(bar, orient="vertical", style="Bar.TSeparator").pack(side="left", fill="y", padx=6)
         ttk.Label(bar, text="Pads:", style="Bar.TLabel").pack(side="left")
         for v, t in (("tht", "Through-hole"), ("dead", "Deadbug"), ("mixed", "Both")):
@@ -230,8 +246,8 @@ class App:
                                      "Route every net with chamfered 45 degree copper; adds jumpers if it must."),
                                     ("Check", self.show_drc, "Blue.TButton", "Design rule check (clearances, corners, widths)."),
                                     ("Laser...", self.laser_dialog, "Red.TButton", "G-code for the Elegoo Phecda laser.")):
-            btn = ttk.Button(bar, text=text, command=cmd, style=sty)
-            btn.pack(side="left", padx=2)
+            btn = ttk.Button(bar, text=text, command=cmd, style=sty, width=0)   # as wide as the text, so
+            btn.pack(side="left", padx=2)                                          # the bar fits 1280 px
             Tooltip(btn, tip)
         jc = ttk.Checkbutton(bar, text="Jumpers", variable=self.jumpers_var, style="Bar.TCheckbutton",
                              command=self._toggle_jumpers)
@@ -368,6 +384,11 @@ class App:
         b.add_checkbutton(label="Auto-route may add jumpers", variable=self.jumpers_var, command=self._toggle_jumpers)
         b.add_checkbutton(label="Keep traces out from under parts", variable=self.keepout_var,
                           command=self._toggle_keepout)
+        b.add_separator()
+        b.add_checkbutton(label="Ground fill (RF / Manhattan)", variable=self.island_var,
+                          command=self._toggle_islands)
+        b.add_command(label="Ground fill settings...", command=self.island_dialog)
+        b.add_separator()
         b.add_command(label="Remove automatic routes", command=self.clear_auto)
         b.add_command(label="Remove ALL routes", command=self.clear_all)
         b.add_command(label="Check (DRC)", command=self.show_drc)
@@ -414,7 +435,7 @@ class App:
                                                    else self.delete_selection))
         r.bind("<Return>", lambda e: self._key(self.finish_trace))
         for k, t in (("s", "select"), ("p", "place"), ("w", "wire"), ("t", "trace"), ("j", "jumper"), ("x", "trim"),
-                     ("c", "cut")):
+                     ("c", "cut"), ("i", "island")):
             r.bind(k, lambda e, t=t: self._key(lambda: self.set_tool(t)))
         r.bind("r", lambda e: self._key(self.rotate))
         r.bind("R", lambda e: self._key(lambda: self.rotate(-90)))
@@ -460,6 +481,7 @@ class App:
         self.board = Board.from_dict(json.loads(snap))
         self.jumpers_var.set(self.board.settings.allow_jumpers)
         self.keepout_var.set(self.board.settings.keep_out_under_parts)
+        self.island_var.set(self.board.settings.island_mode)
         self.cut_start = None
         self.sel = {}
         self.marks = []
@@ -747,7 +769,11 @@ class App:
                  "trim": "Trim: click a trace section to cut it out. The rest of the trace stays. Esc to stop.",
                  "cut": "Cut: click a trace and that piece goes, up to the nearest joints; the rest of the net stays. "
                         "Shift + click two points to cut between them.",
-                 "jumper": "Click the first end, then the second end in a straight line (5 to 15 mm)."}
+                 "jumper": "Click the first end, then the second end in a straight line (5 to 15 mm).",
+                 "island": "Island: click to drop a %s %.4g x %.4g mm copper pad, or drag out a rectangle. Shift + click "
+                           "switches round / rectangle. Click an island to select it; drag its corner squares to "
+                           "resize." % (self.island_new["shape"] == "round" and "round" or "rectangular",
+                                        self.island_new["w"], self.island_new["h"])}
         self.status(hints.get(t, ""))
         self.request_redraw()
 
@@ -756,7 +782,7 @@ class App:
         self.pending_pin = None
         self.jump_start = None
         self.cut_start = None
-        if self.tool in ("place", "wire", "trace", "jumper", "trim", "cut"):
+        if self.tool in ("place", "wire", "trace", "jumper", "trim", "cut", "island"):
             self.set_tool("select")
         self.sel = {}
         self.show_props()
@@ -798,7 +824,31 @@ class App:
             x0, y0, x1, y1 = b.court_rect(ref)
             if x0 - 0.5 <= wx <= x1 + 0.5 and y0 - 0.5 <= wy <= y1 + 0.5:
                 return {"part": ref}
+        isl = self.island_at(wx, wy)
+        if isl is not None:
+            return {"island": isl}
         return {}
+
+    def island_at(self, wx: float, wy: float) -> Optional[int]:
+        """The top-most copper island under this point (None if there is none)."""
+        probe = Cap(wx, wy, wx, wy, 0.0)
+        for i in range(len(self.board.islands) - 1, -1, -1):
+            if shape_dist(probe, self.board.islands[i].copper()) <= 0.0:
+                return i
+        return None
+
+    def island_handle(self, sx: float, sy: float) -> Optional[Tuple[int, int, int]]:
+        """(island, sx_sign, sy_sign) when the screen point is on a corner handle of the selected island."""
+        i = self.sel.get("island")
+        if i is None or i >= len(self.board.islands):
+            return None
+        isl = self.board.islands[i]
+        for kx in (-1, 1):
+            for ky in (-1, 1):
+                hx, hy = self.w2s(isl.x + kx * isl.w / 2, isl.y + ky * isl.h / 2)
+                if abs(hx - sx) <= 7 and abs(hy - sy) <= 7:
+                    return (i, kx, ky)
+        return None
 
     def pin_near(self, wx: float, wy: float, radius: float = 1.6) -> Optional[str]:
         b = self.board
@@ -815,8 +865,12 @@ class App:
         wx, wy = self.s2w(e.x, e.y)
         self.cursor = (wx, wy)
         self.cursor_var.set("X %.2f  Y %.2f mm" % (wx, wy))
-        if self.tool in ("place", "wire", "trace", "jumper", "cut"):
+        if self.tool in ("place", "wire", "trace", "jumper", "cut", "island"):
             self.request_overlay()
+        if self.tool in ("select", "island") and not self.drag and self.sel.get("island") is not None:
+            if self.island_handle(e.x, e.y):
+                self.canvas.configure(cursor="sizing")
+                return
         if self.tool in ("select", "wire", "trace", "trim", "cut") and not self.drag:
             last = getattr(self, "_hover_xy", None)
             if last is None or abs(last[0] - e.x) + abs(last[1] - e.y) > 3:
@@ -857,7 +911,9 @@ class App:
         self.canvas.focus_set()
         wx, wy = self.s2w(e.x, e.y)
         t = self.tool
-        if t == "select":
+        if t == "island" or (t == "select" and self.island_handle(e.x, e.y)):
+            self.island_press(e, wx, wy)
+        elif t == "select":
             hit = self.hit_test(wx, wy)
             self.sel = hit
             self.drag = None
@@ -865,10 +921,14 @@ class App:
             if ref and ref in self.board.parts and not self.board.parts[ref].locked:
                 pl = self.board.parts[ref]
                 self.drag = {"ref": ref, "dx": pl.x - wx, "dy": pl.y - wy, "moved": False}
+            elif "island" in hit:
+                isl = self.board.islands[hit["island"]]
+                self.drag = {"island": hit["island"], "dx": isl.x - wx, "dy": isl.y - wy, "moved": False}
             elif "trace" in hit:
                 tr = self.board.traces[hit["trace"]]
                 self.drag = {"trace": hit["trace"], "seg": hit["seg"], "base": list(tr.points),
-                             "basew": list(tr.widths), "start": (wx, wy), "moved": False, "sx": e.x, "sy": e.y}
+                             "basew": list(tr.widths), "start": (wx, wy), "moved": False, "sx": e.x, "sy": e.y,
+                             "attached": attached_ends(self.board, tr)}
             self.show_props()
             self.request_redraw()
         elif t == "place":
@@ -971,10 +1031,15 @@ class App:
         if self.tool == "wire":
             self.on_motion(e)
             return
-        if self.tool != "select" or not self.drag:
+        if self.tool not in ("select", "island") or not self.drag:
             return
         wx, wy = self.s2w(e.x, e.y)
         d = self.drag
+        if self.board.settings.island_mode:
+            self.board._island_fast = True           # skip the floating-fill check until the mouse is let go
+        if "island" in d or "draw_island" in d:
+            self.island_drag(d, wx, wy)
+            return
         if "ref" in d:
             nx, ny = self.snap((wx + d["dx"], wy + d["dy"]))
             pl = self.board.parts[d["ref"]]
@@ -994,9 +1059,14 @@ class App:
                 self.push_undo()
                 d["moved"] = True
             apply_drag(self.board, d["trace"], d["seg"], d["base"], d["basew"], off)
+            # branches joined to this trace move with it, so they stay joined
+            follow_trunk(self.board, self.board.traces[d["trace"]], d["attached"])
             self.request_redraw()
 
     def on_release(self, e) -> None:
+        if getattr(self.board, "_island_fast", False):
+            self.board._island_fast = False          # full ground-fill check again now the drag is over
+            self.request_redraw()
         wp = getattr(self, "_wire_press", None)
         self._wire_press = None
         if self.tool == "wire" and wp and self.pending_pin and abs(e.x - wp[0]) + abs(e.y - wp[1]) > 8:
@@ -1007,6 +1077,10 @@ class App:
                 self.wire_click(wx, wy, bool(getattr(e, "state", 0) & 1))
             return
         d = self.drag
+        if d and ("island" in d or "draw_island" in d):
+            self.island_release(d, *self.s2w(e.x, e.y))
+            self.drag = None
+            return
         if d and d.get("moved"):
             if "ref" in d:
                 self.status("Moved. Existing traces stay where they were; re-route if needed.")
@@ -1019,7 +1093,9 @@ class App:
                              key=lambda k: seg_point_dist((wx, wy), t.points[k], t.points[k + 1]))
                     self.sel = {"trace": ti, "seg": si}
                     self.show_props()
-                self.quick_drc("Trace moved.")
+                    settle_branch_ends(self.board)
+                n_att = len(d.get("attached", []))
+                self.quick_drc("Trace moved%s." % (" (with the %d branch(es) joined to it)" % n_att if n_att else ""))
         self.drag = None
 
     def on_double(self, e) -> None:
@@ -1093,6 +1169,8 @@ class App:
             del b.traces[s["trace"]]
         elif "jumper" in s and s["jumper"] < len(b.jumpers):
             del b.jumpers[s["jumper"]]
+        elif "island" in s and s["island"] < len(b.islands):
+            del b.islands[s["island"]]
         elif "pin" in s:
             b.disconnect("%s.%s" % (s["part"], s["pin"]))
         elif "part" in s:
@@ -1274,6 +1352,25 @@ class App:
                                   command=lambda: self._net_jumpers(t.net, jv.get()))
                 m.add_command(label="Re-route net %s" % t.net, command=lambda: self.auto_route(only=t.net))
                 m.add_command(label="Delete trace", command=self.delete_selection, accelerator="Del")
+            elif "island" in hit and hit["island"] < len(b.islands):
+                ii = hit["island"]
+                isl = b.islands[ii]
+                net = b.island_net(ii)
+                head("Island #%d, %s %.4g x %.4g mm, %s" % (ii + 1, isl.shape == "round" and "round" or "rectangle",
+                                                            isl.w, isl.h, "net %s" % net if net else "not joined yet"))
+                m.add_command(label="Make it round" if isl.shape == "rect" else "Make it rectangular",
+                              command=lambda: self.set_island(ii, shape="round" if isl.shape == "rect" else "rect"))
+                sm = tk.Menu(m, tearoff=0)
+                for v in ISLAND_SIZES:
+                    sm.add_command(label="%.4g x %.4g mm" % (v, v), command=lambda v=v: self.set_island(ii, w=v, h=v))
+                for a_, b_ in ((5.08, 2.54), (7.62, 3.81), (10.16, 5.08), (15.24, 5.08)):
+                    sm.add_command(label="%.4g x %.4g mm" % (a_, b_), command=lambda a_=a_, b_=b_: self.set_island(ii, w=a_, h=b_))
+                m.add_cascade(label="Size", menu=sm)
+                m.add_command(label="Turn 90 degrees (swap width and height)",
+                              command=lambda: self.set_island(ii, w=isl.h, h=isl.w))
+                m.add_separator()
+                m.add_command(label="Duplicate island", command=lambda: self.duplicate_island(ii), accelerator="Ctrl+D")
+                m.add_command(label="Delete island", command=self.delete_selection, accelerator="Del")
             elif "jumper" in hit:
                 j = b.jumpers[hit["jumper"]]
                 head("Jumper on net %s (%.1f mm)" % (j.net, j.length()))
@@ -1350,6 +1447,7 @@ class App:
                 if self.armed:
                     m.add_command(label="Place %s here" % self.lib[self.armed].name if self.armed in self.lib else "Place part here",
                                   command=lambda: self.place_here(wx, wy))
+                m.add_command(label="Add a copper island here", command=lambda: self.add_island(wx, wy))
                 m.add_command(label="Auto-place", command=self.auto_place)
                 m.add_command(label="Auto-route", command=self.auto_route)
                 m.add_command(label="Tidy all traces", command=self.tidy_all)
@@ -1443,6 +1541,53 @@ class App:
             "go round part bodies (between DIP rows, under transistors) unless there is no other way"
             if self.board.settings.keep_out_under_parts else "run under part bodies when that is shorter"))
 
+    def _toggle_islands(self) -> None:
+        st = self.board.settings
+        on = bool(self.island_var.get())
+        dead = False
+        if on and any(pl.style != "dead" or pl.pad_styles for pl in self.board.parts.values()):
+            dead = messagebox.askyesno(
+                APP_NAME, "A ground-fill board is usually built with the parts soldered straight onto the copper.\n\n"
+                "Make every pad a deadbug pad (no holes to drill)?", parent=self.root)
+        self.set_islands(on, st.island_net, st.island_gap, st.island_grow, dead)
+
+    def island_dialog(self) -> None:
+        from .dialogs import IslandDialog
+        IslandDialog(self)
+
+    def set_islands(self, on: bool, net: str, gap: float, grow: float, dead: bool) -> None:
+        """Turn the ground fill on or off with these settings (one undo step)."""
+        b = self.board
+        st = b.settings
+        self.push_undo()
+        was = st.island_mode
+        st.island_mode, st.island_net, st.island_gap, st.island_grow = on, net, gap, grow
+        msg = []
+        if dead:
+            n = make_pads_deadbug(b)
+            if n:
+                msg.append("%d part(s) now have deadbug pads." % n)
+        if on:
+            from .islands import ground_net
+            g = ground_net(b)
+            if g:
+                # the fill joins the ground net; its automatic traces are no longer needed
+                before = len(b.traces)
+                b.traces = [t for t in b.traces if t.manual or t.net != g]
+                if len(b.traces) != before:
+                    msg.append("Removed %d automatic %s trace(s): the fill joins them." % (before - len(b.traces), g))
+                msg.insert(0, "Ground fill on: ground fill on %s, %.2g mm gap round everything else." % (g, max(gap, st.clearance)))
+            else:
+                msg.insert(0, "Ground fill on, but there is no net to use as ground yet; wire some pins first.")
+        elif was:
+            msg.insert(0, "Ground fill off. Auto-route will route the ground net again.")
+        b.touch()
+        self.island_var.set(on)
+        self.mark_dirty()
+        self.redraw()
+        self.show_props()
+        self.status(" ".join(msg) or "Ground fill settings saved.")
+
     def _net_jumpers(self, net: str, ok: bool) -> None:
         if net in self.board.nets:
             self.push_undo()
@@ -1508,11 +1653,224 @@ class App:
     def tidy_all(self) -> None:
         self.push_undo()
         n = tidy_traces(self.board)
+        settle_branch_ends(self.board)
         self.status("Tidied %d trace(s): centred ends, straight exits on wide traces, larger chamfers." % n)
         self.quick_drc("Tidied %d trace(s)." % n)
 
     # -------------------------------------------------------------- part edits
+    # ----------------------------------------------------------------- islands
+    def add_island(self, wx: float, wy: float, w: Optional[float] = None, h: Optional[float] = None,
+                   shape: Optional[str] = None) -> int:
+        """Drop a copper island centred here (snapped); returns its index."""
+        n = self.island_new
+        x, y = self.snap((wx, wy), ISLAND_GRID)
+        self.push_undo()
+        isl = Island(x, y, clamp_island(w or n["w"]), clamp_island(h or n["h"]), shape or n["shape"])
+        self.board.islands.append(isl)
+        self.board.touch()
+        i = len(self.board.islands) - 1
+        self.sel = {"island": i}
+        self.show_props()
+        self._island_status(i, "Island #%d added" % (i + 1))
+        self.request_redraw()
+        return i
+
+    def _island_status(self, i: int, what: str) -> None:
+        net = self.board.island_net(i)
+        pins = [p for p in self._island_pins(i)]
+        if net:
+            self.status("%s: joined to net %s%s." % (what, net, " (pins %s)" % ", ".join(pins) if pins else ""))
+        else:
+            self.status("%s: not joined to anything yet. Put a part's pin on it (deadbug pads are easiest), or draw a "
+                        "trace onto it." % what)
+
+    def _island_pins(self, i: int) -> List[str]:
+        b = self.board
+        shp = None
+        for s in b.copper():
+            if s.tag and s.tag[0] == "isl" and s.tag[1] == i:
+                shp = s
+        if shp is None:
+            return []
+        out = []
+        for s in b.copper():
+            if s.tag and s.tag[0] == "pad" and shape_dist(s, shp) <= 1e-6:
+                pin = "%s.%s" % (s.tag[1], s.tag[2])
+                if pin not in out:
+                    out.append(pin)
+        return out
+
+    def duplicate_island(self, i: int) -> None:
+        b = self.board
+        if i >= len(b.islands):
+            return
+        isl = b.islands[i]
+        step = math.ceil((isl.w + 1.27) / 1.27) * 1.27
+        nx = isl.x + step if isl.x + step + isl.w / 2 < b.width else isl.x - step
+        self.push_undo()
+        b.islands.append(Island(nx, isl.y, isl.w, isl.h, isl.shape, isl.corner))
+        b.touch()
+        self.sel = {"island": len(b.islands) - 1}
+        self.show_props()
+        self.status("Duplicated island #%d. Drag it where you want it." % (i + 1))
+        self.request_redraw()
+
+    def set_island(self, i: int, **kw) -> None:
+        """Change an island's shape or size (one undo step); the new values become the default for new islands."""
+        b = self.board
+        if i >= len(b.islands):
+            return
+        isl = b.islands[i]
+        self.push_undo()
+        for k, v in kw.items():
+            if k in ("w", "h"):
+                v = clamp_island(v)
+            setattr(isl, k, v)
+        self.island_new = {"shape": isl.shape, "w": isl.w, "h": isl.h}
+        b.touch()
+        self.sel = {"island": i}
+        self.show_props()
+        self._island_status(i, "Island #%d is now %s %.4g x %.4g mm" % (
+            i + 1, isl.shape == "round" and "round" or "rectangular", isl.w, isl.h))
+        self.request_redraw()
+
+    def island_press(self, e, wx: float, wy: float) -> None:
+        b = self.board
+        self.drag = None
+        h = self.island_handle(e.x, e.y)
+        if h:
+            i, kx, ky = h
+            isl = b.islands[i]
+            self.drag = {"island": i, "resize": (isl.x - kx * isl.w / 2, isl.y - ky * isl.h / 2), "moved": False}
+            return
+        shift = bool(getattr(e, "state", 0) & 1)
+        if shift:
+            n = self.island_new
+            n["shape"] = "round" if n["shape"] == "rect" else "rect"
+            self.status("New islands will be %s. Shift + click switches back." % (
+                "round" if n["shape"] == "round" else "rectangular"))
+            self.request_overlay()
+            return
+        i = self.island_at(wx, wy)
+        if i is not None:
+            isl = b.islands[i]
+            self.sel = {"island": i}
+            self.drag = {"island": i, "dx": isl.x - wx, "dy": isl.y - wy, "moved": False}
+            self.show_props()
+            self.request_redraw()
+            return
+        p0 = self.snap((wx, wy), ISLAND_GRID)
+        self.drag = {"draw_island": p0, "cur": p0, "sx": e.x, "sy": e.y}
+        self.request_overlay()
+
+    def island_drag(self, d: dict, wx: float, wy: float) -> None:
+        b = self.board
+        if "draw_island" in d:
+            d["cur"] = self.snap((wx, wy), ISLAND_GRID)
+            self.request_overlay()
+            return
+        i = d["island"]
+        if i >= len(b.islands):
+            return
+        isl = b.islands[i]
+        if "resize" in d:
+            ax, ay = d["resize"]
+            cx, cy = self.snap((wx, wy), ISLAND_GRID)
+            w = clamp_island(abs(cx - ax))
+            h = clamp_island(abs(cy - ay))
+            nx = ax + (w / 2 if cx >= ax else -w / 2)
+            ny = ay + (h / 2 if cy >= ay else -h / 2)
+            new = (nx, ny, w, h)
+        else:
+            nx, ny = self.snap((wx + d["dx"], wy + d["dy"]), ISLAND_GRID)
+            new = (nx, ny, isl.w, isl.h)
+        if new != (isl.x, isl.y, isl.w, isl.h):
+            if not d["moved"]:
+                self.push_undo()
+                d["moved"] = True
+            isl.x, isl.y, isl.w, isl.h = new
+            b.touch()
+            self.request_redraw()
+
+    def island_release(self, d: dict, wx: float, wy: float) -> None:
+        b = self.board
+        if "draw_island" in d:
+            (x0, y0), (x1, y1) = d["draw_island"], d["cur"]
+            if abs(x1 - x0) >= ISLAND_MIN and abs(y1 - y0) >= ISLAND_MIN:
+                self.island_new["w"], self.island_new["h"] = abs(x1 - x0), abs(y1 - y0)
+                self.add_island((x0 + x1) / 2, (y0 + y1) / 2, abs(x1 - x0), abs(y1 - y0))
+            else:
+                self.add_island(x0, y0)
+            return
+        i = d["island"]
+        if d.get("moved") and i < len(b.islands):
+            isl = b.islands[i]
+            if "resize" in d:
+                self.island_new = {"shape": isl.shape, "w": isl.w, "h": isl.h}
+            self.show_props()
+            self._island_status(i, "Island #%d %s" % (i + 1, "resized to %.4g x %.4g mm" % (isl.w, isl.h)
+                                                       if "resize" in d else "moved"))
+
+    def _props_island(self, p, i: int) -> None:
+        b = self.board
+        isl = b.islands[i]
+        net = b.island_net(i)
+        pins = self._island_pins(i)
+        ttk.Label(p, text="Copper island #%d" % (i + 1), font=FONT_B).pack(anchor="w", pady=(4, 0))
+        if net:
+            txt = "Joined to net %s%s" % (net, ("\nPins on it: " + ", ".join(pins)) if pins else "")
+        else:
+            txt = "Not joined to anything yet: put a part's pin on it, or draw a trace onto it."
+        ttk.Label(p, text=txt, wraplength=250, justify="left").pack(anchor="w", pady=(2, 6))
+        sv = tk.StringVar(value=isl.shape)
+        row = ttk.Frame(p)
+        row.pack(anchor="w")
+        for val, lab in (("rect", "Rectangle"), ("round", "Round")):
+            ttk.Radiobutton(row, text=lab, value=val, variable=sv,
+                            command=lambda: self.set_island(i, shape=sv.get())).pack(side="left", padx=(0, 8))
+        grid = ttk.Frame(p)
+        grid.pack(anchor="w", pady=4)
+        ents = {}
+        for r, (k, lab) in enumerate((("w", "Width (mm)"), ("h", "Height (mm)"), ("corner", "Corner cut (mm)"))):
+            if k == "corner" and isl.shape == "round":
+                continue
+            ttk.Label(grid, text=lab).grid(row=r, column=0, sticky="w")
+            v = tk.StringVar(value="%.4g" % getattr(isl, k))
+            en = ttk.Entry(grid, textvariable=v, width=8)
+            en.grid(row=r, column=1, padx=4, pady=1)
+            ents[k] = v
+
+            def commit(_e=None, k=k, v=v) -> None:
+                try:
+                    val = float(v.get())
+                except ValueError:
+                    self.status("Type a number in mm.")
+                    return
+                if k == "corner":
+                    val = max(0.0, min(val, min(isl.w, isl.h) / 2))
+                if abs(val - getattr(isl, k)) > 1e-9:
+                    self.set_island(i, **{k: val})
+            en.bind("<Return>", commit)
+            en.bind("<FocusOut>", commit)
+        ttk.Label(p, text="Square / circle sizes:").pack(anchor="w")
+        pr = ttk.Frame(p)
+        pr.pack(anchor="w")
+        for n_, v in enumerate(ISLAND_SIZES):
+            ttk.Button(pr, text="%.4g" % v, style="Small.TButton", width=5,
+                       command=lambda v=v: self.set_island(i, w=v, h=v)).grid(row=n_ // 4, column=n_ % 4, padx=1, pady=1)
+        bar = ttk.Frame(p)
+        bar.pack(anchor="w", pady=6)
+        ttk.Button(bar, text="Turn 90", width=0, command=lambda: self.set_island(i, w=isl.h, h=isl.w)).pack(side="left")
+        ttk.Button(bar, text="Duplicate", width=0, command=lambda: self.duplicate_island(i)).pack(side="left", padx=4)
+        ttk.Button(bar, text="Delete", width=0, command=self.delete_selection).pack(side="left")
+        ttk.Label(p, text="Drag the island to move it, drag a white corner square to resize it. Pins of two "
+                          "different nets on one island short them (Check marks it).",
+                  wraplength=250, justify="left").pack(anchor="w", pady=(4, 0))
+
     def duplicate(self) -> None:
+        if "island" in self.sel and self.sel["island"] < len(self.board.islands):
+            self.duplicate_island(self.sel["island"])
+            return
         ref = self.sel.get("part")
         b = self.board
         if not ref or ref not in b.parts:
@@ -1533,6 +1891,16 @@ class App:
         self.request_redraw()
 
     def nudge(self, dx: int, dy: int, big: bool = False) -> None:
+        i = self.sel.get("island")
+        if i is not None and i < len(self.board.islands):
+            g = 2.54 if big else self.board.settings.place_grid
+            self.push_undo()
+            isl = self.board.islands[i]
+            isl.x += dx * g
+            isl.y += dy * g
+            self.board.touch()
+            self.request_redraw()
+            return
         ref = self.sel.get("part")
         if not ref or ref not in self.board.parts or self.board.parts[ref].locked:
             return
@@ -1618,6 +1986,8 @@ class App:
             ttk.Label(p, text="Fit a bare wire or a link part on the COMPONENT side.\nSolder both ends on the copper side.",
                       wraplength=260, justify="left").pack(anchor="w")
             ttk.Button(p, text="Delete jumper", command=self.delete_selection).pack(anchor="w", pady=6)
+        elif "island" in s and s["island"] < len(b.islands):
+            self._props_island(p, s["island"])
         elif "part" in s and s["part"] in b.parts:
             self._props_part(p)
         elif "net" in s and s["net"] in b.nets:
@@ -1882,6 +2252,7 @@ class App:
                 keep = self.sel.get("trace")
                 tr = self.board.traces[keep] if keep is not None and keep < len(self.board.traces) else None
                 tidy_traces(self.board, [t for t in todo if t in self.board.traces])
+                settle_branch_ends(self.board)
                 if tr is not None and tr in self.board.traces and "seg" in self.sel:
                     self.sel["seg"] = min(self.sel["seg"], len(tr.widths) - 1)
             iss = [i for i in run_drc(self.board, check_unrouted=False) if i.kind in ("clearance", "edge")]
@@ -1965,6 +2336,17 @@ class App:
         jok = tk.BooleanVar(value=n.jumpers_ok)
         ttk.Checkbutton(p, text="Auto-route may use jumpers on this net", variable=jok,
                         command=lambda: self._net_jumpers(name, jok.get())).pack(anchor="w", pady=(6, 0))
+        if b.settings.island_mode:
+            from .islands import ground_net
+            if ground_net(b) == name:
+                ttk.Label(p, text="This net is the ground fill: its pins are joined by the fill, "
+                                  "so Auto-route leaves it alone. A yellow line means a pin sits on a piece of "
+                                  "fill that is cut off; join it with a trace or a jumper.",
+                          wraplength=230, justify="left").pack(anchor="w", pady=(6, 0))
+            else:
+                ttk.Button(p, text="Use this net as the ground fill", style="Small.TButton",
+                           command=lambda: self.set_islands(True, name, b.settings.island_gap,
+                                                            b.settings.island_grow, False)).pack(anchor="w", pady=(6, 0))
         links = b.rigid_links(name)
         if links:
             ttk.Label(p, text="Rigid wires (routed first, direct):", font=FONT_B).pack(anchor="w", pady=(8, 0))
@@ -2045,6 +2427,14 @@ class App:
             c.create_polygon(self._poly_pts(s.pts), fill=fill, outline=fill)
 
     def redraw(self) -> None:
+        rid = getattr(self, "_redraw_id", None)
+        if rid:
+            # a direct redraw makes any scheduled one pointless; cancel it so none is left behind
+            try:
+                self.root.after_cancel(rid)
+            except Exception:
+                pass
+            self._redraw_id = None
         self._redraw_pending = False
         c = self.canvas
         c.delete("all")
@@ -2072,6 +2462,16 @@ class App:
                 for sy in ys:
                     c.create_rectangle(sx - 1, sy - 1, sx + 1, sy + 1, fill=col, outline="")
         cu = b.copper()
+        ip = island_plan(b)
+        if ip is not None:
+            # ground fill: the fill, the gaps cut round every other net, then the fattened copper
+            dimf = not self.mirror
+            fcol = COL["fill_dim"] if dimf else COL["fill"]
+            self.draw_shape(ip.rect_poly(), fcol)
+            for s in ip.cut:
+                self.draw_shape(s, COL["board"])
+            for s in ip.fat:
+                self.draw_shape(s, COL["copper_dim"] if dimf else COL["copper"])
         sel = self.sel
         # selection halo under the copper
         selnet = sel.get("net")
@@ -2081,6 +2481,8 @@ class App:
             if tag and tag[0] == "trace" and sel.get("trace") == tag[1]:
                 hi = True
             if tag and tag[0] == "jpad" and sel.get("jumper") == tag[1]:
+                hi = True
+            if tag and tag[0] == "isl" and sel.get("island") == tag[1]:
                 hi = True
             if tag and tag[0] == "pad" and sel.get("part") == tag[1] and (sel.get("pin") in (None, tag[2])):
                 hi = True
@@ -2097,12 +2499,23 @@ class App:
                     self._draw_pin_labels(ref, labs)
         first = c.create_line(0, 0, 0, 0, tags=("cu",))      # marks where the copper starts in the stack
         for s in cu:
-            tg = s.tag or ()
-            if tg and tg[0] == "trace" and tg[1] < len(b.traces) and b.traces[tg[1]].rigid:
-                self.draw_shape(s, COL["rigid_dim"] if dim else COL["rigid"])
-            else:
-                self.draw_shape(s, COL["copper_dim"] if dim else COL["copper"])
+            # every piece of copper in one colour, so joints look like the single piece of copper
+            # they are once etched; rigid traces get a thin orange line down the middle instead
+            self.draw_shape(s, COL["copper_dim"] if dim else COL["copper"])
+        for t in b.traces:
+            if t.rigid:
+                for i in range(len(t.points) - 1):
+                    A, B = self.w2s(*t.points[i]), self.w2s(*t.points[i + 1])
+                    c.create_line(A[0], A[1], B[0], B[1], fill=COL["rigid"], width=2, dash=(6, 3))
         self._cu_first = first
+        si_ = sel.get("island")
+        if si_ is not None and si_ < len(b.islands):
+            isl = b.islands[si_]
+            a = self.w2s(isl.x - isl.w / 2, isl.y - isl.h / 2)
+            e_ = self.w2s(isl.x + isl.w / 2, isl.y + isl.h / 2)
+            c.create_rectangle(a[0], a[1], e_[0], e_[1], outline=COL["sel"], dash=(4, 3))
+            for hx, hy in ((a[0], a[1]), (a[0], e_[1]), (e_[0], a[1]), (e_[0], e_[1])):
+                c.create_rectangle(hx - 5, hy - 5, hx + 5, hy + 5, fill="#ffffff", outline=COL["sel"], width=2)
         if "trace" in sel and sel["trace"] < len(b.traces):
             t = b.traces[sel["trace"]]
             si = min(sel.get("seg", 0), len(t.widths) - 1)
@@ -2266,7 +2679,19 @@ class App:
         c = self.canvas
         b = self.board
         wx, wy = self.cursor
-        if self.tool == "place" and self.armed:
+        if self.tool == "island":
+            d = self.drag or {}
+            if "draw_island" in d:
+                (x0, y0), (x1, y1) = d["draw_island"], d["cur"]
+                a, e = self.w2s(x0, y0), self.w2s(x1, y1)
+                c.create_rectangle(a[0], a[1], e[0], e[1], outline=COL["ghost"], width=2, dash=(6, 3))
+                c.create_text(e[0] + 10, e[1] + 10, anchor="nw", fill=COL["ghost"], font=("TkDefaultFont", 9, "bold"),
+                              text="%.4g x %.4g mm" % (max(ISLAND_MIN, abs(x1 - x0)), max(ISLAND_MIN, abs(y1 - y0))))
+            elif not d and self.island_at(wx, wy) is None:
+                x, y = self.snap((wx, wy), ISLAND_GRID)
+                n = self.island_new
+                self.draw_shape(Island(x, y, n["w"], n["h"], n["shape"]).copper(), COL["ghost"])
+        elif self.tool == "place" and self.armed:
             d = self.lib[self.armed]
             gb = self.ghost_board
             gb.width, gb.height = b.width, b.height
@@ -2496,6 +2921,7 @@ class App:
         self.cut_start = None
         self.jumpers_var.set(board.settings.allow_jumpers)
         self.keepout_var.set(board.settings.keep_out_under_parts)
+        self.island_var.set(board.settings.island_mode)
         self.set_title()
         self.show_props()
         self.fit()

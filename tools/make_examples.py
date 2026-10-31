@@ -48,6 +48,8 @@ if __name__ == "__main__":
     build("5v-regulator", demos.regulator_7805)
     build("555-power-oscillator", demos.power_oscillator, seed=4)
     build("logic-mix", demos.logic_dip14, seed=3)     # seed 2 leaves net G unrouted; see DESIGN_NOTES.md
+    build("rf-oscillator-ground-fill", demos.rf_oscillator, place=False)
+    build("manhattan-rf-amplifier", demos.manhattan_amp, place=False)
     folder = os.path.join(OUT, "test-cards")
     os.makedirs(folder, exist_ok=True)
     with open(os.path.join(folder, "speed-power-test.gcode"), "w", encoding="utf-8", newline="\n") as fh:

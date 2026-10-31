@@ -1,4 +1,4 @@
-; SoloTrace 0.3.4-wip - laser job: TRACE / GAP LADDER (strips 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0 mm wide)
+; SoloTrace 0.4.0-wip - laser job: TRACE / GAP LADDER (strips 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0 mm wide)
 ; WORK IN PROGRESS: defaults are untested starting points. Run the test cards first.
 ; Board: ladder  19.6 x 20.0 mm  mode=negative  mirror=False
 ; comp=0.000 mm  gap=0.600 mm  interval=0.080 mm  feed=1500 mm/min  power=70% of S1000  passes=1

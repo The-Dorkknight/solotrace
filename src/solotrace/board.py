@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from . import library
-from .geom import (Cap, Poly, bbox_gap, chamfer_polyline, dist, max_turn, place_point,
+from .geom import (Cap, Poly, bbox_gap, chamfer_polyline, dist, max_turn, octagon_rect, place_point,
                    seg_point_dist, shape_dist, simplify_polyline)
 from .parts import PartDef, STYLES, pad_copper
 
@@ -58,6 +58,11 @@ class Settings:
     temp_rise: float = 10.0
     allow_jumpers: bool = True      # the router may add wire-link jumpers (each net can also say no)
     keep_out_under_parts: bool = False   # make the router go round part bodies unless there is no other way
+    island_mode: bool = False       # deadbug islands: ground fill over the board, every other net an island
+    island_net: str = ""            # ground net for island mode ("" = guess: GND, 0V, VSS..., else the biggest net)
+    island_gap: float = 0.6         # bare board between an island and the ground fill, mm
+    island_grow: float = 1.0        # how much islands are fattened beyond their pads and traces, mm
+    island_drop_floating: bool = True   # cut away pieces of fill that no ground pin sits on
     classes: Dict[str, float] = field(default_factory=lambda: {"Signal": 0.8, "Power": 2.0, "High current": 5.0})
 
     def to_dict(self) -> dict:
@@ -166,6 +171,56 @@ class Jumper:
                       (float(d["b"][0]), float(d["b"][1])), bool(d.get("auto", True)))
 
 
+ISLAND_SHAPES = ("rect", "round")
+ISLAND_MIN, ISLAND_MAX = 1.0, 60.0
+
+
+@dataclass
+class Island:
+    """A free-standing copper pad (Manhattan / deadbug style): a round or rectangular patch of copper.
+
+    It has no net of its own: it joins whatever net's pin, trace or jumper pad touches it (or
+    another island it touches). Rectangles get their corners cut at 45 degrees like every
+    other corner on the board; "round" is a circle, or an oval (a stadium) when w and h differ.
+    """
+    x: float
+    y: float
+    w: float = 5.08
+    h: float = 5.08
+    shape: str = "rect"
+    corner: float = 0.5
+
+    def copper(self, net: Optional[str] = None, tag: Optional[tuple] = None):
+        w = clamp_island(self.w)
+        h = clamp_island(self.h)
+        if self.shape == "round":
+            r = min(w, h) / 2.0
+            if w >= h:
+                d = (w - h) / 2.0
+                return Cap(self.x - d, self.y, self.x + d, self.y, r, net, tag)
+            d = (h - w) / 2.0
+            return Cap(self.x, self.y - d, self.x, self.y + d, r, net, tag)
+        return Poly(octagon_rect(self.x, self.y, w, h, max(0.0, self.corner)), net, tag)
+
+    def bbox(self) -> Tuple[float, float, float, float]:
+        return (self.x - self.w / 2, self.y - self.h / 2, self.x + self.w / 2, self.y + self.h / 2)
+
+    def to_dict(self) -> dict:
+        return {"x": round(self.x, 4), "y": round(self.y, 4), "w": round(self.w, 4), "h": round(self.h, 4),
+                "shape": self.shape, "corner": round(self.corner, 4)}
+
+    @staticmethod
+    def from_dict(d: dict) -> "Island":
+        shape = d.get("shape", "rect")
+        return Island(float(d["x"]), float(d["y"]), clamp_island(float(d.get("w", 5.08))),
+                      clamp_island(float(d.get("h", 5.08))), shape if shape in ISLAND_SHAPES else "rect",
+                      float(d.get("corner", 0.5)))
+
+
+def clamp_island(v: float) -> float:
+    return max(ISLAND_MIN, min(ISLAND_MAX, float(v)))
+
+
 class Board:
     def __init__(self, width: float = 100.0, height: float = 80.0, name: str = "Untitled") -> None:
         self.name = name
@@ -176,6 +231,7 @@ class Board:
         self.nets: Dict[str, Net] = {}
         self.traces: List[Trace] = []
         self.jumpers: List[Jumper] = []
+        self.islands: List[Island] = []
         self.defs: Dict[str, PartDef] = {}
         self.rev = 0
         self._cu_cache: Optional[tuple] = None
@@ -495,8 +551,49 @@ class Board:
         for ji, j in enumerate(self.jumpers):
             shapes.append(Cap(j.a[0], j.a[1], j.a[0], j.a[1], r, j.net, ("jpad", ji, 0)))
             shapes.append(Cap(j.b[0], j.b[1], j.b[0], j.b[1], r, j.net, ("jpad", ji, 1)))
+        shapes.extend(self._island_copper(shapes))
         self._cu_cache = (self.rev, shapes)
         return shapes
+
+    def _island_copper(self, others: List) -> List:
+        """Copper of the islands, each with the net of what touches it (islands that touch share one)."""
+        n = len(self.islands)
+        if not n:
+            return []
+        raw = [isl.copper() for isl in self.islands]
+        bbs = [s.bbox() for s in raw]
+        parent = list(range(n))
+
+        def find(a: int) -> int:
+            while parent[a] != a:
+                parent[a] = parent[parent[a]]
+                a = parent[a]
+            return a
+
+        for i in range(n):
+            for j in range(i + 1, n):
+                if bbox_gap(bbs[i], bbs[j]) <= 1e-6 and shape_dist(raw[i], raw[j]) <= 1e-6:
+                    parent[find(i)] = find(j)
+        nets: Dict[int, set] = {}
+        for i in range(n):
+            for o in others:
+                if o.net and bbox_gap(bbs[i], o.bbox()) <= 1e-6 and shape_dist(raw[i], o) <= 1e-6:
+                    nets.setdefault(find(i), set()).add(o.net)
+        out = []
+        for i in range(n):
+            ns = nets.get(find(i), set())
+            real = sorted(x for x in ns if not x.startswith("~"))
+            loose = sorted(ns - set(real))
+            net = real[0] if real else (loose[0] if loose else "~island%d" % find(i))
+            out.append(self.islands[i].copper(net, ("isl", i)))
+        return out
+
+    def island_net(self, i: int) -> Optional[str]:
+        """The net island i belongs to (None when nothing real touches it)."""
+        for s in self.copper():
+            if s.tag and s.tag[0] == "isl" and s.tag[1] == i:
+                return None if (s.net or "~").startswith("~") else s.net
+        return None
 
     def drills(self) -> List[Tuple[float, float, float]]:
         out = []
@@ -572,14 +669,26 @@ class Board:
         Each item is ``(net, p1, p2, pin1, pin2)``. Uses a minimum spanning tree
         between the groups of already-joined pins.
         """
-        key = (self.rev, tuple((n, tuple(v.pins), tuple(tuple(lk) for lk in v.links)) for n, v in self.nets.items()))
+        st = self.settings
+        key = (self.rev, tuple((n, tuple(v.pins), tuple(tuple(lk) for lk in v.links)) for n, v in self.nets.items()),
+               st.island_mode, st.island_net, st.island_gap, st.island_grow, st.island_drop_floating,
+               st.clearance, st.edge_clearance,
+               self.width, self.height)
         cache = getattr(self, "_air_cache", None)
         if cache and cache[0] == key:
             return list(cache[1])
         comps = self.components()
+        gnd = None
+        if st.island_mode:
+            from .islands import ground_net
+            gnd = ground_net(self)
         wires = []
         for name, net in self.nets.items():
             groups = comps.get(name, [])
+            if name == gnd:
+                # in island mode the ground fill joins every ground pin on the same piece of fill
+                from .islands import ground_groups
+                groups = ground_groups(self, groups)
             joined = {p for g in groups for p in g}
             groups = [list(g) for g in groups] + [[p] for p in net.pins if p not in joined and self.has_pin(p)]
             if len(groups) < 2:
@@ -643,6 +752,7 @@ class Board:
                      for n in self.nets.values()],
             "traces": [t.to_dict() for t in self.traces],
             "jumpers": [j.to_dict() for j in self.jumpers],
+            "islands": [i.to_dict() for i in self.islands],
             "defs": {pid: self.get_def(pid).to_dict() for pid in sorted(used)},
         }
 
@@ -663,6 +773,7 @@ class Board:
                                      not nd.get("no_jumpers", False))
         b.traces = [Trace.from_dict(t) for t in d.get("traces", [])]
         b.jumpers = [Jumper.from_dict(j) for j in d.get("jumpers", [])]
+        b.islands = [Island.from_dict(i) for i in d.get("islands", [])]
         b._net_counter = max([int(m.group(1)) for n in b.nets for m in [re.match(r"^N(\d+)$", n)] if m] + [0])
         b.touch()
         return b

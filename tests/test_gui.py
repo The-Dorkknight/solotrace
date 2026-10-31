@@ -338,6 +338,106 @@ class Window(unittest.TestCase):
         self.pump(3)
         self.assertFalse([x for x in a.board.traces if x is t])  # only now is it gone
 
+    def test_island_tool_drop_drag_resize_and_menu(self):
+        from solotrace.board import Board
+        a = self.app
+        b = Board(60, 40, "islands")
+        b.add_part("R_V_0.25W_2.54", 20.32, 20.32, ref="R1", style="dead")
+        a.load_board(b)
+        self.pump(3)
+        a.set_tool("island")
+        self.click(40.64, 20.32)                                     # a click drops one of the default size
+        self.assertEqual(len(a.board.islands), 1)
+        isl = a.board.islands[0]
+        self.assertEqual((isl.x, isl.y, isl.w, isl.h, isl.shape), (40.64, 20.32, 5.08, 5.08, "rect"))
+        self.assertEqual(a.sel, {"island": 0})
+        # drag out a rectangle somewhere empty
+        c = a.canvas
+        s0, s1 = a.w2s(5.08, 5.08), a.w2s(15.24, 10.16)
+        c.event_generate("<ButtonPress-1>", x=int(s0[0]), y=int(s0[1]))
+        c.event_generate("<B1-Motion>", x=int(s1[0]), y=int(s1[1]))
+        c.event_generate("<ButtonRelease-1>", x=int(s1[0]), y=int(s1[1]))
+        self.pump(3)
+        self.assertEqual(len(a.board.islands), 2)
+        r = a.board.islands[1]
+        self.assertAlmostEqual(r.w, 10.16, places=2)
+        self.assertAlmostEqual(r.h, 5.08, places=2)
+        # Shift + click switches new islands to round
+        sx, sy = a.w2s(50, 35)
+        c.event_generate("<ButtonPress-1>", x=int(sx), y=int(sy), state=1)
+        c.event_generate("<ButtonRelease-1>", x=int(sx), y=int(sy), state=1)
+        self.pump(3)
+        self.assertEqual(a.island_new["shape"], "round")
+        # select tool: drag the first island onto R1's pin 1, so it joins that pin
+        a.set_tool("select")
+        px, py = a.board.pin_pos("R1.1")
+        a.sel = {"island": 0}
+        f, t = a.w2s(40.64, 20.32), a.w2s(px - 1.27, py)
+        c.event_generate("<ButtonPress-1>", x=int(f[0]), y=int(f[1]))
+        c.event_generate("<B1-Motion>", x=int((f[0] + t[0]) / 2), y=int(f[1]))
+        c.event_generate("<B1-Motion>", x=int(t[0]), y=int(t[1]))
+        c.event_generate("<ButtonRelease-1>", x=int(t[0]), y=int(t[1]))
+        self.pump(3)
+        isl = a.board.islands[0]
+        self.assertAlmostEqual(isl.x, px - 1.27, delta=0.64)
+        # resize from the top-right corner handle; the opposite corner stays put
+        a.sel = {"island": 0}
+        a.redraw()
+        left, bottom = isl.x - isl.w / 2, isl.y - isl.h / 2
+        h = a.w2s(isl.x + isl.w / 2, isl.y + isl.h / 2)
+        self.assertIsNotNone(a.island_handle(*h))
+        to = a.w2s(left + 3.81, bottom + 7.62)
+        c.event_generate("<ButtonPress-1>", x=int(round(h[0])), y=int(round(h[1])))
+        c.event_generate("<B1-Motion>", x=int(to[0]), y=int(to[1]))
+        c.event_generate("<ButtonRelease-1>", x=int(to[0]), y=int(to[1]))
+        self.pump(3)
+        isl = a.board.islands[0]
+        self.assertAlmostEqual(isl.w, 3.81, delta=0.01)
+        self.assertAlmostEqual(isl.h, 7.62, delta=0.01)
+        self.assertAlmostEqual(isl.x - isl.w / 2, left, delta=0.01)
+        # the panel and the right-click menu
+        a.show_props()
+        self.pump(2)
+        a.set_island(0, shape="round")
+        self.assertEqual(a.board.islands[0].shape, "round")
+        a.do_undo()
+        self.assertEqual(a.board.islands[0].shape, "rect")
+
+        class E:
+            pass
+        e = E()
+        e.x, e.y = (int(v) for v in a.w2s(a.board.islands[1].x, a.board.islands[1].y))
+        e.x_root, e.y_root = e.x + 50, e.y + 50
+        a.context_menu(e)
+        self.pump(2)
+        m = a._menu
+        labels = [m.entrycget(k, "label") for k in range(m.index("end") + 1) if m.type(k) in ("command", "cascade")]
+        self.assertTrue(any(l.startswith("Island #2") for l in labels))
+        self.assertIn("Make it round", labels)
+        m.unpost()
+        a.sel = {"island": 1}
+        a.duplicate()
+        self.assertEqual(len(a.board.islands), 3)
+        a.delete_selection()
+        self.assertEqual(len(a.board.islands), 2)
+
+    def test_ground_fill_toggle(self):
+        from solotrace import demos
+        from unittest import mock
+        a = self.app
+        a.load_board(demos.flasher_555())
+        self.pump(3)
+        with mock.patch("solotrace.app.messagebox.askyesno", return_value=True):
+            a.island_var.set(True)
+            a._toggle_islands()
+        self.assertTrue(a.board.settings.island_mode)
+        self.assertTrue(all(pl.style == "dead" for pl in a.board.parts.values()))
+        self.assertIn("ground fill on GND", a.status_var.get())
+        a.island_dialog()
+        self.pump(5)
+        a.do_undo()
+        self.assertFalse(a.board.settings.island_mode)
+
 
 if __name__ == "__main__":
     unittest.main()

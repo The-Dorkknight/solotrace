@@ -1,6 +1,6 @@
 # SoloTrace
 
-**WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN** · version `0.3.4-wip` · source-available, non-commercial
+**WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN** · version `0.4.0-wip` · source-available, non-commercial
 
 An easy PCB designer for **single-sided, through-hole, quick-prototype boards**. A small library of real full-size parts, traces up to 10 mm wide set with a slider, **every corner chamfered** (no pure 90° traces), an autorouter that avoids the "tangled string" look, and output for printing (toner transfer), Gerber fabs and a **gantry diode laser (Elegoo Phecda) with a negative option and adjustable trace gap**.
 
@@ -22,7 +22,7 @@ An easy PCB designer for **single-sided, through-hole, quick-prototype boards**.
 | Auto-route retries (best of up to 6 net orders), jumpers optional globally or per net | Works on the test boards; slower (up to about 12 s plus one try) |
 | Cut tool: one click removes a piece of trace from joint to joint (Shift: between two points) | Works in tests |
 | Favourites & recently placed parts; Shift + click turns a part while placing | Works in tests |
-| Branches stay joined when a trunk is widened or tidied; DRC warns about hanging trace ends | Works in tests and on rebuilds of real boards |
+| Branches stay joined when a trunk is widened, tidied or dragged; DRC warns about hanging trace ends | Works in tests and on rebuilds of real boards |
 | Board > Keep traces out from under parts | Works on the test boards; can add jumpers on cramped boards |
 | Pin labels (B C E, G D S, K A, IN GND OUT, optocoupler and DIP layouts) and part values on the board | Works; layouts are the common ones for each shape, **check your datasheet** |
 | Dragging a trace section sideways (neighbours follow, 45° rules kept) | Works in tests; lightly tested by hand |
@@ -30,6 +30,8 @@ An easy PCB designer for **single-sided, through-hole, quick-prototype boards**.
 | Trace width slider 0.4–10 mm (segment, trace or net) + current readout + "fits up to" hint | Works |
 | Wide traces leave pads straight and end on the pad centre (auto-tidy) | Works on the test boards; may leave a trace as it was when the tidy shape does not fit |
 | Deadbug (surface-solder, no-drill) pads, per part or per pad | Works |
+| Copper islands (Island tool): round or rectangular pads you drop, drag and resize; pins on an island join it | Works in tests and the screenshots; new in 0.4.0, not yet used on a real board |
+| Ground fill for RF / Manhattan boards: the board is ground copper with a gap round every other net, floating fill removed | Works in tests, the examples and an independent Gerber reader; new in 0.4.0, **never etched yet** |
 | Chamfered corners everywhere + DRC | Works |
 | Auto-place and auto-route with jumper fallback | Works on the three demo boards and random test boards; **pure Python, can be slow** on big boards |
 | Gerber + drill zip, 1:1 PDF/SVG, BOM CSV, netlist text | Written and re-read by an independent Gerber library in tests; **not opened in a fab's own viewer** |
@@ -61,6 +63,7 @@ python3 src/main.py --version        # version line
 python3 src/main.py --demo           # open the 555 example
 python3 src/main.py demo "5 V regulator" board.solotrace
 python3 src/main.py route board.solotrace routed.solotrace
+python3 src/main.py islands board.solotrace rf.solotrace --deadbug   # ground fill on (--off turns it off)
 python3 src/main.py export routed.solotrace --gerber out.zip --pdf out.pdf --laser out.gcode --mode negative
 python3 src/main.py selftest         # run the tests
 ```
@@ -76,6 +79,8 @@ The first time it starts it shows a safety and work-in-progress notice; tick the
 5. **Label:** select a part and type its *Value / type* (NE555, BC547, 10k...), and pick its *Pin labels* (B C E, G D S, IN GND OUT...).
 6. **Tweak:** drag a trace section sideways to move it, use **Trim** (`X`) to cut a section out, and **right-click** anything for its menu.
 7. **Check**, then **Export**.
+
+**Quick and dirty RF (Manhattan / deadbug):** *File > Open example > Manhattan RF amplifier (copper islands)*. Press `I` and click to drop copper islands, sit the parts' pins on them, and tick *Board > Ground fill*. No traces needed.
 
 [![Ratsnest before routing](docs/images/gui-ratsnest.webp)](docs/images/gui-ratsnest.webp)
 
@@ -103,9 +108,28 @@ Click a part and a drawing of it (copper, holes, outline, pin numbers, pitch and
 
 **Trace width.** Press `T` and click along the board to draw a trace (`Enter`, a double-click or *Finish trace here* on the right-click menu finishes it; corners are chamfered for you). To change a width, click a **trace section** on the drawing, or click a **yellow rubber-band line** to set the width of a whole net, then drag the **slider** in the right panel (0.4–10 mm; preset buttons 0.4, 0.8, 1.5, 2.5, 5, 10). Choose whether it applies to the section, the whole trace or the whole net. The panel shows roughly how many amps that width carries (IPC-2221 outer-layer formula; board settings give copper weight and temperature rise; a guide only) and how wide the trace can go where it is before it breaks the clearance rule.
 
-**Rigid wires (power trunks).** A net with more than two pins is normally routed by joining the nearest pins first, so a ground net can end up as one long chain (transistor to capacitor to terminal). If you want a direct trace between two particular pins, hold **Shift** while wiring them (click or drag), or right-click a pin > *Rigid wire from this pin*, or right-click an existing rubber band > *Make ... rigid*. The router routes every rigid pair first, as its own pin-to-pin trace, then connects the rest of the net to the nearest point of that trunk, so a capacitor becomes a short branch. "Rigid" fixes *which* two pins are joined, not the path: the trunk bends round other parts like any trace, can be moved by a re-route, and you can drag or cut it. Rigid rubber bands are thicker and orange; the routed trunk is drawn in orange copper (it is ordinary copper in every export). The net panel lists the rigid pairs, each with a *make normal* button.
+**Rigid wires (power trunks).** A net with more than two pins is normally routed by joining the nearest pins first, so a ground net can end up as one long chain (transistor to capacitor to terminal). If you want a direct trace between two particular pins, hold **Shift** while wiring them (click or drag), or right-click a pin > *Rigid wire from this pin*, or right-click an existing rubber band > *Make ... rigid*. The router routes every rigid pair first, as its own pin-to-pin trace, then connects the rest of the net to the nearest point of that trunk, so a capacitor becomes a short branch. "Rigid" fixes *which* two pins are joined, not the path: the trunk bends round other parts like any trace, can be moved by a re-route, and you can drag or cut it. Rigid rubber bands are thicker and orange. Once routed, the trunk is drawn in the same copper colour as everything else, so joints look like the one piece of copper they will be, with a thin dashed orange line down its middle to show it is a rigid wire. Branches stop inside the trunk instead of poking out of its far side, and when you drag a trunk sideways the branches joined to it move with it and stay joined. The net panel lists the rigid pairs, each with a *make normal* button.
 
 [![Pin labels and an orange rigid power trunk from Q1 to J1](docs/images/gui-pin-labels.webp)](docs/images/gui-pin-labels.webp)
+
+**Copper islands (Island tool, `I`).** Free-standing pads for Manhattan / deadbug building. Click on the board to drop one (5.08 mm square to start), or drag to draw one any size; Shift + click switches new islands between rectangular and round. With *Select*, drag an island to move it (0.635 mm steps, so it can sit under pins) and drag one of its white corner squares to resize it while the opposite corner stays put. The right panel takes an exact width, height and corner cut (rectangles get 45 degree corners like everything else; a round island with a different width and height is an oval), offers square/circle sizes from 2.54 to 15.24 mm, and has *Turn 90*, *Duplicate* (`Ctrl+D`) and *Delete*; arrow keys nudge it. Right-click an island for the same choices, or right-click empty board > *Add a copper island here*.
+
+An island has no net of its own: it **joins the net of whatever touches it**, a pin, a trace or a jumper pad, and islands that touch each other share a net. So sit a part's pins on islands (deadbug pads make that easy) and the connection is made, with no trace. The panel says which net an island is on and which pins sit on it. If pins of two different nets end up on one island, that is a short and *Check* reports it. The router treats islands as copper and routes round them, and they appear in every export.
+
+[![Manhattan RF amplifier: hand-placed copper islands on a ground fill, one island selected](docs/images/gui-islands.webp)](docs/images/gui-islands.webp)
+
+**Ground fill (Board > Ground fill).** For quick and dirty RF and fast analogue: the whole board becomes copper, used as ground, and every other net is cut free from it with a gap. Settings are under *Board > Ground fill settings...*:
+
+- **Ground net:** guessed (a net called GND, 0V, VSS, ground... otherwise the net with the most pins), or pick one; the net panel also has *Use this net as the ground fill*. The ground net is joined by the fill, so Auto-route does not route it, and its old automatic traces are removed when you turn the fill on.
+- **Gap** round everything else (default 0.6 mm, never less than the board's copper-to-copper gap). For laser etching keep it at least 3 to 4 line intervals.
+- **Fatten other nets' copper** by up to this much (default 1 mm): routed traces and pads grow into wide, low-inductance patches, but only where that keeps the gap from other nets, ground copper and the board edge. Copper islands you placed keep their size.
+- **Remove floating fill** (on by default): a piece of fill that no ground pin sits on, boxed in by other nets, is cut away rather than left as floating copper. A ground pin that sits on a piece of fill cut off from the rest gets a yellow rubber band; join it with a trace or a jumper.
+- Turning the fill on offers to make every pad a **deadbug pad**, since such boards are usually built with the parts soldered straight onto the copper.
+
+The fill is drawn in the editor and is in the Gerber, the PDF/SVG prints and the laser G-code. In negative laser mode the laser then burns only the gaps (much faster); isolation mode burns the same thing on such a board.
+
+[![Ground fill on a routed RF oscillator, with the ground net selected](docs/images/gui-ground-fill.webp)](docs/images/gui-ground-fill.webp)
+[![Ground fill settings](docs/images/islands-dialog.webp)](docs/images/islands-dialog.webp)
 
 **Values and pin labels.** Select a part: *Value / type* at the top of the right panel takes anything (NE555, BC547, IRF540, 7805, 10k, 100uF 25V) and is shown next to the part name on the board; double-click a part to jump to it. *Pin labels* offers the common layouts for that shape, not specific part numbers:
 
@@ -197,6 +221,10 @@ Examples to look at without installing anything: [examples/](examples/) has four
 | Dragging a trace does nothing | Use the *Select* tool and press on the trace itself (not on a pad); drag sideways, the section only moves at right angles to itself |
 | Right-click pans instead of opening the menu | Click without moving the mouse; a right-drag pans |
 | A trace runs straight through the middle of a chip | Tick *Board > Keep traces out from under parts* and route again (it may need a jumper instead) |
+| *Check* says "pad ... touches island #n" | That island has pins of two nets on it (a short). Make it smaller, move it, or split it into two islands with a gap |
+| An island says "not joined to anything yet" | No pin, trace or jumper pad touches it. Drag it under a pin, or make it bigger |
+| Ground fill: a yellow line from a ground pin | That pin sits on a piece of fill cut off by other nets. Join it with a trace or a jumper, or move parts so the fill can reach it |
+| Ground fill: big bare areas | Fill that no ground pin sat on was cut away (floating copper). Untick *Remove pieces of fill...* in *Board > Ground fill settings* to keep it |
 | A short stub hangs off a trace | *Check* lists it as "dangling"; use Cut or Trim to remove it, or re-route the net |
 | Auto-route adds jumpers you do not want | Untick **Jumpers** in the tool bar (whole board) or in the net panel (one net), then route again; finish what is left by hand |
 | Auto-route leaves nets unrouted | Make the board bigger, lock fewer parts, run Auto-place again, lower the width of wide nets, or finish by hand with the Trace tool; unrouted nets stay as yellow lines |
@@ -219,6 +247,8 @@ Examples to look at without installing anything: [examples/](examples/) has four
 - Dragging moves one section at a time; there is no push-and-shove of neighbouring traces, so a dragged trace can end up too close to others (it is marked in red).
 - The tidy step only reshapes the first few sections at each end of a trace; it does not re-route.
 - A trace cannot be thinner near a pad than elsewhere when auto-routed ("neck-down"), so a power net wider than about 2.4 mm cannot leave the middle pin of a TO-220 or TO-92 (2.54 mm pitch) with the 0.3 mm clearance: the net stays unrouted. Use 2 mm for such nets, or narrow that one section by hand.
+- Copper islands and the ground fill are new in 0.4.0 and have not been etched or lasered on a real board. Islands are only rectangles (with cut corners), circles and ovals; there are no other shapes yet, and no text on copper.
+- With the ground fill on, every edit re-works the fill (about 0.1 to 0.3 s on the example boards). While you drag something, the floating-fill check waits until you let go.
 - Pin labels and values are not yet part of the silkscreen in the Gerber, PDF or SVG exports.
 - Only the tests and the screenshots have exercised the GUI; Windows and macOS have not been run at all.
 

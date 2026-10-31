@@ -15,7 +15,7 @@
 
 | It writes | When |
 | --- | --- |
-| `.solotrace` board files | File > Save (a board is plain, readable JSON that also embeds its part shapes, so it opens anywhere) |
+| `.solotrace` board files | File > Save (a board is plain, readable JSON that also embeds its part shapes, copper islands and ground-fill settings, so it opens anywhere) |
 | Gerber zip, PDF, SVG, BOM CSV, netlist text, G-code files | Only when you pick an Export menu item and choose a file name |
 | `~/.solotrace/parts/*.json` | When you save a footprint in the wizard |
 | `~/.solotrace/config.json` | When you accept the first-start notice, export laser code, or open/save a board (recent files list) |
@@ -32,6 +32,24 @@ It **never** connects to the internet, never talks to your laser or your printer
 - **Chamfers:** whenever two segments meet at a corner, the corner is replaced by two shorter bends of 45° each. The chamfer leg is at least 0.9 mm or 1.5 × the trace width, whichever is larger, so a 10 mm trace gets a 15 mm chamfer. The route checker complains about any turn over 46°, so a hand-made 90° corner cannot survive.
 - **Pads:** *through-hole* has a drilled hole and a ring. *Deadbug* has no hole; the pad is stretched outwards by about 2.2 mm so you can bend the lead flat and solder it on the copper side. *Both* keeps the hole and the extra copper. The part definitions are checked so that pads stay at least 0.25 mm apart in all three styles.
 
+## Copper islands
+
+An island is a round, oval or rectangular piece of copper with its corners cut at 45 degrees (rectangles only). It is saved in the board file with its centre, width, height, shape and corner cut, and nothing else: it has **no net of its own**. Whenever the copper is worked out, each island takes the net of whatever touches it (a pad, a trace, a jumper pad; islands that touch each other are taken together). If two real nets touch it, it takes one of them and the checker reports the other as a clash, which is the short it is. An island nothing touches is its own little net and is kept clear of everything else. Because islands are ordinary copper once their net is known, the router steers round them, connections through them count as made, and every export contains them.
+
+## Ground fill
+
+With *Board > Ground fill* on, the board is copper except where it must not be. The program never cuts polygons; it describes the copper as a paint order that each output follows:
+
+1. a rectangle covering the board, inset by the edge clearance, in copper;
+2. every piece of copper that is not ground, grown by its own growth plus the gap, in bare board;
+3. the fattened copper of those nets, then all the ordinary copper, in copper.
+
+The growth of each shape is the wanted growth, cut down so that it keeps the gap from ground copper and the edge, and keeps the gap from any other net's shape even if that one grows by as much (half the free space each). Islands you placed do not grow.
+
+To find floating fill, the fill is sampled along lines 0.05 mm apart; neighbouring intervals that overlap are joined into pieces, and each ground pin is looked up in its piece. Pieces with no ground pin are cut away (one polygon per run of rows), and the same is done once more across the other direction for slivers thinner than a row. Ground pins that sit on different pieces are shown as yellow rubber bands between the pieces. The editor skips the floating-fill check while you drag and does it when you let go.
+
+Outputs: the editor and the PDF/SVG prints draw in the paint order; Gerber writes the fill as a dark region, switches to clear polarity (`%LPC*%`) for step 2 and back (`%LPD*%`) for step 3; the laser engine adds the fill to the copper intervals of each scan line (fill interval minus the cut intervals), so negative mode burns only the gaps.
+
 ## Tidying wide traces
 
 A trace that is 1.2 mm or wider gets three fixes, in this order, each checked against the real copper and the clearance rule:
@@ -42,9 +60,13 @@ A trace that is 1.2 mm or wider gets three fixes, in this order, each checked ag
 
 A reshaped trace is only kept if everything of its own net that it touched (pads it ran over, branches ending on it, jumper pads) still touches it, with every branch end at least as deep inside it as before; otherwise only the end is moved onto the pad centre, or nothing changes. It must also be no closer to copper of any other net than it already was (thin traces only get step 1). This runs after auto-routing and, if *Auto-tidy* is ticked, a moment after the width slider stops. If a straight exit cannot fit (for example a 3 mm trace between 2.54 mm pitch pads), the trace keeps its old shape and the clash is marked in red.
 
+## T-joints
+
+Where a branch ends on another trace of its net, the branch is stopped on that trace's centre line, or pulled back by half the difference in width when the branch is the wider one, so its round end does not stick out of the far side. The end always stays inside the other trace's copper. This runs after routing, after tidying and after a drag.
+
 ## Dragging, trimming, splitting
 
-- **Drag:** the section you hold moves sideways (only at right angles to itself, in grid steps). Each neighbouring section keeps its direction and is lengthened or shortened to meet the moved line, so a 45° section stays 45°. A section that starts on a pad cannot move its pad end; a 45° link is added there. The result is chamfered like any trace.
+- **Drag:** branches that end on the trace you drag move with it: each slides along its own last section until it meets the moved trace again (or gets a short 45° link), so it stays joined. The section you hold moves sideways (only at right angles to itself, in grid steps). Each neighbouring section keeps its direction and is lengthened or shortened to meet the moved line, so a 45° section stays 45°. A section that starts on a pad cannot move its pad end; a 45° link is added there. The result is chamfered like any trace.
 - **Trim:** the clicked section is removed; what is left either side becomes separate traces.
 - **Split:** the trace is cut in two at the clicked point; no copper is removed.
 
@@ -57,7 +79,7 @@ Simulated annealing (random moves that are accepted if they help, or sometimes i
 ## Auto-route
 
 1. Nets are ordered: wide nets first, then short nets first.
-2. **Rigid pairs first.** Pairs marked rigid (Shift + Wire) are routed before anything else in their net, each as one pin-to-pin search, and those traces are flagged so they are drawn in orange.
+2. **Rigid pairs first.** Pairs marked rigid (Shift + Wire) are routed before anything else in their net, each as one pin-to-pin search, and those traces are flagged so the editor can mark them with a thin orange centre line.
 3. Each remaining connection is searched with **A\*** on a 0.635 mm grid. The search state is *position and heading*, and a turn costs extra. Moves are straight or diagonal, and a 90° turn costs as much as two 45° turns, so it prefers long straight runs and gentle bends instead of staircases.
 4. Each width class has its own obstacle map, so a 5 mm trace keeps further away from other copper than a 0.8 mm one. A step under a part's body (away from its pins) costs a little extra, and a lot extra with *Keep traces out from under parts*.
 5. A found path is **checked with exact geometry** (the real copper shapes, with the real clearance). If it fails, the offending grid cell is forbidden and the net is searched again.

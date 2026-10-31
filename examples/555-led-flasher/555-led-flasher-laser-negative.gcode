@@ -1,4 +1,4 @@
-; SoloTrace 0.3.4-wip - laser job: 555 LED flasher
+; SoloTrace 0.4.0-wip - laser job: 555 LED flasher
 ; WORK IN PROGRESS: defaults are untested starting points. Run the test cards first.
 ; Board: 555 LED flasher  70.0 x 50.0 mm  mode=negative  mirror=True
 ; comp=0.000 mm  gap=0.600 mm  interval=0.080 mm  feed=1500 mm/min  power=70% of S1000  passes=1

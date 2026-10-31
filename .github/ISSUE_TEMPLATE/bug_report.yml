@@ -7,7 +7,7 @@ body:
     attributes:
       label: SoloTrace version
       description: Help > About, or run `python3 src/main.py --version`
-      placeholder: "SoloTrace v0.3.4-wip (Built ...)"
+      placeholder: "SoloTrace v0.4.0-wip (Built ...)"
     validations:
       required: true
   - type: input

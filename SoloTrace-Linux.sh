@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight)
 # Licensed under the PolyForm Noncommercial License 1.0.0. No warranty.
-# SoloTrace 0.3.4-wip - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN
+# SoloTrace 0.3.5-wip - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN
 # Double-click launcher for Linux. If your file manager asks, choose "Run" (not "Display").
 cd "$(dirname "$0")" || exit 1
 

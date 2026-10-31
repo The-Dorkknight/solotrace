@@ -1,15 +1,19 @@
 name: release
-# Creates a GitHub PRE-release (this project is a work in progress) when a tag like v0.3.4-wip is pushed,
-# or when you run it by hand from the Actions tab.
+# Creates a GitHub PRE-release (this project is a work in progress):
+#  - on every push to main, for the version in src/solotrace/__init__.py (tag v<version>), if that
+#    release does not exist yet; the tag is created by this workflow, so nothing has to push a tag;
+#  - when a tag like v0.4.0-wip is pushed;
+#  - when you run it by hand from the Actions tab.
 on:
   push:
+    branches: [main]
     tags: ["v*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (for example v0.3.4-wip). It must already exist, or it will be created on the latest main commit."
+        description: "Tag to release (for example v0.4.0-wip). It must already exist, or it will be created on the latest main commit."
         required: true
-        default: "v0.3.4-wip"
+        default: "v0.4.0-wip"
 permissions:
   contents: write
 jobs:
@@ -22,7 +26,14 @@ jobs:
       - name: Work out the tag
         id: tag
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then T="${{ github.event.inputs.tag }}"; else T="${GITHUB_REF_NAME}"; fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            T="${{ github.event.inputs.tag }}"
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            T="${GITHUB_REF_NAME}"
+          else
+            V=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/solotrace/__init__.py)
+            T="v$V"
+          fi
           echo "tag=$T" >> "$GITHUB_OUTPUT"
       - name: Pack the source zip (keeps the double-click launchers executable)
         run: |
@@ -37,6 +48,6 @@ jobs:
             echo "Release $T already exists; nothing to do."
           else
             gh release create "$T" "solotrace-$T.zip" SHA256SUMS.txt --prerelease --title "SoloTrace $T (work in progress)" \
-              --notes "**WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN.** Early pre-release. Unzip, then double-click the launcher for your system (SoloTrace-Linux.sh, SoloTrace-Windows.bat or SoloTrace-Mac.command). Needs Python 3.8+ with tkinter. Not tested on a real Elegoo Phecda yet. See README.md for known limitations." \
+              --notes "**WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN.** Early pre-release. Unzip, then double-click the launcher for your system (SoloTrace-Linux.sh, SoloTrace-Windows.bat or SoloTrace-Mac.command). Needs Python 3.8+ with tkinter. Not tested on a real Elegoo Phecda yet. See CHANGELOG.md for what changed and README.md for known limitations." \
               --target "${GITHUB_SHA}"
           fi

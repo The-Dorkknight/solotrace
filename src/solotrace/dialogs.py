@@ -98,6 +98,78 @@ class SettingsDialog:
 
 
 # ---------------------------------------------------------------------------------------
+class IslandDialog:
+    """Ground fill: copper over the whole board as ground, every other net cut free from it."""
+
+    GUESS = "(guess: %s)"
+
+    def __init__(self, app) -> None:
+        from .islands import guess_ground
+        self.app = app
+        b = app.board
+        st = b.settings
+        d = self.d = tk.Toplevel(app.root)
+        d.title("Ground fill (RF / Manhattan)")
+        d.transient(app.root)
+        top = d
+        d = ttk.Frame(top, padding=6)        # a themed frame, so the labels match the window background
+        d.pack(fill="both", expand=True)
+        pad = {"padx": 8, "pady": 3}
+        ttk.Label(d, text="Quick and dirty RF / fast analogue: the board stays copper as one big ground, and "
+                          "every other net is cut free from it with a gap. Solder the parts straight onto "
+                          "the copper (deadbug / Manhattan style). The ground net is joined by the fill, so "
+                          "Auto-route leaves it alone. For pads of your own size and shape, use the Island tool (I).", wraplength=380, justify="left").grid(
+            row=0, column=0, columnspan=2, sticky="w", **pad)
+        self.on = tk.BooleanVar(value=st.island_mode)
+        ttk.Checkbutton(d, text="Ground fill over the board", variable=self.on).grid(
+            row=1, column=0, columnspan=2, sticky="w", **pad)
+        ttk.Label(d, text="Ground net (the fill)").grid(row=2, column=0, sticky="w", **pad)
+        g = guess_ground(b) or "none"
+        self.guess_text = self.GUESS % g
+        names = [self.guess_text] + sorted(b.nets)
+        self.net = tk.StringVar(value=st.island_net if st.island_net in b.nets else self.guess_text)
+        ttk.Combobox(d, textvariable=self.net, values=names, state="readonly", width=18).grid(row=2, column=1, **pad)
+        ttk.Label(d, text="Gap round each island (mm)").grid(row=3, column=0, sticky="w", **pad)
+        self.gap = tk.StringVar(value="%g" % st.island_gap)
+        ttk.Entry(d, textvariable=self.gap, width=10).grid(row=3, column=1, sticky="w", **pad)
+        ttk.Label(d, text="Fatten other nets' copper by up to (mm)").grid(row=4, column=0, sticky="w", **pad)
+        self.grow = tk.StringVar(value="%g" % st.island_grow)
+        ttk.Entry(d, textvariable=self.grow, width=10).grid(row=4, column=1, sticky="w", **pad)
+        n_tht = sum(1 for pl in b.parts.values() if pl.style != "dead" or pl.pad_styles)
+        self.dead = tk.BooleanVar(value=(not st.island_mode) and n_tht > 0)
+        ttk.Checkbutton(d, text="Make every pad a deadbug pad (no holes to drill; %d part(s) to change)" % n_tht,
+                        variable=self.dead).grid(row=5, column=0, columnspan=2, sticky="w", **pad)
+        self.drop = tk.BooleanVar(value=st.island_drop_floating)
+        ttk.Checkbutton(d, text="Remove pieces of fill that no ground pin sits on (floating copper)",
+                        variable=self.drop).grid(row=6, column=0, columnspan=2, sticky="w", **pad)
+        ttk.Label(d, text="The gap is never less than the copper-to-copper gap of the board (%g mm). Copper "
+                          "is fattened only where it keeps the gap from other nets, ground copper and the edge; "
+                          "copper islands you placed keep their size. "
+                          "For laser etching keep the gap at least 3 to 4 line intervals." % st.clearance,
+                  wraplength=380, justify="left", foreground="#555").grid(row=7, column=0, columnspan=2, sticky="w", **pad)
+        bar = ttk.Frame(d)
+        bar.grid(row=8, column=0, columnspan=2, pady=8)
+        ttk.Button(bar, text="Apply", command=lambda: self.apply(False)).pack(side="left", padx=4)
+        ttk.Button(bar, text="OK", command=lambda: self.apply(True)).pack(side="left", padx=4)
+        ttk.Button(bar, text="Cancel", command=top.destroy).pack(side="left", padx=4)
+
+    def apply(self, close: bool) -> None:
+        try:
+            gap = _num(self.gap, 0.1, 5, "Gap")
+            grow = _num(self.grow, 0, 10, "Fatten")
+        except ValueError as exc:
+            messagebox.showerror("SoloTrace", str(exc), parent=self.d)
+            return
+        net = self.net.get()
+        self.app.board.settings.island_drop_floating = bool(self.drop.get())
+        self.app.set_islands(bool(self.on.get()), "" if net == self.guess_text else net, gap, grow,
+                             bool(self.dead.get()))
+        self.dead.set(False)
+        if close:
+            self.d.destroy()
+
+
+# ---------------------------------------------------------------------------------------
 class FootprintWizard:
     """Build your own part: type or click pads, or start from a preset or a KiCad file."""
 

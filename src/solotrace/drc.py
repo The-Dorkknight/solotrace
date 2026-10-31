@@ -41,6 +41,8 @@ def _label(owner: tuple) -> str:
         return "trace #%d" % owner[1]
     if owner[0] == "jpad":
         return "jumper #%d" % owner[1]
+    if owner[0] == "isl":
+        return "island #%d" % (owner[1] + 1)
     return "?"
 
 
@@ -152,8 +154,12 @@ def run_drc(board: Board, check_unrouted: bool = True) -> List[Issue]:
                                     (j.a[0] + j.b[0]) / 2, (j.a[1] + j.b[1]) / 2, "error"))
     # trace ends that are not joined to anything of their own net (a stub left hanging)
     cu = board.copper()
+    fill_net = None
+    if board.settings.island_mode:
+        from .islands import ground_net
+        fill_net = ground_net(board)
     for ti, t in enumerate(board.traces):
-        if len(t.points) < 2:
+        if len(t.points) < 2 or t.net == fill_net:      # a ground trace ending in the ground fill is joined
             continue
         for end in (t.points[0], t.points[-1]):
             probe = Cap(end[0], end[1], end[0], end[1], 0.0)
@@ -169,6 +175,16 @@ def run_drc(board: Board, check_unrouted: bool = True) -> List[Issue]:
             if not joined:
                 issues.append(Issue("dangling", "trace #%d on net %s has an end that is not joined to anything"
                                     % (ti, t.net), end[0], end[1], "warn"))
+    if board.settings.island_mode:
+        from .islands import floating_fill, ground_net
+        gnd = ground_net(board)
+        if gnd is None:
+            issues.append(Issue("islands", "the ground fill is on but the board has no nets, so the fill is "
+                                "not joined to any ground pin", board.width / 2, board.height / 2, "warn"))
+        else:
+            for x, y, area in floating_fill(board):
+                issues.append(Issue("islands", "a %.0f mm² piece of ground fill is cut off by islands and "
+                                    "touches no %s pin (floating copper)" % (area, gnd), x, y, "warn"))
     if check_unrouted:
         for net, p1, p2, a, b in board.airwires():
             issues.append(Issue("unrouted", "net %s: %s is not connected to %s yet" % (net, a, b),

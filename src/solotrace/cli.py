@@ -20,7 +20,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if "--version" in argv or "-V" in argv:
         print("%s  [WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN]" % title())
         return 0
-    cmds = {"route", "place", "export", "demo", "drc", "selftest"}
+    cmds = {"route", "place", "export", "demo", "drc", "islands", "selftest"}
     if not argv or argv[0] not in cmds:
         from .app import main as gui_main
         return gui_main(argv)
@@ -37,6 +37,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("board")
     p.add_argument("out")
     p.add_argument("--no-jumpers", action="store_true")
+    p = sub.add_parser("islands", help="turn the ground fill (RF / Manhattan boards) on or off")
+    p.add_argument("board")
+    p.add_argument("out")
+    p.add_argument("--off", action="store_true", help="turn island mode off")
+    p.add_argument("--net", default="", help="ground net (default: guess GND, 0V, VSS..., else the biggest net)")
+    p.add_argument("--gap", type=float, default=0.6, help="gap round each island, mm")
+    p.add_argument("--grow", type=float, default=1.0, help="make islands fatter by up to this, mm")
+    p.add_argument("--deadbug", action="store_true", help="also make every pad a deadbug pad (no holes)")
+    p.add_argument("--keep-floating", action="store_true", help="keep pieces of fill no ground pin sits on")
     p = sub.add_parser("drc", help="design rule check")
     p.add_argument("board")
     p = sub.add_parser("export", help="write manufacturing files")
@@ -76,6 +85,24 @@ def main(argv: Optional[List[str]] = None) -> int:
         b.save(a.out)
         print(r.summary())
         return 0 if r.complete else 1
+    elif a.cmd == "islands":
+        from .islands import ground_net, make_pads_deadbug
+        b = _load(a.board)
+        st = b.settings
+        st.island_mode = not a.off
+        st.island_net, st.island_gap, st.island_grow = a.net, a.gap, a.grow
+        st.island_drop_floating = not a.keep_floating
+        if a.net and a.net not in b.nets:
+            print("No net called %s. Nets: %s" % (a.net, ", ".join(b.nets)))
+            return 2
+        if a.deadbug:
+            print("deadbug pads on %d part(s)" % make_pads_deadbug(b))
+        g = ground_net(b)
+        if g:
+            b.traces = [t for t in b.traces if t.manual or t.net != g]
+        b.touch()
+        b.save(a.out)
+        print("ground fill %s%s" % ("off" if a.off else "on", "" if a.off else ", on net %s" % g))
     elif a.cmd == "drc":
         from .drc import run_drc, summarize
         iss = run_drc(_load(a.board))

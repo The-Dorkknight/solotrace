@@ -1,0 +1,13 @@
+References,Qty,Value,Part,Part id
+C2,1,47p,"Ceramic disc cap, 2.54 mm",C_DISC_2.54
+C3,1,100p,"Ceramic disc cap, 2.54 mm",C_DISC_2.54
+C4,1,100n,"Ceramic disc cap, 2.54 mm",C_DISC_2.54
+C5,1,10n,"Ceramic disc cap, 2.54 mm",C_DISC_2.54
+C6,1,10p,"Ceramic disc cap, 2.54 mm",C_DISC_2.54
+J1,1,9V,"Pin header 1x2, 2.54 mm",HDR_1x2
+J2,1,RF out,"Pin header 1x2, 2.54 mm",HDR_1x2
+L1,1,1uH,"Inductor radial, 5 mm pitch (body up to 10 mm)",L_RAD_5
+Q1,1,2N3904,"Transistor TO-92 (3 pins, 2.54 mm)",TO92
+R1,1,47k,"Resistor 0.25 W standing, 2.54 mm",R_V_0.25W_2.54
+R2,1,10k,"Resistor 0.25 W standing, 2.54 mm",R_V_0.25W_2.54
+R3,1,1k,"Resistor 0.25 W standing, 2.54 mm",R_V_0.25W_2.54

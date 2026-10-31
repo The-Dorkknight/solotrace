@@ -1,4 +1,4 @@
-; SoloTrace 0.3.4-wip - SPEED/POWER TEST CARD
+; SoloTrace 0.4.0-wip - SPEED/POWER TEST CARD
 ; Columns left to right use feeds 600, 1000, 1500, 2000, 3000 mm/min.
 ; Rows bottom to top use power 30, 45, 60, 75, 90 % of S1000.
 ; Each square is 6 mm and filled with lines 0.080 mm apart.

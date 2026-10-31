@@ -61,7 +61,7 @@ footer{border-top:1px solid var(--line);margin-top:1.5rem;padding:1.4rem 0 2.2re
 </style>
 </head>
 <body>
-<div class="banner">WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN &middot; v0.3.4-wip</div>
+<div class="banner">WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN &middot; v0.4.0-wip</div>
 
 <div class="wrap">
 <header class="hero">
@@ -84,11 +84,13 @@ footer{border-top:1px solid var(--line);margin-top:1.5rem;padding:1.4rem 0 2.2re
     <div class="card"><h3>Make your own</h3><p>A footprint wizard (pad table, click-to-add, DIP and header presets) and KiCad <code>.kicad_mod</code> import.</p></div>
     <div class="card"><h3>Trace width 0.4 to 10 mm</h3><p>Click a trace section or a whole net, drag the slider. Shows roughly how many amps it carries.</p></div>
     <div class="card"><h3>No 90&deg; corners</h3><p>Every corner is chamfered by construction, and the checker flags anything sharper than 45&deg;.</p></div>
+    <div class="card"><h3>Copper islands</h3><p>Round or rectangular pads you drop, drag and resize. Sit a part's pins on them and they are joined: Manhattan / deadbug building with no traces.</p></div>
+    <div class="card"><h3>Ground fill for RF</h3><p>The board becomes ground copper with a gap round every other net; floating copper is removed. In the editor, Gerber, prints and laser G-code.</p></div>
     <div class="card"><h3>Deadbug pads</h3><p>No hole, extra copper to bend a lead flat and solder on the copper side. Per part or per pad.</p></div>
     <div class="card"><h3>Calmer autorouter</h3><p>Prefers straight runs and clean 45&deg; bends, rips up and retries, then adds wire-link jumpers instead of tangles.</p></div>
     <div class="card"><h3>Print, fab or laser</h3><p>Gerber + drill zip, 1:1 mirrored PDF/SVG, BOM, and G-code for the Elegoo Phecda.</p></div>
     <div class="card"><h3>Edit traces by hand</h3><p>Drag a section sideways and its neighbours follow at 45&deg;. Trim a section out, split a trace, tidy it. Right-click anything for its menu.</p></div>
-    <div class="card"><h3>Rigid power trunks</h3><p>Shift + wire two pins and the router joins them with a direct trunk first; the rest of the net branches off it. Drawn in orange.</p></div>
+    <div class="card"><h3>Rigid power trunks</h3><p>Shift + wire two pins and the router joins them with a direct trunk first; the rest of the net branches off it. Marked with a thin orange line, joined like ordinary copper.</p></div>
     <div class="card"><h3>Pin labels and values</h3><p>B C E, G D S, K A, IN GND OUT, optocoupler and 555 / op-amp layouts beside the pads, and the part value on the board.</p></div>
     <div class="card"><h3>Neat wide traces</h3><p>Wide traces leave pads straight and land on the pad centre, and the panel says how wide a trace can go and still fit.</p></div>
     <div class="card"><h3>Laser: negative and gap</h3><p>Negative, isolation and positive modes, trace adjust, gap, line interval, speed, power, passes, crosshatch, test cards, frame file.</p></div>
@@ -98,6 +100,8 @@ footer{border-top:1px solid var(--line);margin-top:1.5rem;padding:1.4rem 0 2.2re
 <section>
   <h2>Screens</h2>
   <div class="two">
+    <a class="shot" href="images/gui-islands.webp"><img src="images/gui-islands.webp" alt="Manhattan board: copper islands on a ground fill" loading="lazy" width="1280" height="840"></a>
+    <a class="shot" href="images/gui-ground-fill.webp"><img src="images/gui-ground-fill.webp" alt="Ground fill on a routed RF oscillator" loading="lazy" width="1280" height="840"></a>
     <a class="shot" href="images/gui-pin-labels.webp"><img src="images/gui-pin-labels.webp" alt="Pin labels and a rigid power trunk" loading="lazy" width="1280" height="840"></a>
     <a class="shot" href="images/gui-context-menu.webp"><img src="images/gui-context-menu.webp" alt="Right-click menu on a trace" loading="lazy" width="1280" height="840"></a>
     <a class="shot" href="images/wide-trace-tidy.webp"><img src="images/wide-trace-tidy.webp" alt="A 2 mm trace before and after tidying" loading="lazy" width="1394" height="625"></a>

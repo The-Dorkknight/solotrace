@@ -15,6 +15,7 @@ from typing import Dict, List, Tuple
 from . import __version__
 from .board import Board
 from .geom import Cap, Poly
+from .islands import plan as island_plan
 from .render import silk_segments
 
 SCALE = 1000000   # 4.6 format, millimetres
@@ -77,17 +78,34 @@ class _Gerber:
         return o.getvalue()
 
 
+def _draw(g: _Gerber, s) -> None:
+    if isinstance(s, Poly):
+        g.region(s.pts)
+    else:
+        dia = max(2.0 * s.r, 0.01)
+        if abs(s.x1 - s.x2) < 1e-9 and abs(s.y1 - s.y2) < 1e-9:
+            g.flash(s.x1, s.y1, dia)
+        else:
+            g.stroke(s.x1, s.y1, s.x2, s.y2, dia)
+
+
 def copper_layer(board: Board) -> str:
     g = _Gerber("Copper,L1,Bot")
+    p = island_plan(board)
+    if p is None:
+        for s in board.copper():
+            _draw(g, s)
+        return g.text()
+    # deadbug islands: ground fill (dark), islands + gap cut out of it (clear), then the copper (dark)
+    g.region(p.rect_poly().pts)
+    g.body.append("%LPC*%")
+    for s in p.cut:
+        _draw(g, s)
+    g.body.append("%LPD*%")
+    for s in p.fat:
+        _draw(g, s)
     for s in board.copper():
-        if isinstance(s, Poly):
-            g.region(s.pts)
-        else:
-            dia = max(2.0 * s.r, 0.01)
-            if abs(s.x1 - s.x2) < 1e-9 and abs(s.y1 - s.y2) < 1e-9:
-                g.flash(s.x1, s.y1, dia)
-            else:
-                g.stroke(s.x1, s.y1, s.x2, s.y2, dia)
+        _draw(g, s)
     return g.text()
 
 

@@ -21,6 +21,11 @@
   "temp_rise": 10.0,
   "allow_jumpers": true,
   "keep_out_under_parts": false,
+  "island_mode": false,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.0,
+  "island_drop_floating": true,
   "classes": {
    "Signal": 0.8,
    "Power": 2.0,
@@ -714,6 +719,7 @@
   }
  ],
  "jumpers": [],
+ "islands": [],
  "defs": {
   "C_FILM_5": {
    "id": "C_FILM_5",

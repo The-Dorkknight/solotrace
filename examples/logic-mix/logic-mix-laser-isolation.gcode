@@ -1,4 +1,4 @@
-; SoloTrace 0.3.4-wip - laser job: Logic mix
+; SoloTrace 0.4.0-wip - laser job: Logic mix
 ; WORK IN PROGRESS: defaults are untested starting points. Run the test cards first.
 ; Board: Logic mix  80.0 x 60.0 mm  mode=isolation  mirror=True
 ; comp=0.000 mm  gap=0.600 mm  interval=0.080 mm  feed=1500 mm/min  power=70% of S1000  passes=1

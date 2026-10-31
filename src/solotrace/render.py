@@ -64,6 +64,16 @@ def silk_segments(board: Board) -> List[Tuple[float, float, float, float]]:
     return segs
 
 
+def paint_order(board: Board):
+    """(shape, is_copper) in drawing order; with deadbug islands the ground fill and its cuts come first."""
+    from .islands import plan
+    p = plan(board)
+    cu = board.copper()
+    if p is None:
+        return [(s, True) for s in cu]
+    return p.paint(cu)
+
+
 def _mx(board: Board, mirror: bool):
     W = board.width
     return (lambda x: W - x) if mirror else (lambda x: x)
@@ -80,14 +90,15 @@ def to_svg(board: Board, mirror: bool = False, negative: bool = False, drill_dot
          % (W, H, W, H),
          '<title>%s - SoloTrace %s</title>' % (_esc(board.name), "mirrored" if mirror else "design view"),
          '<rect x="0" y="0" width="%g" height="%g" fill="%s"/>' % (W, H, bg)]
-    for s in board.copper():
+    for s, is_cu in paint_order(board):
+        col = fg if is_cu else bg
         if s.kind == "cap":
             w = max(2.0 * s.r, 0.01)
             o.append('<line x1="%.4f" y1="%.4f" x2="%.4f" y2="%.4f" stroke="%s" stroke-width="%.4f" '
-                     'stroke-linecap="round"/>' % (X(s.x1), H - s.y1, X(s.x2), H - s.y2, fg, w))
+                     'stroke-linecap="round"/>' % (X(s.x1), H - s.y1, X(s.x2), H - s.y2, col, w))
         else:
             o.append('<polygon points="%s" fill="%s"/>' % (
-                " ".join("%.4f,%.4f" % (X(x), H - y) for x, y in s.pts), fg))
+                " ".join("%.4f,%.4f" % (X(x), H - y) for x, y in s.pts), col))
     if drill_dots:
         for x, y, d in board.drills():
             o.append('<circle cx="%.4f" cy="%.4f" r="%.4f" fill="%s"/>' % (X(x), H - y, dot_dia / 2.0, bg))
@@ -117,13 +128,14 @@ def to_pdf(board: Board, mirror: bool = False, negative: bool = False, drill_dot
     fgs, bgs = ("1 G", "0 G") if negative else ("0 G", "1 G")
     c.append("%s 0 0 %.3f %.3f re f" % (bg, W * k, H * k))
     c.append("1 J 1 j")
-    for s in board.copper():
+    for s, is_cu in paint_order(board):
         if s.kind == "cap":
             w = max(2.0 * s.r, 0.01)
-            c.append("%s %.4f w %.3f %.3f m %.3f %.3f l S" % (fgs, w * k, X(s.x1) * k, s.y1 * k, X(s.x2) * k, s.y2 * k))
+            c.append("%s %.4f w %.3f %.3f m %.3f %.3f l S" % (fgs if is_cu else bgs, w * k, X(s.x1) * k, s.y1 * k,
+                                                             X(s.x2) * k, s.y2 * k))
         else:
             pts = [(X(x) * k, y * k) for x, y in s.pts]
-            c.append("%s %.3f %.3f m %s f" % (fg, pts[0][0], pts[0][1],
+            c.append("%s %.3f %.3f m %s f" % (fg if is_cu else bg, pts[0][0], pts[0][1],
                                               " ".join("%.3f %.3f l" % p for p in pts[1:])))
     if drill_dots:
         for x, y, d in board.drills():

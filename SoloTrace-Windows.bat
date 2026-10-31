@@ -1,7 +1,7 @@
 @echo off
 rem Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight)
 rem Licensed under the PolyForm Noncommercial License 1.0.0. No warranty.
-rem SoloTrace 0.3.4-wip - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN
+rem SoloTrace 0.3.5-wip - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN
 rem Double-click launcher for Windows.
 cd /d "%~dp0"
 set "PYCMD="

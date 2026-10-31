@@ -21,6 +21,11 @@
   "temp_rise": 10.0,
   "allow_jumpers": true,
   "keep_out_under_parts": false,
+  "island_mode": false,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.0,
+  "island_drop_floating": true,
   "classes": {
    "Signal": 0.8,
    "Power": 2.0,
@@ -321,8 +326,8 @@
      29.13
     ],
     [
-     43.18,
-     23.495
+     42.476,
+     24.199
     ]
    ],
    "widths": [
@@ -380,6 +385,7 @@
    "auto": true
   }
  ],
+ "islands": [],
  "defs": {
   "C_ELEC_5": {
    "id": "C_ELEC_5",

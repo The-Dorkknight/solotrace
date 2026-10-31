@@ -572,3 +572,129 @@ def trim_piece(board: Board, ti: int, p: Point) -> Optional[int]:
         board.traces.insert(ti + k, nt)
     board.touch()
     return len(kept_pts)
+
+
+# ------------------------------------------------------------ branches on trunks
+def _ray_hit(p: Point, d: Point, a: Point, b: Point) -> Optional[float]:
+    """Distance t >= 0 along p + t*d (d a unit vector) where it meets segment a-b, or None."""
+    ex, ey = b[0] - a[0], b[1] - a[1]
+    den = d[0] * ey - d[1] * ex
+    if abs(den) < 1e-12:
+        return None
+    t = ((a[0] - p[0]) * ey - (a[1] - p[1]) * ex) / den
+    u = ((a[0] - p[0]) * d[1] - (a[1] - p[1]) * d[0]) / den
+    if t < -1e-9 or u < -1e-9 or u > 1 + 1e-9:
+        return None
+    return t
+
+
+def attached_ends(board: Board, trunk: Trace) -> List[Tuple[Trace, int, List[Point]]]:
+    """Other traces of the same net with an end on ``trunk`` (a T-joint, not a pad):
+    (trace, 0 or -1, copy of its points)."""
+    out = []
+    hw = max(trunk.widths) / 2.0 if trunk.widths else 0.4
+    for o in board.traces:
+        if o is trunk or o.net != trunk.net or len(o.points) < 2:
+            continue
+        for k in (0, -1):
+            e = o.points[k]
+            if _pad_at(board, o.net, e) is not None:
+                continue
+            d = min(seg_point_dist(e, trunk.points[i], trunk.points[i + 1]) for i in range(len(trunk.points) - 1))
+            if d <= hw + 1e-6:
+                out.append((o, k, list(o.points)))
+    return out
+
+
+def follow_trunk(board: Board, trunk: Trace, attached: List[Tuple[Trace, int, List[Point]]]) -> None:
+    """After a trunk moved, slide each attached branch end along its own last section until it meets
+    the trunk again (or add a 45 degree link to the nearest point), so the branches stay joined."""
+    for o, k, base in attached:
+        if o not in board.traces:
+            continue
+        pts = list(base)
+        if k == 0:
+            pts.reverse()
+        e, p = pts[-1], pts[-2]
+        L = dist(p, e)
+        if L < 1e-9:
+            continue
+        d = ((e[0] - p[0]) / L, (e[1] - p[1]) / L)
+        best = None
+        for i in range(len(trunk.points) - 1):
+            t = _ray_hit(p, d, trunk.points[i], trunk.points[i + 1])
+            if t is not None and t > 0.05 and (best is None or t < best):
+                best = t
+        if best is not None:
+            new = pts[:-1] + [(p[0] + d[0] * best, p[1] + d[1] * best)]
+        else:
+            q = min((project_on_trace(trunk, p)[1],), key=lambda x: 0)
+            new = pts[:-1] + octi_path(p, q)[1:]
+        new = simplify_polyline(new)
+        if k == 0:
+            new.reverse()
+        w = max(o.widths) if o.widths else 0.8
+        new = chamfer_polyline(new, board.settings.chamfer_len(w))
+        tmp = Trace(o.net, list(base), list(o.widths), o.manual)
+        _set_points(tmp, new, list(base))
+        o.points, o.widths = tmp.points, tmp.widths
+        o.manual = True
+    board.touch()
+
+
+def settle_branch_ends(board: Board) -> int:
+    """Make T-joints look like one piece of copper: a branch that ends on another trace of its net
+    stops on that trace's centre line, pulled back a little when the branch is the wider one, so its
+    round end does not poke out of the far side. Returns how many ends moved."""
+    moved = 0
+    for o in list(board.traces):
+        if len(o.points) < 2:
+            continue
+        for k in (0, -1):
+            e = o.points[k]
+            p = o.points[1] if k == 0 else o.points[-2]
+            if _pad_at(board, o.net, e) is not None:
+                continue
+            L = dist(p, e)
+            if L < 1e-9:
+                continue
+            d = ((e[0] - p[0]) / L, (e[1] - p[1]) / L)
+            wb = o.widths[0] if k == 0 else o.widths[-1]
+            hit = None
+            for t in board.traces:
+                if t is o or t.net != o.net:
+                    continue
+                for i in range(len(t.points) - 1):
+                    if seg_point_dist(e, t.points[i], t.points[i + 1]) > t.widths[i] / 2.0 + 1e-6:
+                        continue
+                    s = _ray_hit(p, d, t.points[i], t.points[i + 1])
+                    if s is not None and (hit is None or s < hit[0]):
+                        hit = (s, t.widths[i])
+            if hit is None:
+                continue
+            s, wt = hit
+            back = max(0.0, (wb - wt) / 2.0)
+            others = [(t.points[i], t.points[i + 1], t.widths[i]) for t in board.traces
+                      if t is not o and t.net == o.net for i in range(len(t.points) - 1)]
+            done = False
+            for f in (1.0, 0.5, 0.0):
+                s_new = s - back * f
+                if s_new < 0.05:
+                    continue
+                if abs(s_new - L) < 1e-4:
+                    done = True                            # already where it should be
+                    break
+                ne = (round(p[0] + d[0] * s_new, 4), round(p[1] + d[1] * s_new, 4))
+                # the new end must stay inside the other trace's copper, so they stay joined
+                if not any(seg_point_dist(ne, a_, b_) <= w_ / 2.0 - 0.05 for a_, b_, w_ in others):
+                    continue
+                pts = list(o.points)
+                pts[k] = ne
+                o.points = pts
+                board.touch()
+                moved += 1
+                done = True
+                break
+            if not done:
+                continue
+    return moved

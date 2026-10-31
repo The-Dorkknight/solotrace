@@ -83,6 +83,77 @@ def power_oscillator() -> Board:
     return b
 
 
+def rf_oscillator() -> Board:
+    """Colpitts oscillator built deadbug style on islands: ground fill over the board, every other
+    net an island, every pad a surface (no-drill) pad. Shows Board > Ground fill."""
+    from .library import BUILTIN, pinout_presets
+    b = Board(50, 40, "RF oscillator (islands)")
+    b.settings.island_mode = True
+    b.settings.island_grow = 1.5
+    for pid, x, y, rot, ref, val in (
+            ("TO92", 25.4, 20.32, 0, "Q1", "2N3904"),
+            ("R_V_0.25W_2.54", 12.7, 30.48, 0, "R1", "47k"),
+            ("R_V_0.25W_2.54", 12.7, 20.32, 90, "R2", "10k"),
+            ("R_V_0.25W_2.54", 22.86, 10.16, 90, "R3", "1k"),
+            ("C_DISC_2.54", 12.7, 10.16, 90, "C5", "10n"),
+            ("C_DISC_2.54", 31.75, 12.7, 0, "C2", "47p"),
+            ("C_DISC_2.54", 31.75, 5.08, 0, "C3", "100p"),
+            ("L_RAD_5", 33.02, 30.48, 0, "L1", "1uH"),
+            ("C_DISC_2.54", 40.64, 21.59, 90, "C6", "10p"),
+            ("C_DISC_2.54", 22.86, 33.02, 0, "C4", "100n"),
+            ("HDR_1x2", 5.08, 33.02, 90, "J1", "9V"),
+            ("HDR_1x2", 45.72, 10.16, 90, "J2", "RF out")):
+        b.add_part(pid, x, y, rot=rot, ref=ref, value=val, style="dead")
+    b.parts["Q1"].pin_labels = dict(pinout_presets(BUILTIN["TO92"])[0][1])
+    b.parts["J1"].pin_labels = {"1": "-", "2": "+"}
+    b.parts["J2"].pin_labels = {"1": "GND", "2": "OUT"}
+    _net(b, "GND", "J1.1", "R2.2", "R3.2", "C3.2", "C5.2", "C4.2", "J2.1", cls="Power")
+    _net(b, "VCC", "J1.2", "R1.1", "L1.1", "C4.1", cls="Power")
+    _net(b, "BASE", "Q1.2", "R1.2", "R2.1", "C5.1")
+    _net(b, "EMIT", "Q1.1", "R3.1", "C3.1", "C2.2")
+    _net(b, "COLL", "Q1.3", "L1.2", "C2.1", "C6.1")
+    _net(b, "OUT", "C6.2", "J2.2")
+    return b
+
+
+def manhattan_amp() -> Board:
+    """Common-emitter RF amplifier built Manhattan style: hand-placed copper islands (no traces at all)
+    on a ground fill, every pad a surface pad. Shows the Island tool."""
+    from .board import Island
+    b = Board(60, 36, "Manhattan RF amplifier")
+    b.settings.island_mode = True
+    b.settings.island_grow = 0.0
+    for pid, x, y, rot, ref, val in (
+            ("PAD_2.5", 6.35, 11.43, 0, "P1", "RF in"),
+            ("C_DISC_5.08", 11.43, 11.43, 0, "C1", "1n"),
+            ("R_V_0.25W_5.08", 19.05, 11.43, 90, "R2", "10k"),
+            ("R_V_0.25W_5.08", 23.495, 11.43, 270, "R1", "47k"),
+            ("TO92", 25.4, 22.86, 0, "Q1", "2N3904"),
+            ("L_RAD_5", 40.64, 5.08, 90, "L1", "10uH"),
+            ("C_DISC_5.08", 43.18, 27.94, 0, "C2", "1n"),
+            ("C_DISC_5.08", 34.29, 5.08, 90, "C3", "100n"),
+            ("PAD_2.5", 25.4, 5.08, 0, "P3", "+9V"),
+            ("PAD_2.5", 53.34, 27.94, 0, "P2", "RF out"),
+            ("PAD_2.5", 8.89, 30.48, 0, "P4", "GND")):
+        b.add_part(pid, x, y, rot=rot, ref=ref, value=val, style="dead")
+    for x, y, w, h in ((8.89, 11.43, 8.89, 3.81),        # RF in
+                       (21.59, 11.43, 11.43, 3.81),      # base
+                       (27.94, 17.15, 1.8, 12.7),        # base, up to Q1
+                       (31.75, 5.08, 20.32, 3.81),       # +9 V rail
+                       (30.48, 25.4, 1.8, 6.35),         # collector, up from Q1
+                       (38.1, 27.94, 15.24, 3.81),       # collector
+                       (40.64, 18.0, 3.81, 17.0),        # collector, down to L1
+                       (51.5, 27.94, 9.0, 3.81)):        # RF out
+        b.islands.append(Island(x, y, w, h))
+    for name, pins in (("IN", ("P1.1", "C1.1")), ("BASE", ("C1.2", "R2.1", "R1.1", "Q1.2")),
+                       ("VCC", ("P3.1", "R1.2", "L1.1", "C3.1")), ("COLL", ("Q1.3", "L1.2", "C2.1")),
+                       ("OUT", ("C2.2", "P2.1")), ("GND", ("Q1.1", "R2.2", "C3.2", "P4.1"))):
+        for p in pins[1:]:
+            b.connect(pins[0], p, name)
+    b.touch()
+    return b
+
+
 def logic_dip14(seed: int = 7) -> Board:
     """Two DIP-14 gates, a DIP-8 and a few passives; many signals, so jumpers may appear."""
     b = Board(80, 60, "Logic mix")
@@ -144,4 +215,6 @@ DEMOS: Dict[str, Callable[[], Board]] = {
     "5 V regulator": regulator_7805,
     "555 power oscillator": power_oscillator,
     "Logic mix": logic_dip14,
+    "RF oscillator (ground fill, routed)": rf_oscillator,
+    "Manhattan RF amplifier (copper islands)": manhattan_amp,
 }

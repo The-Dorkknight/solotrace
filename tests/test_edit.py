@@ -369,3 +369,40 @@ class TrimPiece(unittest.TestCase):
         self.assertEqual(len(b.traces), 1)
         b = self._b()
         self.assertIsNone(trim_piece(b, 0, (25.4, 10.16)))         # right on the joint: nothing happens
+
+
+class TrunkAffinity(unittest.TestCase):
+    def _b(self, wb=2.0, wt=1.0):
+        from solotrace.board import Trace
+        b = Board(60, 60)
+        for r, x, y in (("P1", 5.08, 20.32), ("P2", 45.72, 20.32), ("P3", 25.4, 40.64)):
+            b.add_part("PAD_2.5", x, y, ref=r)
+        b.connect("P1.1", "P2.1", "G")
+        b.connect("P1.1", "P3.1", "G")
+        b.traces.append(Trace("G", [(5.08, 20.32), (45.72, 20.32)], [wt], False, True))    # rigid trunk
+        b.traces.append(Trace("G", [(25.4, 40.64), (25.4, 20.32)], [wb]))                   # branch to its centre
+        b.touch()
+        return b
+
+    def test_a_wider_branch_stops_inside_the_trunk(self):
+        from solotrace.tidy import settle_branch_ends
+        b = self._b()
+        self.assertEqual(settle_branch_ends(b), 1)
+        end = b.traces[1].points[-1]
+        self.assertGreater(end[1], 20.32)                         # pulled back towards its pad
+        self.assertLessEqual(end[1] - 1.0, 20.32 + 0.5 + 1e-6)    # its round end does not stick out below
+        self.assertEqual(b.unrouted_count(), 0)                   # still joined
+        self.assertEqual(settle_branch_ends(b), 0)                # and it is stable
+
+    def test_dragging_a_trunk_takes_its_branches_along(self):
+        from solotrace.tidy import apply_drag, attached_ends, follow_trunk
+        b = self._b(1.0, 1.0)
+        trunk = b.traces[0]
+        att = attached_ends(b, trunk)
+        self.assertEqual(len(att), 1)
+        base, basew = list(trunk.points), list(trunk.widths)
+        apply_drag(b, 0, 0, base, basew, (0.0, -5.0))             # move the trunk 5 mm down
+        follow_trunk(b, b.traces[0], att)
+        self.assertEqual(b.unrouted_count(), 0)
+        self.assertLess(b.traces[1].points[-1][1], 20.0)          # the branch end went down with it
+        self.assertLessEqual(max_turn(b.traces[1].points), 46.0)

@@ -1,0 +1,7 @@
+References,Qty,Value,Part,Part id
+"C1, C2",2,1n,"Ceramic disc cap, 5.08 mm",C_DISC_5.08
+C3,1,100n,"Ceramic disc cap, 5.08 mm",C_DISC_5.08
+L1,1,10uH,"Inductor radial, 5 mm pitch (body up to 10 mm)",L_RAD_5
+Q1,1,2N3904,"Transistor TO-92 (3 pins, 2.54 mm)",TO92
+R1,1,47k,"Resistor 0.25 W standing, 5.08 mm",R_V_0.25W_5.08
+R2,1,10k,"Resistor 0.25 W standing, 5.08 mm",R_V_0.25W_5.08

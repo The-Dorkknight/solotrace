@@ -220,6 +220,8 @@ class AutoRouter:
                 for i in range(len(t.points) - 1):
                     a, c = t.points[i], t.points[i + 1]
                     shapes.append(Cap(a[0], a[1], c[0], c[1], t.widths[i] / 2.0, t.net, ("fixed",)))
+        # copper islands (free-standing pads) with the net of whatever touches them
+        shapes.extend(s for s in b.copper() if s.tag and s.tag[0] == "isl")
         r = b.settings.jumper_pad / 2.0
         for j in b.jumpers:
             if (not j.auto) or j in keep_jump:
@@ -912,7 +914,7 @@ class AutoRouter:
             return self._best_of(lambda r: r.route_all())
         b = self.board
         b.clear_auto_routes()
-        names = [n for n in b.nets if len(b.nets[n].pins) >= 2]
+        names = [n for n in b.nets if len(b.nets[n].pins) >= 2 and n != _fill_net(b)]
         return self._route(names, set(names))
 
     def route_net(self, name: str) -> RouteResult:
@@ -969,7 +971,7 @@ class AutoRouter:
         if self.opt.attempts > 1:
             return self._best_of(lambda r: r.route_nets(list(names)))
         b = self.board
-        names = [n for n in names if n in b.nets and len(b.nets[n].pins) >= 2]
+        names = [n for n in names if n in b.nets and len(b.nets[n].pins) >= 2 and n != _fill_net(b)]
         ns = set(names)
         b.traces = [t for t in b.traces if t.manual or t.net not in ns]
         b.jumpers = [j for j in b.jumpers if (not j.auto) or j.net not in ns]
@@ -1034,6 +1036,8 @@ class AutoRouter:
                 self._say("Straightening pad exits", 0.98)
                 from .tidy import tidy_traces
                 tidy_traces(self.board, [t for t in self.board.traces if not t.manual])
+                from .tidy import settle_branch_ends
+                settle_branch_ends(self.board)
         except RoutingCancelled:
             result.messages.append("Routing was stopped early; partial result kept.")
             result.failed_nets = [n for n in names if self.board.nets.get(n) and
@@ -1044,6 +1048,14 @@ class AutoRouter:
 
     def _unrouted_nets(self) -> Set[str]:
         return {w[0] for w in self.board.airwires()}
+
+
+def _fill_net(board: Board):
+    """In deadbug island mode the ground net is joined by the ground fill, so it is not routed."""
+    if not board.settings.island_mode:
+        return None
+    from .islands import ground_net
+    return ground_net(board)
 
 
 def _under_parts_length(board: Board) -> float:

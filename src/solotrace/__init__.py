@@ -3,8 +3,8 @@
 """SoloTrace: a simple single-sided PCB designer with a jumper-aware autorouter and laser output."""
 
 APP_NAME = "SoloTrace"
-__version__ = "0.3.4-wip"
-__build_date__ = "2026-10-29 19:25"
+__version__ = "0.4.0-wip"
+__build_date__ = "2026-10-31 10:30"
 
 
 def title() -> str:

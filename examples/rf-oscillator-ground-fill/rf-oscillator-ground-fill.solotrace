@@ -1,0 +1,875 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "RF oscillator (islands)",
+ "width": 50.0,
+ "height": 40.0,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "island_mode": true,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.5,
+  "island_drop_floating": true,
+  "classes": {
+   "Signal": 0.8,
+   "Power": 2.0,
+   "High current": 5.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "C2",
+   "part": "C_DISC_2.54",
+   "x": 31.75,
+   "y": 12.7,
+   "rot": 0,
+   "flip": false,
+   "value": "47p",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "C3",
+   "part": "C_DISC_2.54",
+   "x": 31.75,
+   "y": 5.08,
+   "rot": 0,
+   "flip": false,
+   "value": "100p",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "C4",
+   "part": "C_DISC_2.54",
+   "x": 22.86,
+   "y": 33.02,
+   "rot": 0,
+   "flip": false,
+   "value": "100n",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "C5",
+   "part": "C_DISC_2.54",
+   "x": 12.7,
+   "y": 10.16,
+   "rot": 90,
+   "flip": false,
+   "value": "10n",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "C6",
+   "part": "C_DISC_2.54",
+   "x": 40.64,
+   "y": 21.59,
+   "rot": 90,
+   "flip": false,
+   "value": "10p",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "J1",
+   "part": "HDR_1x2",
+   "x": 5.08,
+   "y": 33.02,
+   "rot": 90,
+   "flip": false,
+   "value": "9V",
+   "style": "dead",
+   "locked": false,
+   "pin_labels": {
+    "1": "-",
+    "2": "+"
+   }
+  },
+  {
+   "ref": "J2",
+   "part": "HDR_1x2",
+   "x": 45.72,
+   "y": 10.16,
+   "rot": 90,
+   "flip": false,
+   "value": "RF out",
+   "style": "dead",
+   "locked": false,
+   "pin_labels": {
+    "1": "GND",
+    "2": "OUT"
+   }
+  },
+  {
+   "ref": "L1",
+   "part": "L_RAD_5",
+   "x": 33.02,
+   "y": 30.48,
+   "rot": 0,
+   "flip": false,
+   "value": "1uH",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "Q1",
+   "part": "TO92",
+   "x": 25.4,
+   "y": 20.32,
+   "rot": 0,
+   "flip": false,
+   "value": "2N3904",
+   "style": "dead",
+   "locked": false,
+   "pin_labels": {
+    "1": "E",
+    "2": "B",
+    "3": "C"
+   }
+  },
+  {
+   "ref": "R1",
+   "part": "R_V_0.25W_2.54",
+   "x": 12.7,
+   "y": 30.48,
+   "rot": 0,
+   "flip": false,
+   "value": "47k",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "R2",
+   "part": "R_V_0.25W_2.54",
+   "x": 12.7,
+   "y": 20.32,
+   "rot": 90,
+   "flip": false,
+   "value": "10k",
+   "style": "dead",
+   "locked": false
+  },
+  {
+   "ref": "R3",
+   "part": "R_V_0.25W_2.54",
+   "x": 22.86,
+   "y": 10.16,
+   "rot": 90,
+   "flip": false,
+   "value": "1k",
+   "style": "dead",
+   "locked": false
+  }
+ ],
+ "nets": [
+  {
+   "name": "GND",
+   "class": "Power",
+   "pins": [
+    "J1.1",
+    "R2.2",
+    "R3.2",
+    "C3.2",
+    "C5.2",
+    "C4.2",
+    "J2.1"
+   ]
+  },
+  {
+   "name": "VCC",
+   "class": "Power",
+   "pins": [
+    "J1.2",
+    "R1.1",
+    "L1.1",
+    "C4.1"
+   ]
+  },
+  {
+   "name": "BASE",
+   "class": "Signal",
+   "pins": [
+    "Q1.2",
+    "R1.2",
+    "R2.1",
+    "C5.1"
+   ]
+  },
+  {
+   "name": "EMIT",
+   "class": "Signal",
+   "pins": [
+    "Q1.1",
+    "R3.1",
+    "C3.1",
+    "C2.2"
+   ]
+  },
+  {
+   "name": "COLL",
+   "class": "Signal",
+   "pins": [
+    "Q1.3",
+    "L1.2",
+    "C2.1",
+    "C6.1"
+   ]
+  },
+  {
+   "name": "OUT",
+   "class": "Signal",
+   "pins": [
+    "C6.2",
+    "J2.2"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "net": "VCC",
+   "points": [
+    [
+     5.08,
+     35.56
+    ],
+    [
+     10.52,
+     35.56
+    ],
+    [
+     12.7,
+     33.38
+    ],
+    [
+     12.7,
+     30.48
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "VCC",
+   "points": [
+    [
+     22.86,
+     33.02
+    ],
+    [
+     22.5,
+     33.38
+    ],
+    [
+     14.445,
+     33.38
+    ],
+    [
+     12.7,
+     31.635
+    ],
+    [
+     12.7,
+     30.48
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "VCC",
+   "points": [
+    [
+     22.86,
+     33.02
+    ],
+    [
+     22.86,
+     31.865
+    ],
+    [
+     24.605,
+     30.12
+    ],
+    [
+     29.76,
+     30.12
+    ],
+    [
+     30.12,
+     30.48
+    ],
+    [
+     33.02,
+     30.48
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "OUT",
+   "points": [
+    [
+     40.64,
+     24.13
+    ],
+    [
+     44.45,
+     20.32
+    ],
+    [
+     45.085,
+     20.32
+    ],
+    [
+     45.72,
+     19.685
+    ],
+    [
+     45.72,
+     12.7
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "EMIT",
+   "points": [
+    [
+     34.29,
+     12.7
+    ],
+    [
+     31.75,
+     10.16
+    ],
+    [
+     31.75,
+     5.08
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "EMIT",
+   "points": [
+    [
+     31.75,
+     5.08
+    ],
+    [
+     26.67,
+     10.16
+    ],
+    [
+     22.86,
+     10.16
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "EMIT",
+   "points": [
+    [
+     22.86,
+     10.16
+    ],
+    [
+     23.495,
+     10.16
+    ],
+    [
+     25.4,
+     12.065
+    ],
+    [
+     25.4,
+     20.32
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "COLL",
+   "points": [
+    [
+     31.75,
+     12.7
+    ],
+    [
+     31.75,
+     19.05
+    ],
+    [
+     30.48,
+     20.32
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "COLL",
+   "points": [
+    [
+     40.64,
+     21.59
+    ],
+    [
+     40.005,
+     21.59
+    ],
+    [
+     38.02,
+     23.575
+    ],
+    [
+     38.02,
+     30.48
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "COLL",
+   "points": [
+    [
+     30.48,
+     20.32
+    ],
+    [
+     33.655,
+     23.495
+    ],
+    [
+     38.1,
+     23.495
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "BASE",
+   "points": [
+    [
+     12.7,
+     10.16
+    ],
+    [
+     12.065,
+     10.16
+    ],
+    [
+     10.16,
+     12.065
+    ],
+    [
+     10.16,
+     17.78
+    ],
+    [
+     12.7,
+     20.32
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "BASE",
+   "points": [
+    [
+     12.7,
+     20.32
+    ],
+    [
+     13.335,
+     20.32
+    ],
+    [
+     15.24,
+     22.225
+    ],
+    [
+     15.24,
+     30.48
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "BASE",
+   "points": [
+    [
+     15.24,
+     22.225
+    ],
+    [
+     26.67,
+     22.225
+    ],
+    [
+     27.94,
+     20.955
+    ],
+    [
+     27.94,
+     20.32
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  }
+ ],
+ "jumpers": [],
+ "islands": [],
+ "defs": {
+  "C_DISC_2.54": {
+   "id": "C_DISC_2.54",
+   "name": "Ceramic disc cap, 2.54 mm",
+   "category": "Capacitors",
+   "prefix": "C",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.0,
+     -1.75,
+     3.54,
+     1.75
+    ]
+   ],
+   "court": [
+    -1.0,
+    -1.75,
+    3.54,
+    1.75
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  },
+  "HDR_1x2": {
+   "id": "HDR_1x2",
+   "name": "Pin header 1x2, 2.54 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.27,
+     -1.27,
+     3.81,
+     1.27
+    ]
+   ],
+   "court": [
+    -1.27,
+    -1.27,
+    3.81,
+    1.27
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "2-row headers number across the columns: 1 top, 2 below it, 3 next top..."
+  },
+  "L_RAD_5": {
+   "id": "L_RAD_5",
+   "name": "Inductor radial, 5 mm pitch (body up to 10 mm)",
+   "category": "Inductors",
+   "prefix": "L",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "circle",
+     2.5,
+     0.0,
+     5.0
+    ]
+   ],
+   "court": [
+    -2.5,
+    -5.0,
+    7.5,
+    5.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Generic radial (drum core) inductor. Check the pitch on your part."
+  },
+  "R_V_0.25W_2.54": {
+   "id": "R_V_0.25W_2.54",
+   "name": "Resistor 0.25 W standing, 2.54 mm",
+   "category": "Resistors",
+   "prefix": "R",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "circle",
+     0.0,
+     0.0,
+     1.25
+    ],
+    [
+     "line",
+     1.25,
+     0.0,
+     1.74,
+     0.0
+    ]
+   ],
+   "court": [
+    -1.25,
+    -1.25,
+    3.34,
+    1.25
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Standing (vertical) mounting: the body stands on pin 1, the other lead folds back down to pin 2. Saves board space."
+  },
+  "TO92": {
+   "id": "TO92",
+   "name": "Transistor TO-92 (3 pins, 2.54 mm)",
+   "category": "Transistors & LEDs",
+   "prefix": "Q",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.6,
+     "h": 1.6,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "line",
+     0.2883339501604594,
+     -0.9,
+     4.791666049839541,
+     -0.9
+    ],
+    [
+     "arc",
+     2.54,
+     0.4,
+     2.6,
+     -30.0,
+     210.0
+    ]
+   ],
+   "court": [
+    0.2883339501604594,
+    -0.9,
+    4.791666049839541,
+    3.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Pins are in order 1-2-3 left to right with the flat face towards you. Pin names depend on the part (BC547: C-B-E vs 2N3904: E-B-C), check the datasheet."
+  }
+ }
+}

@@ -21,6 +21,11 @@
   "temp_rise": 10.0,
   "allow_jumpers": true,
   "keep_out_under_parts": false,
+  "island_mode": false,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.0,
+  "island_drop_floating": true,
   "classes": {
    "Signal": 0.8,
    "Power": 2.0,
@@ -439,7 +444,7 @@
      20.955
     ],
     [
-     60.96,
+     60.95,
      20.955
     ]
    ],
@@ -796,7 +801,7 @@
    "net": "GND",
    "points": [
     [
-     45.085,
+     45.7944,
      19.05
     ],
     [
@@ -1107,6 +1112,7 @@
    "auto": true
   }
  ],
+ "islands": [],
  "defs": {
   "DIP14_N": {
    "id": "DIP14_N",

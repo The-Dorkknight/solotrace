@@ -18,6 +18,8 @@
 - **2026-10-29, the author:** designed his childhood LM555 astable power oscillator (it drives a high-voltage transformer) in about **5 minutes**; he estimates the same board would have taken about **2 hours** in other PCB programs. Tested on an i5 laptop with 8 GB of RAM.
 - **Same day, 0.3.0 on his oscillator board:** "routing got far worse", with tracks that disappear and overlap and forced jumpers. Rebuilt from his photo in `tests/test_edit.py` (`test_branches_join_existing_copper_instead_of_running_over_it`). Cause: a net that was partly routed and then re-routed after a rip-up did not count its existing copper, so new traces ran over it (an old bug that rigid wires triggered more often). Fixed in 0.3.1, together with retries, optional jumpers, a small cost for routing under part bodies, and the Cut tool he asked for. He also explained that "rigid" was meant as "always join A to B directly", not "a stiff straight line"; the docs now say so.
 - **Evening, 0.3.1:** "much better", but next to the rigid trunks branches looked repelled and malformed: stubs stopping short of a trunk, one overshooting it, a loose blob on a capacitor pad, and a trunk running through the middle of the 555. Cause: the tidy pass (and corner smoothing) reshaped a wide trunk after its branches had been joined to it. Fixed in 0.3.2 with a "keep joints" rule, a DRC "dangling" warning and the keep-out option; regression tests in `tests/test_edit.py` (`KeepJoints`, `Dangling`).
+- **Night, 0.3.4:** a board saved in 0.3.3 reopened fine and routed "much better, completely workable"; the remaining wish was for rigid trunks to merge with their branches ("not a true bool union"). Copper was already merged in the exports; the editor drew rigid copper in its own colour on top, and wide branches poked out of narrow trunks. 0.3.5: one colour plus a thin marker line, branch ends settled inside the trunk, branches follow a dragged trunk (`TrunkAffinity` tests).
+- **2026-10-31, request for 0.4.0:** "a deadbug island mode for quick and dirty RF designs". A first take built a ground fill with every net cut out as an island; he then said he was "thinking more just round / rectangular / circular pads which are resizable and draggable", and asked to keep both. So 0.4.0 has copper islands (the pads he meant) and the ground fill (renamed from "deadbug islands" so the two are not confused).
 - Problems he found, and what changed: drawing a wire felt slightly slow (0.2.1: only the moving layer is redrawn); auto-route chained the ground net Q1 emitter -> C1 -> J1 instead of a thick trunk from Q1 to J1 with a branch to the capacitor (0.3.0: rigid wires, his idea of Shift + wire); the rubber bands were hard to see (thicker, edged lines); pins could not be labelled and values were hard to find (pin-label layouts, a bold value field); TO-92 outlines looked odd (D shape).
 
 ## Findings (with sources)
@@ -46,6 +48,10 @@
 | Power trunks (0.3) | Explicit rigid pairs routed first, then the rest of the net branches off them (pins connect to the nearest node of the trunk, which the router already allows) | A Steiner-tree router for wide nets, or always picking the two farthest pins as the trunk: guesses what the designer means; the explicit pair is predictable |
 | Pin labels (0.3) | Per-form-factor lists of common layouts plus free text, stored per placed part; defaults only where every part of that shape agrees (diode K A, electrolytic + -) | A database of real part numbers and their pinouts: big, licence questions, and wrong for the many parts that share a package but not a pinout |
 | Look (0.2) | ttk "clam" theme with a dark tool bar, copper / teal / blue / red action buttons, a status badge, and a canvas whose corners are painted over in the panel colour (fake 12 px fillet) | A custom-drawn widget set: lots of code for the same effect |
+| Copper islands (0.4) | A new board object (round, oval or chamfered rectangle) that takes the net of whatever copper touches it, so it needs no net assignment UI and DRC finds shorts for free | Islands as parts in the library (fixed sizes, a "pin" to wire); or asking the user for each island's net: more clicks, and a wrong choice silently disagrees with the copper |
+| Ground fill (0.4) | A paint order instead of polygon clipping: fill rectangle, then every non-ground shape grown by its growth + gap in bare board, then the fattened copper and all copper. Gerber does the same with clear polarity (`%LPC*%`), the laser engine with interval arithmetic per scan line, the canvas, SVG and PDF by drawing order | A polygon-clipping library (pyclipper or shapely): not in the standard library, which breaks double-click and run; writing a robust clipper: a lot of code for the same pictures |
+| Fattening (0.4) | Per shape: grow g = min(wanted, edge room, distance to ground copper - gap, (distance to other nets - gap) / 2), so two growing shapes can never close the gap | One growth for the whole board limited by the tightest spot: a single cramped pin pair would stop every other net from growing |
+| Floating fill (0.4) | Sample the fill on lines 0.05 mm apart, join overlapping intervals into pieces (union-find), cut away pieces no ground pin sits on with one polygon per chain of rows, then repeat across the other axis for slivers thinner than a row | Leave floating copper (it couples noise into RF circuits); one rectangle per row (hundreds of shapes and hairline seams in prints) |
 | Laser | Exact scanline intervals computed from the shapes | Rendering a bitmap and tracing it: blurry edges, no exact "trace adjust" |
 | Gerber | Round-aperture strokes + region fills, RS-274X, X2 attributes | Aperture macros for capsules: more to go wrong in viewers |
 | Netlist | Wire pin to pin, no schematic | A schematic editor: far outside "easy" |
@@ -103,6 +109,8 @@ Moving the drawing to C would not have helped: the time was spent inside Tk crea
 - **Deadbug pads grow outward.** The extra copper (about 2.2 mm) extends away from the part and is clamped by neighbouring pads; rows of three or more fold perpendicular to the row. The library test checks every part in all three styles keeps at least 0.25 mm between pads.
 - **Width of an unrouted net.** Clicking the yellow rubber-band line creates a net class named after the width (for example "2.5 mm"), so the router uses it.
 
+- **Ground fill with clear polarity.** The Gerber copper layer of a filled board is: a dark region (the fill), `%LPC*%`, the cut shapes, `%LPD*%`, then the copper. The independent gerbonara library read this back with 63 clear and 120 dark objects for the RF example and drew it as expected; no fab CAM has seen it yet.
+
 ## Tried and dropped (0.2)
 
 - **"No worse" by count.** The first tidy version accepted a reshaped trace if it touched no *more* shapes than before. On a board where a 5 mm trace already overlapped a thin one, the thin trace was then re-pathed straight across the wide one: the same count, but a new short. Now a reshaped trace may only touch copper of nets it was already too close to, and thin traces are only allowed to move their end onto the pad centre, never to shortcut.
@@ -122,6 +130,7 @@ Found while making the power-oscillator demo (0.3): a 2.5 mm power net could not
 - The new generic footprints (standing resistors and diodes, inductors, 5.08 mm pot, triangle trimmer) are not measured against real parts.
 - Tooltips and the right-click menu on Windows and macOS (Tk draws menus natively there, so colours will differ).
 - Part outlines (silkscreen) are approximate; check against the real part.
+- Copper islands and the ground fill (0.4): only tests, the examples, screenshots and gerbonara. Nobody has etched, lasered or soldered such a board yet, and the 0.05 mm sampling leaves slivers of fill below about 0.01 mm² (too small to etch).
 
 ## Ideas
 
@@ -133,6 +142,7 @@ Found while making the power-oscillator demo (0.3): a 2.5 mm power net could not
 - Pin labels and values in the silkscreen exports (needs a small stroke font for Gerber).
 - Let auto-route choose straight pad exits itself for wide nets (a cost in the search) so the tidy pass has less to do.
 - Part packs as plug-ins; flip parts to the copper side for deadbug builds.
+- Islands: more shapes (L-shapes by joining rectangles already work), "make an island under every pin of this net", and a stitched fill (several pieces joined by jumpers automatically).
 - Laser: exposure-test presets per paint type once real data exists; air-assist and focus notes.
 
 ## How to test a change

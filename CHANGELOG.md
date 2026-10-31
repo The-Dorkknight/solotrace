@@ -2,6 +2,26 @@
 
 **WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN**
 
+## 0.4.0-wip (2026-10-31)
+
+For quick and dirty RF and fast analogue boards, built deadbug / Manhattan style:
+
+- **Copper islands (Island tool, `I`).** Free-standing round or rectangular copper pads. Click to drop one, drag on the board to draw one any size, Shift + click to switch between round and rectangular. With *Select*, drag an island to move it and drag its white corner squares to resize it (the opposite corner stays put); the right panel has exact width, height and corner cut, square/circle size buttons, *Turn 90*, *Duplicate* and *Delete*, and the right-click menu has the same. An island has no net of its own: it joins the net of any pin, trace or jumper pad that touches it, and islands that touch each other share one net. Pins of two different nets on one island are a short, and *Check* says so. A board built from islands needs no traces at all.
+- **Ground fill (Board > Ground fill).** The whole board becomes ground copper, with a gap (default 0.6 mm, never less than the copper clearance) cut round every other net. The ground net is guessed (GND, 0V, VSS..., else the net with the most pins) or chosen; it is joined by the fill, so Auto-route leaves it alone and removes its old automatic traces. Other nets' copper can be fattened (default 1 mm, only where it keeps the gap; islands you placed keep their size). Pieces of fill that no ground pin sits on (floating copper) are cut away; a ground pin on a piece of fill that is cut off from the rest gets a yellow rubber band. Turning it on offers to make every pad a deadbug pad (no holes to drill).
+- The fill is in every output: the editor, Gerber (with clear polarity, read back by the independent gerbonara library in testing), PDF and SVG prints, and the laser G-code (negative mode then burns only the gaps; isolation mode burns the same as negative on such a board).
+- New examples: *Manhattan RF amplifier (copper islands)*, built from islands with no traces, and *RF oscillator (ground fill, routed)*.
+- Command line: `solotrace islands board.solotrace out.solotrace [--net GND] [--gap 0.6] [--grow 1] [--deadbug] [--keep-floating] [--off]` turns the ground fill on or off.
+- The coloured tool-bar buttons are only as wide as their text, so the bar fits a 1280 px window with the new tool.
+- A redraw could be left scheduled when a window closed ("invalid command name ...redraw" in the test output); fixed.
+
+## 0.3.5-wip (2026-10-29)
+
+Rigid-wire refinements, after the author found rigid trunks "still separate, not a true union":
+
+- **One colour.** Routed rigid traces are drawn in the normal copper colour, like the branches joined to them, with a thin dashed orange line down the middle to mark them. (They were always ordinary copper in the exports; only the editor drew them in a different colour on top.)
+- **Clean T-joints.** A branch that ends on another trace stops on its centre line, and is pulled back a little when it is the wider one, so its round end no longer pokes out of the far side of a narrow trunk. It always stays inside the trunk's copper. Done after routing, tidying and dragging.
+- **Branches follow a dragged trunk.** Dragging a trace sideways now moves the ends of the branches joined to it, so they stay joined (each slides along its own direction, or gets a short 45 degree link).
+
 ## 0.3.4-wip (2026-10-29)
 
 - **Right-click never deletes anything by itself.** Right-clicking a trace only opens its menu. While the mouse rests on *Cut this piece*, the piece that would go is shown in red; it is removed only when you choose that item. On a joint the item is greyed out and says why.

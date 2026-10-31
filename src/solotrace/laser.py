@@ -114,6 +114,10 @@ def validate(board: Board, o: LaserOptions) -> List[str]:
         w.append("Isolation gap is very small compared with the line interval.")
     if o.trace_comp < -0.3:
         w.append("A negative trace compensation this large will eat into thin traces.")
+    if board.settings.island_mode and 2 * o.trace_comp >= board.settings.island_gap - 0.05:
+        w.append("Trace adjust %.2f mm grows the copper on both sides of each %.2f mm island gap and would "
+                 "close it: lower the trace adjust or widen the gap (Board > Ground fill settings)."
+                 % (o.trace_comp, board.settings.island_gap))
     if board.height / max(o.line_interval, 1e-6) > o.max_lines:
         w.append("Too many scan lines; increase the line interval.")
     return w
@@ -150,10 +154,24 @@ def _transpose(shapes):
     return out
 
 
-def _scan(shapes, W: float, H: float, o: LaserOptions, dots) -> List[Tuple[float, List[Tuple[float, float]]]]:
-    """Burn intervals per scan line for lines along X; y runs 0..H."""
+def _scan(shapes, W: float, H: float, o: LaserOptions, dots, fill=None) -> List[Tuple[float, List[Tuple[float, float]]]]:
+    """Burn intervals per scan line for lines along X; y runs 0..H.
+
+    ``fill`` is ``(rect, cut_shapes)`` for the ground fill: the rectangle is copper except
+    where the cut shapes are, so everything outside the copper is just the gaps, and
+    isolation mode burns the same as negative mode.
+    """
     comp = o.trace_comp
-    grow_out = max(comp, 0.0) + (o.gap if o.mode == "isolation" else 0.0)
+    mode = "negative" if (fill and o.mode == "isolation") else o.mode
+    grow_out = max(comp, 0.0) + (o.gap if mode == "isolation" else 0.0)
+    cut_items = []
+    if fill:
+        for c in fill[1]:
+            bb = c.bbox()
+            cut_items.append((bb[1] - abs(comp) - 0.01, bb[3] + abs(comp) + 0.01, c))
+        cut_items.sort(key=lambda t: t[0])
+    cut_active: List[tuple] = []
+    cut_next = 0
     items = []
     for s in shapes:
         bb = s.bbox()
@@ -179,12 +197,26 @@ def _scan(shapes, W: float, H: float, o: LaserOptions, dots) -> List[Tuple[float
         outer: List[Tuple[float, float]] = []
         for _lo, _hi, s in active:
             inner.extend(_ivals(s, y, comp))
-            if o.mode == "isolation":
+            if mode == "isolation":
                 outer.extend(_ivals(s, y, comp + o.gap))
+        if fill:
+            while cut_next < len(cut_items) and cut_items[cut_next][0] <= y:
+                cut_active.append(cut_items[cut_next])
+                cut_next += 1
+            cut_active = [t for t in cut_active if t[1] >= y]
+            fx0, fy0, fx1, fy1 = fill[0]
+            if fy0 <= y <= fy1:
+                cuts: List[Tuple[float, float]] = []
+                for _lo, _hi, c in cut_active:
+                    if c.kind == "cap":
+                        cuts.extend(_ivals(c, y, -comp))
+                    else:
+                        cuts.extend(shape_intervals(c, y, max(0.0, -comp)))
+                inner.extend(subtract_intervals([(fx0, fx1)], merge_intervals(cuts)))
         inner = merge_intervals(inner)
-        if o.mode == "negative":
+        if mode == "negative":
             burn = subtract_intervals([(x_lo, x_hi)], inner)
-        elif o.mode == "positive":
+        elif mode == "positive":
             burn = [(max(lo, x_lo), min(hi, x_hi)) for lo, hi in inner if hi > x_lo and lo < x_hi]
         else:
             outer = merge_intervals(outer)
@@ -293,13 +325,23 @@ def generate(board: Board, o: Optional[LaserOptions] = None, title: str = "coppe
         raise ValueError("unknown mode %s" % o.mode)
     W, H = board.width, board.height
     shapes = board.copper()
+    fill = None
+    from .islands import plan as island_plan
+    ip = island_plan(board)
+    if ip is not None:
+        shapes = list(shapes) + list(ip.fat)
+        fill = (ip.rect, ip.cut)
     dots = [(x, y, o.dot_dia / 2.0) for x, y, _d in board.drills()] if o.drill_dots else []
-    hz = _scan(shapes, W, H, o, dots)
+    hz = _scan(shapes, W, H, o, dots, fill)
     # preview in design coordinates
     for y, ivs in hz:
         for a, c in ivs:
             job.segments.append((a, y, c, y))
     code = _header(board.name, o, W, H, title)
+    if ip is not None:
+        code.insert(3, "; Ground fill on net %s, %.2f mm gap round every other net%s"
+                    % (ip.ground or "(none)", ip.gap, " (isolation burns the same as negative here)"
+                       if o.mode == "isolation" else ""))
     burn_total = 0.0
     travel_total = 0.0
     nlines = 0
@@ -308,7 +350,11 @@ def generate(board: Board, o: Optional[LaserOptions] = None, title: str = "coppe
     for p in range(max(1, o.passes)):
         passes.append((base_h, False))
         if o.crosshatch:
-            vt = _scan(_transpose(shapes), H, W, o, [(y, x, r) for x, y, r in dots])
+            tfill = None
+            if fill:
+                r0 = fill[0]
+                tfill = ((r0[1], r0[0], r0[3], r0[2]), _transpose(fill[1]))
+            vt = _scan(_transpose(shapes), H, W, o, [(y, x, r) for x, y, r in dots], tfill)
             if o.mirror:
                 # vertical lines sit at design x; mirrored x' = W - x, scanning along Y unchanged
                 vt = [(W - x, ivs) for x, ivs in vt][::-1]
