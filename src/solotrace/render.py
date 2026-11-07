@@ -56,18 +56,30 @@ def part_segments(board: Board, ref: str) -> List[Tuple[float, float, float, flo
     return segs
 
 
-def silk_segments(board: Board) -> List[Tuple[float, float, float, float]]:
-    """Component outlines as board-coordinate line segments."""
+def silk_segments(board: Board, side: str = "both") -> List[Tuple[float, float, float, float]]:
+    """Component outlines as board-coordinate line segments.
+
+    ``side`` is "top" (parts on the component side: through-hole parts, unless mirrored), "bottom"
+    (parts on the copper side: SMD parts, and through-hole parts mounted under the board) or "both".
+    """
     segs: List[Tuple[float, float, float, float]] = []
     for ref in board.parts:
+        under = board.on_copper_side(ref)
+        if side == "top" and under or side == "bottom" and not under:
+            continue
         segs.extend(part_segments(board, ref))
     return segs
 
 
-def paint_order(board: Board):
-    """(shape, is_copper) in drawing order; with deadbug islands the ground fill and its cuts come first."""
+def paint_order(board: Board, layer: str = "bottom"):
+    """(shape, is_copper) in drawing order. Bottom: with the ground fill on, the fill and its cuts
+    come first. Top: the back-side ground plane (nothing else is on the top)."""
+    if layer == "top":
+        from .plane import plan as pplan
+        p = pplan(board)
+        return p.paint() if p is not None else []
     from .islands import plan
-    p = plan(board)
+    p = plan(board, full=True)
     cu = board.copper()
     if p is None:
         return [(s, True) for s in cu]
@@ -80,8 +92,11 @@ def _mx(board: Board, mirror: bool):
 
 
 def to_svg(board: Board, mirror: bool = False, negative: bool = False, drill_dots: bool = True,
-           silk: bool = False, outline: bool = True, dot_dia: float = 0.4) -> str:
-    """SVG at exactly 1 mm = 1 user unit and the physical size set in mm."""
+           silk: bool = False, outline: bool = True, dot_dia: float = 0.4, layer: str = "bottom") -> str:
+    """SVG at exactly 1 mm = 1 user unit and the physical size set in mm.
+
+    ``layer`` "top" prints the back-side ground plane (seen from the component side, so it is
+    normally NOT mirrored)."""
     W, H = board.width, board.height
     X = _mx(board, mirror)
     fg, bg = ("#ffffff", "#000000") if negative else ("#000000", "#ffffff")
@@ -90,7 +105,7 @@ def to_svg(board: Board, mirror: bool = False, negative: bool = False, drill_dot
          % (W, H, W, H),
          '<title>%s - SoloTrace %s</title>' % (_esc(board.name), "mirrored" if mirror else "design view"),
          '<rect x="0" y="0" width="%g" height="%g" fill="%s"/>' % (W, H, bg)]
-    for s, is_cu in paint_order(board):
+    for s, is_cu in paint_order(board, layer):
         col = fg if is_cu else bg
         if s.kind == "cap":
             w = max(2.0 * s.r, 0.01)
@@ -118,7 +133,7 @@ def _esc(s: str) -> str:
 
 
 def to_pdf(board: Board, mirror: bool = False, negative: bool = False, drill_dots: bool = True,
-           silk: bool = False, outline: bool = True, dot_dia: float = 0.4) -> bytes:
+           silk: bool = False, outline: bool = True, dot_dia: float = 0.4, layer: str = "bottom") -> bytes:
     """A one-page PDF whose page is exactly the board size, drawn 1:1 (1 mm = 2.83465 pt)."""
     k = 72.0 / 25.4
     W, H = board.width, board.height
@@ -128,7 +143,7 @@ def to_pdf(board: Board, mirror: bool = False, negative: bool = False, drill_dot
     fgs, bgs = ("1 G", "0 G") if negative else ("0 G", "1 G")
     c.append("%s 0 0 %.3f %.3f re f" % (bg, W * k, H * k))
     c.append("1 J 1 j")
-    for s, is_cu in paint_order(board):
+    for s, is_cu in paint_order(board, layer):
         if s.kind == "cap":
             w = max(2.0 * s.r, 0.01)
             c.append("%s %.4f w %.3f %.3f m %.3f %.3f l S" % (fgs if is_cu else bgs, w * k, X(s.x1) * k, s.y1 * k,
@@ -173,19 +188,22 @@ def bom_rows(board: Board) -> List[List[str]]:
         d = board.get_def(pl.part_id)
         if d.kind in ("hole", "pad"):
             continue
-        key = (d.name, pl.value, pl.part_id)
+        side = "copper side" if board.on_copper_side(ref) else "component side"
+        if board.is_mirrored(ref):
+            side += " (MIRRORED)"
+        key = (d.name, pl.value, pl.part_id, side)
         groups.setdefault(key, []).append(ref)
     rows = []
-    for (name, value, pid), refs in sorted(groups.items(), key=lambda kv: kv[1][0]):
+    for (name, value, pid, side), refs in sorted(groups.items(), key=lambda kv: kv[1][0]):
         refs.sort(key=lambda r: (r.rstrip("0123456789"), int(r[len(r.rstrip("0123456789")):] or 0)))
-        rows.append([", ".join(refs), str(len(refs)), value, name, pid])
+        rows.append([", ".join(refs), str(len(refs)), value, name, pid, side])
     return rows
 
 
 def to_bom_csv(board: Board) -> str:
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
-    w.writerow(["References", "Qty", "Value", "Part", "Part id"])
+    w.writerow(["References", "Qty", "Value", "Part", "Part id", "Mounted on"])
     for r in bom_rows(board):
         w.writerow(r)
     return buf.getvalue()

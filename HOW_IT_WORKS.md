@@ -10,7 +10,7 @@
 | Netlist text files | File > Import netlist text |
 | KiCad `.kicad_mod` footprints | Parts > Import KiCad .kicad_mod |
 | Your own parts in `~/.solotrace/parts/*.json` | At start |
-| `~/.solotrace/config.json` | At start (notice accepted, last laser settings, recent files) |
+| `~/.solotrace/config.json` | At start (notice accepted, last laser settings, recent files, favourites, which parts list was open) |
 | `~/.solotrace/autosave.solotrace` | Only when you pick *File > Recover autosave* |
 
 | It writes | When |
@@ -23,6 +23,10 @@
 
 It **never** connects to the internet, never talks to your laser or your printer (you open the G-code in your own laser software), never installs anything, and never changes files you did not ask it to save.
 
+## The web UI (the default since 0.8.0)
+
+When you run `python3 src/main.py` or a launcher, SoloTrace starts a small HTTP server from the Python standard library on `127.0.0.1` (a random free port, or `--port N`) and opens `http://127.0.0.1:<port>/` in your browser. It only answers requests whose `Host` header is the local address, so nothing else on your network can reach it. The page (`src/solotrace/web/static/`) is plain HTML, CSS and JavaScript with no libraries; it asks the server for the picture of the board as data (every piece of copper, the outlines, the rubber bands) and draws it on a canvas, and sends every click, key and menu choice back as a command. The server holds the board, the undo stack and the tool state in `session.py`, which is the desktop editor with the window taken out: the same board, tidy, ground-fill and plane code answers both. Differences from the window: the page shows a ghost while you drag and the move is applied when you let go; *Save* is a download (the browser's downloads folder) and *Open* reads a file you pick; a board opened from a path on the command line can also be saved back to it (*File > Save to the opened file*). The page pings the server every 10 s; 90 s without a ping (the tab was closed) and the server stops, as does *File > Quit*. The autosave file and `config.json` are the same ones the window uses.
+
 ## The board
 
 - Units are **millimetres**, Y points **up**. The screen normally shows the **component side, looking through the board**. Copper is on the other side.
@@ -30,11 +34,12 @@ It **never** connects to the internet, never talks to your laser or your printer
 - A **net** is a list of pins that must be connected, plus any **rigid pairs** (two pins of the net that must be joined directly). The wire tool adds pins to nets, and a yellow rubber-band line shows what is not yet routed.
 - A **trace** is a list of points with one width per segment. Every segment is a straight capsule (a line with round ends), and a pad is a circle, oval or square polygon. Copper is simply the union of those shapes.
 - **Chamfers:** whenever two segments meet at a corner, the corner is replaced by two shorter bends of 45° each. The chamfer leg is at least 0.9 mm or 1.5 × the trace width, whichever is larger, so a 10 mm trace gets a 15 mm chamfer. The route checker complains about any turn over 46°, so a hand-made 90° corner cannot survive.
+- **SMD parts** (Pro) have rectangular copper lands with no hole and sit on the copper side: they are stored with *flip* on, so in the component-side view they appear mirrored, and their outlines go to the bottom silkscreen. Their pad sizes come from the makers' land-pattern drawings (docs/research/smd-land-patterns.md).
 - **Pads:** *through-hole* has a drilled hole and a ring. *Deadbug* has no hole; the pad is stretched outwards by about 2.2 mm so you can bend the lead flat and solder it on the copper side. *Both* keeps the hole and the extra copper. The part definitions are checked so that pads stay at least 0.25 mm apart in all three styles.
 
 ## Copper islands
 
-An island is a round, oval or rectangular piece of copper with its corners cut at 45 degrees (rectangles only). It is saved in the board file with its centre, width, height, shape and corner cut, and nothing else: it has **no net of its own**. Whenever the copper is worked out, each island takes the net of whatever touches it (a pad, a trace, a jumper pad; islands that touch each other are taken together). If two real nets touch it, it takes one of them and the checker reports the other as a clash, which is the short it is. An island nothing touches is its own little net and is kept clear of everything else. Because islands are ordinary copper once their net is known, the router steers round them, connections through them count as made, and every export contains them.
+An island is a round, oval or rectangular piece of copper with its corners cut at 45 degrees (rectangles only). It is saved in the board file with its centre, width, height, shape and corner cut, and nothing else: it has **no net of its own**. Whenever the copper is worked out, each island takes the net of whatever touches it (a pad, a trace, a jumper pad; islands that touch each other are taken together). If two real nets touch it, it takes one of them and the checker reports the other as a clash, which is the short it is. Sizes are kept between 1 and 400 mm whatever made the island (a file, the editor or a script). An island nothing touches is its own little net and is kept clear of everything else. Because islands are ordinary copper once their net is known, the router steers round them, connections through them count as made, and every export contains them.
 
 ## Ground fill
 
@@ -46,9 +51,19 @@ With *Board > Ground fill* on, the board is copper except where it must not be. 
 
 The growth of each shape is the wanted growth, cut down so that it keeps the gap from ground copper and the edge, and keeps the gap from any other net's shape even if that one grows by as much (half the free space each). Islands you placed do not grow.
 
-To find floating fill, the fill is sampled along lines 0.05 mm apart; neighbouring intervals that overlap are joined into pieces, and each ground pin is looked up in its piece. Pieces with no ground pin are cut away (one polygon per run of rows), and the same is done once more across the other direction for slivers thinner than a row. Ground pins that sit on different pieces are shown as yellow rubber bands between the pieces. The editor skips the floating-fill check while you drag and does it when you let go.
+To find floating fill, the fill is sampled along lines 0.05 mm apart; neighbouring intervals that overlap are joined into pieces, and each ground pin is looked up in its piece. Pieces with no ground pin are cut away (one polygon per run of rows), and the same is done once more across the other direction for slivers thinner than a row. Ground copper (pads, traces and islands of the ground net) counts as fill, so a thin ground trace through a narrow gap joins the pieces either side. Ground pins that sit on different pieces are shown as yellow rubber bands between the pieces. The editor draws the fill at once and does the floating-fill check about 0.4 s after the last change; Check and every export always use the finished fill.
 
 Outputs: the editor and the PDF/SVG prints draw in the paint order; Gerber writes the fill as a dark region, switches to clear polarity (`%LPC*%`) for step 2 and back (`%LPD*%`) for step 3; the laser engine adds the fill to the copper intervals of each scan line (fill interval minus the cut intervals), so negative mode burns only the gaps.
+
+## Thermal reliefs
+
+With the ground fill or the back-side plane on, each ground pad (part pads, jumper pads, via pads, and copper islands on the ground net if the setting says so) gets a ring of bare board cut round it and a few copper spokes drawn across the ring afterwards. The spoke width is the one typed in, or, if a current was typed, the width that carries that current divided by the spoke count by the IPC-2221 outer-layer formula (the same formula as the width slider's amps readout). Round pads get radial spokes; ovals and rectangles get spokes leaving their long sides at right angles and their ends along the long axis; an island over 4 mm gets spokes 10 % of its shorter side wide (0.6 to 1.5 mm, never thinner than the board's) and one per 5 mm of perimeter. Before a spoke is kept it is checked against the copper of every other net nearby; a spoke that would come within the clearance is left out, and if none are left the pad keeps its solid connection and no ring is cut. The spokes count as ground copper when the fill is split into pieces, so a relieved pad still joins the fill. A part marked *heavy* gets spokes twice as wide; *solid* gets no relief.
+
+## Back-side ground plane
+
+The component side of the board is one copper sheet used as ground; nothing else is ever on it. Like the fill, it is a paint order: the plane rectangle (the board inset by the edge clearance), then bare rings round every hole whose lead is not ground (hole radius plus the clearance setting), then, for ground leads and vias, a relief ring and its spokes (or nothing for *solid* parts). A **via** is saved as a point; on the trace side it is a round pad of the via-pad size on the ground net, in the drill file a hole of the via-drill size. Connectivity: every ground pin whose pad has a hole, and every via, is on the plane, so they are one group; the fill pieces and copper groups join that group through any such pin or via. The router treats the plane group like already-joined copper, so it only draws traces from hole-less ground pins to the nearest via, ground pad or ground copper. Stitching vias are placed on a grid where a via pad keeps the clearance from other nets, is not under a part body, touches ground copper or the fill (and is not inside a cut of it), and is not inside another hole's clearance ring; "via at every ground pin" puts one at the far end of each hole-less ground pad so the via pad overlaps it. The stitching guide is f = c / (20 · s · sqrt(4.4)) for a spacing s (lambda/20 in FR4).
+
+Outputs: the Gerber copper layer of the trace side becomes *L2,Bot* and a *Copper,L1,Top* file holds the plane (dark region, clear rings, dark spokes); the back-plane PDF/SVG draw the same paint order seen from the component side, so they are not mirrored; the laser job for the back uses the plane as a fill (the rings and reliefs become the burn), forces mirror off and says so in its header. The countersink list is simply every hole whose lead is not ground.
 
 ## Tidying wide traces
 
@@ -74,9 +89,19 @@ Edited traces count as hand-drawn, so Auto-route leaves them alone.
 
 ## Auto-place
 
+Two placers (*Board > Auto-place algorithm*). **Annealing** is the one below. **Routability** (experimental) uses the same moves with two extra cost terms: a RUDY-style congestion estimate (each net's bounding-box half-perimeter times its trace pitch, spread over the box and summed on a 5 mm grid, against the room each cell has left once part bodies are taken out; the overflow is wire that will not fit) and a count of pads hemmed in by other parts on all four sides within 1.6 mm; its temperature comes from the spread of random moves and cools by the acceptance rate (VPR's schedule), with the move range shrunk to keep about 44 % of moves accepted, and it cools faster when the time limit would otherwise cut it off hot. In measurements it did not beat Annealing (DESIGN_NOTES.md).
+
 Simulated annealing (random moves that are accepted if they help, or sometimes if they don't, less often as time goes on). It moves, rotates and swaps parts that are not locked. The score is the total length of the shortest ratsnest (minimum spanning tree per net) plus a penalty for each crossing of two airwires plus a large penalty for overlaps and parts off the board. It runs on a copy of the board in the background and you can cancel it.
 
 ## Auto-route
+
+Three drivers share the same grid, search and checks (*Board > Auto-route algorithm*):
+
+- **Classic** is the sequence below, tried with up to six net orders.
+- **Negotiated congestion** (PathFinder, McMurchie & Ebeling 1995, as in VPR): pass 1 routes every net with the search allowed to run through other nets' copper at no extra cost, so each takes its best path. After every pass the cells where two or more nets' copper (plus clearance) overlap are found; every such cell gets a history cost (+1 per pass), and the present-congestion price starts at 0.5 on pass 2 and is multiplied by 1.3 each pass (capped at 1000). On later passes only the nets in conflict are torn up and re-searched, paying price × (number of other nets in the cell) + history per cell. Once the price reaches 1, a jumper may be taken at five times its usual cost, so it is used only where contested copper costs more. The loop stops when no cell is shared (usually 3 to 15 passes), after 30 passes, or after 8 passes without improvement; converged nets are then checked against exact geometry, and anything still in conflict is handed to the classic sequence below (rip-up, jumpers) with the history costs cleared. Nets are visited in ascending bounding-box size, then widest first, which the net-ordering literature favours; the result does not depend much on that order.
+- **Auto** runs negotiated once, and only if a connection is left or a jumper was needed runs the classic tries within the time budget; the best result (fewest unrouted, then fewest jumpers, then shortest) is kept.
+
+The classic sequence:
 
 1. Nets are ordered: wide nets first, then short nets first.
 2. **Rigid pairs first.** Pairs marked rigid (Shift + Wire) are routed before anything else in their net, each as one pin-to-pin search, and those traces are flagged so the editor can mark them with a thin orange centre line.
@@ -88,6 +113,14 @@ Simulated annealing (random moves that are accepted if they help, or sometimes i
 8. Finally, corners on wide traces are enlarged to the chamfer rule, and every trace is tidied as described above.
 
 Traces you drew yourself are kept. This is **not** a full PathFinder router: it has no per-cell "history cost" that grows over repeated rounds. The research notes explain the idea and why it was left for later.
+
+## The in-browser version (nothing to install)
+
+`docs/app/` on GitHub Pages is the same web page with the server taken away. `tools/build_web_app.py` copies the page from `src/solotrace/web/static/` and packs the editor's Python (everything in `src/solotrace` except the tkinter window) into `solotrace-py.zip`. When you open the page, `worker.js` starts a Web Worker, which downloads Pyodide 0.29.5 (CPython compiled to WebAssembly) from `cdn.jsdelivr.net`, unpacks the zip into Pyodide's in-memory file system and calls `solotrace/web/api.py`, the same function the local server calls for every request. The page sends its requests to the worker instead of over HTTP and gets the same answers. In the browser there are no threads, so long jobs (auto-route, auto-place) run straight through and send progress messages as they go; the page cannot cancel them. The folder where the desktop and server versions keep `config.json`, the autosave and your own parts is mounted on the browser's IndexedDB, so they survive a reload. Nothing about your board leaves the page: there is no server to send it to. The only downloads are Pyodide (once, then cached by the browser) and the page's own files from GitHub Pages.
+
+## Moving a part over laid traces
+
+Traces do not follow a part: they are separate copper that happens to end on its pads. So moving, turning, nudging or mirroring a part after routing can put one of its pads on another net's trace, which is a short. While you drag, the editor tries the part at the mouse position (`probe_part` in the web UI, the move itself in the window) and draws a red ring on every pad or trace closer than the clearance; when you let go, the status bar says how many collisions there are and what to do (`after_part_edit` in `drc.py`). Check finds the same things, plus one more: a part mounted under the board (mirrored) and soldered flat is pressed against the copper, so its body over a trace of another net is a warning; on header pins it is only a note.
 
 ## DRC
 

@@ -58,7 +58,8 @@ class PartDef:
     #   ("arc", cx, cy, r, start_deg, end_deg)   counter-clockwise
     outline: List[tuple] = field(default_factory=list)
     court: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)   # body rectangle x0,y0,x1,y1
-    kind: str = "part"          # part | link (wire link) | hole (mounting hole) | pad (solder pad)
+    kind: str = "part"          # part | link (wire link) | hole (mounting hole) | pad (solder pad) | smd
+                                # smd: surface-mount, lives on the COPPER side; pads are copper only, no hole
     dead_dir: Tuple[float, float] = (0.0, -1.0)   # deadbug direction for pads at the centroid
     note: str = ""
 
@@ -180,6 +181,11 @@ def pad_copper(part: PartDef, pad: PadDef, style: str, ox: float, oy: float,
     centre = place_point((pad.x, pad.y), ox, oy, rot, flip)
     shapes = []
     drill = None
+    if part.kind == "smd":
+        # an SMD pad is exactly its land: no hole, no deadbug tab, whatever the part's pad style
+        shapes.append(_shape_from_wh(pad.x, pad.y, pad.w, pad.h, pad.shape, pad.chamfer,
+                                     ox, oy, rot, flip, net, tag))
+        return shapes, None, centre
     if style in ("tht", "mixed") or part.kind in ("hole",):
         shapes.append(_shape_from_wh(pad.x, pad.y, pad.w, pad.h, pad.shape, pad.chamfer,
                                      ox, oy, rot, flip, net, tag))

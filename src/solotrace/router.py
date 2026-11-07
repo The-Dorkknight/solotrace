@@ -54,6 +54,8 @@ class RouteOptions:
         self.max_rounds = 3
         self.margin = 10.0            # search window margin around a connection, mm
         self.max_expansions = 250000
+        self.polish = True            # after routing: re-route each net once against the rest, keep if better
+        self.polish_passes = 2
         self.smooth = True            # enlarge chamfers on wide traces where there is room
         self.under_part_cost = 0.3    # extra cost per grid step under a part's body (keeps the area
                                       # between DIP rows free unless going round costs much more)
@@ -63,6 +65,20 @@ class RouteOptions:
         self.attempts = int(os.environ.get("SOLOTRACE_ROUTE_ATTEMPTS", "6"))
         self.time_budget = 12.0       # ... but start no new try after this many seconds
         self.order_seed = None        # internal: shuffles the net order a little for one try
+        # "classic": one net at a time against hard obstacles, rip-up, retries with shuffled orders.
+        # "negotiated": PathFinder-style negotiated congestion (McMurchie & Ebeling 1995, as used by
+        # VPR): every net is routed allowing overlaps, then the price of every contested cell rises
+        # pass after pass until the nets have sorted themselves out; order-independent, so no retries.
+        self.algorithm = "classic"
+        self.neg_max_iter = 30        # PathFinder passes (VPR's default is 50; small boards converge in 3-15)
+        self.neg_first_pres = 0.5     # present-congestion factor on pass 2 (pass 1 ignores congestion)
+        self.neg_pres_mult = 1.3      # ... multiplied by this after every pass (VPR: 1.3; above 1.5 oscillates)
+        self.neg_acc_fac = 1.0        # history cost added to every contested cell after each pass
+        self.neg_order = "span"       # net order within a pass: "span" (ascending, then width) or "width"
+        self.neg_jump_pres = 1.0      # jumpers join the negotiation only once the congestion price reaches this
+        self.neg_jump_mult = 5.0      # ... and cost this many times more than usual while negotiating
+                                      # (measured on 11 boards: same jumper count as classic, nothing unrouted,
+                                      # 9 % less copper, 30 % less time; see DESIGN_NOTES.md)
         for k, v in kw.items():
             if not hasattr(self, k):
                 raise TypeError("unknown option %s" % k)
@@ -162,6 +178,8 @@ class AutoRouter:
         self.ny = int(board.height / self.g + 1e-9) + 1
         self.N = self.nx * self.ny
         self._t0 = time.time()
+        self.negotiate = False        # inside a PathFinder pass: contested cells cost pres_fac per other net
+        self.pres_fac = 0.0
 
     # ------------------------------------------------------------------ helpers
     def _check(self) -> None:
@@ -221,7 +239,7 @@ class AutoRouter:
                     a, c = t.points[i], t.points[i + 1]
                     shapes.append(Cap(a[0], a[1], c[0], c[1], t.widths[i] / 2.0, t.net, ("fixed",)))
         # copper islands (free-standing pads) with the net of whatever touches them
-        shapes.extend(s for s in b.copper() if s.tag and s.tag[0] == "isl")
+        shapes.extend(s for s in b.copper() if s.tag and s.tag[0] in ("isl", "via"))
         r = b.settings.jumper_pad / 2.0
         for j in b.jumpers:
             if (not j.auto) or j in keep_jump:
@@ -411,7 +429,14 @@ class AutoRouter:
 
     def _build_groups(self, name: str) -> List[_Group]:
         b = self.board
-        comps = b.components().get(name, [])
+        comps = b.components(with_vias=True).get(name, [])
+        if name == _fill_net(b) or name == _plane_net(b):
+            # pins the fill or the back-side plane already join count as one group; drilled ground
+            # pins and vias are on the plane, so only the rest of the ground net needs copper
+            from .islands import ground_groups
+            comps = ground_groups(b, comps)
+        comps = [[q for q in g if not q.startswith("via:")] for g in comps]
+        comps = [g for g in comps if g]
         net = b.nets[name]
         joined = {p for g in comps for p in g}
         lists = [list(g) for g in comps] + [[p] for p in net.pins if p not in joined and b.has_pin(p)]
@@ -424,6 +449,18 @@ class AutoRouter:
                     if k not in grp.nodes or c < grp.nodes[k]:
                         grp.nodes[k] = c
             groups.append(grp)
+        if name == _plane_net(b) and b.vias:
+            # via pads are copper on the plane: a route may end on any of them
+            vnodes: Dict[int, float] = {}
+            for s in b.copper():
+                if s.tag and s.tag[0] == "via":
+                    for k in self._shape_nodes(s):
+                        vnodes[k] = 0.0
+            plane_grp = next((g for g in groups if any(b.pin_drilled(q) for q in g.pins)), None)
+            if plane_grp is None:
+                plane_grp = _Group()
+                groups.append(plane_grp)
+            plane_grp.nodes.update(vnodes)
         # every trace of this net that is on the board (hand-drawn, or routed earlier in this run
         # and kept) joins the group it is connected to, through pads or through other traces, so
         # new copper connects to it instead of running over it
@@ -491,7 +528,7 @@ class AutoRouter:
         jmin = int(round(self.board.settings.jumper_min / g))
         jmax = int(round(self.board.settings.jumper_max / g))
         jstep = max(1, int(round(self.board.settings.jumper_step / g)))
-        jcost = opt.jumper_cost
+        jcost = opt.jumper_cost * (opt.neg_jump_mult if self.negotiate else 1.0)
         jlens = list(range(jmin, jmax + 1, jstep))
         court = self.court
         body = self.body
@@ -556,7 +593,7 @@ class AutoRouter:
                 if cn and not (sid[k2] == cn * nid and ssq[k2] == cn * nid2):
                     if not soft:
                         continue
-                    extra = soft_pen
+                    extra = (self.pres_fac * cn) if self.negotiate else soft_pen
                 if nh & 1:
                     ka = j * nx + i2
                     kb = j2 * nx + i
@@ -783,12 +820,15 @@ class AutoRouter:
             fedges |= be
         return None
 
-    def _route_net(self, name: str, jumps: bool = False) -> bool:
+    def _route_net(self, name: str, jumps: bool = False, soft: bool = False) -> bool:
         groups = self.groups.get(name)
         if groups is None:
             groups = self._build_groups(name)
             self.groups[name] = groups
         width = self.width[name]
+        # while negotiating, a jumper is just another priced resource: the search may take one
+        # whenever it is cheaper than the contested copper (only on nets that allow jumpers)
+        first_jumps = soft and jumps
         # rigid links first: each is routed pin to pin as its own trunk, so the other
         # pins of the net then branch off it instead of being chained through
         for la, lb in self.board.rigid_links(name):
@@ -797,9 +837,9 @@ class AutoRouter:
             if X is None or Y is None or X is Y:
                 continue
             self._check()
-            res = self._route_pair(name, X, Y, False, False)
-            if res is None and jumps:
-                res = self._route_pair(name, X, Y, False, True)
+            res = self._route_pair(name, X, Y, soft, first_jumps)
+            if res is None and jumps and not first_jumps:
+                res = self._route_pair(name, X, Y, soft, True)
             if res is None:
                 return False
             self._join(name, X, Y, res, width, groups, rigid=True)
@@ -813,13 +853,104 @@ class AutoRouter:
             if pair is None:
                 return False
             X, Y = pair
-            res = self._route_pair(name, X, Y, False, False)
-            if res is None and jumps:
-                res = self._route_pair(name, X, Y, False, True)
+            res = self._route_pair(name, X, Y, soft, first_jumps)
+            if res is None and jumps and not first_jumps:
+                res = self._route_pair(name, X, Y, soft, True)
             if res is None:
                 return False
             self._join(name, X, Y, res, width, groups)
         return True
+
+    # ------------------------------------------------------- negotiated congestion
+    def _conflicts(self) -> Tuple[Set[int], Set[str]]:
+        """Cells where two or more nets' copper (plus clearance) overlap, and the nets involved."""
+        cells: Set[int] = set()
+        nets: Set[str] = set()
+        for name, recs in self.records.items():
+            nid = self.nid[name]
+            nid2 = nid * nid
+            cls = self.cidx[round(self.width[name], 3)]
+            cnt, sid, ssq = self.dcnt[cls], self.dsid[cls], self.dssq[cls]
+            for rec in recs:
+                for k in rec["nodes"]:
+                    cn = cnt[k]
+                    if cn and not (sid[k] == cn * nid and ssq[k] == cn * nid2):
+                        cells.add(k)
+                        nets.add(name)
+        return cells, nets
+
+    def _neg_order(self, names: List[str]) -> List[str]:
+        b = self.board
+
+        def span(n: str) -> float:
+            pts = [b.pin_pos(p) for p in b.nets[n].pins if b.has_pin(p)]
+            if len(pts) < 2:
+                return 0.0
+            return (max(p[0] for p in pts) - min(p[0] for p in pts)) + (max(p[1] for p in pts) - min(p[1] for p in pts))
+        if self.opt.neg_order == "width":
+            return sorted(names, key=lambda n: (-self.width[n], span(n), n))
+        return sorted(names, key=lambda n: (span(n), -self.width[n], n))
+
+    def _route_negotiated(self, names: List[str], result: RouteResult) -> List[str]:
+        """PathFinder passes over all nets; returns the nets still in conflict or unrouted at the end
+        (the classic machinery then finishes those). Nets that converge are left committed."""
+        opt = self.opt
+        order = self._neg_order(names)
+        self.negotiate = True
+        self.pres_fac = 0.0
+        failed: List[str] = []
+        conflict_nets: Set[str] = set()
+        best_cells = None
+        stale = 0
+        for it in range(max(1, opt.neg_max_iter)):
+            self._say("Negotiating, pass %d (price x%.1f)" % (it + 1, self.pres_fac), 0.1 + 0.6 * it / opt.neg_max_iter)
+            redo = set(conflict_nets) | set(failed)
+            failed = []
+            for name in order:
+                self._check()
+                if it and name not in redo:
+                    continue                          # only contested nets are rerouted (PathFinder's cheap variant)
+                self._rip(name)
+                self.groups.pop(name, None)
+                jok = (opt.use_jumpers and self.board.settings.allow_jumpers and self.board.nets[name].jumpers_ok
+                       and self.pres_fac >= opt.neg_jump_pres)
+                if not self._route_net(name, jumps=jok, soft=True):
+                    failed.append(name)
+                    self.groups.pop(name, None)
+            cells, conflict_nets = self._conflicts()
+            if not cells and not failed:
+                result.messages.append("negotiated in %d pass(es)" % (it + 1))
+                break
+            for k in cells:
+                self.hist[k] += opt.neg_acc_fac
+            self.pres_fac = opt.neg_first_pres if it == 0 else min(1000.0, self.pres_fac * opt.neg_pres_mult)
+            n_c = len(cells)
+            if best_cells is None or n_c < best_cells:
+                best_cells, stale = n_c, 0
+            else:
+                stale += 1
+                if stale >= 8:                            # not improving: let the classic router finish it
+                    break
+        self.negotiate = False
+        self.pres_fac = 0.0
+        # exact-geometry check of every converged net; a net that fails is handed to the classic router
+        leftovers = set(failed) | set(conflict_nets)
+        for name in names:
+            if name in leftovers:
+                continue
+            recs = self.records.get(name, [])
+            for rec in recs:
+                if rec["kind"] != "trace":
+                    continue
+                bn, be = self._verify(name, [rec["nodes"]], [], self.width[name])
+                if bn or be:
+                    leftovers.add(name)
+                    break
+        for name in leftovers:
+            self._rip(name)
+            self.groups.pop(name, None)
+        self.hist = [0.0] * self.N                      # the classic finisher starts from clean costs
+        return [n for n in order if n in leftovers]
 
     def _join(self, name: str, X: "_Group", Y: "_Group", res, width: float, groups: List["_Group"],
               rigid: bool = False) -> None:
@@ -894,6 +1025,7 @@ class AutoRouter:
             return False
         if result.ripups + len(crossed) > self.opt.max_ripups:
             return False
+        crossed = sorted(crossed)                  # a set of names: sorted so runs repeat exactly
         for n in crossed:
             self._rip(n)
             self.groups.pop(n, None)
@@ -910,7 +1042,7 @@ class AutoRouter:
 
     # ------------------------------------------------------------------- public
     def route_all(self) -> RouteResult:
-        if self.opt.attempts > 1:
+        if (self.opt.attempts > 1 and self.opt.algorithm != "negotiated") or self.opt.algorithm == "auto":
             return self._best_of(lambda r: r.route_all())
         b = self.board
         b.clear_auto_routes()
@@ -931,44 +1063,56 @@ class AutoRouter:
         base = self.opt.under_part_cost
         keep_out = self.board.settings.keep_out_under_parts
         low = base if keep_out else 0.0           # with "keep out" every try avoids part bodies
-        variants = [(None, base), (1, base), (None, low), (2, low), (3, base * 2), (4, base),
-                    (5, low), (6, base * 2)][:max(1, self.opt.attempts)]
+        variants = [("classic", None, base), ("classic", 1, base), ("classic", None, low), ("classic", 2, low),
+                    ("classic", 3, base * 2), ("classic", 4, base), ("classic", 5, low),
+                    ("classic", 6, base * 2)][:max(1, self.opt.attempts)]
+        if self.opt.algorithm == "auto":
+            # negotiated first (one try is enough: it does not depend on the net order); the classic
+            # tries follow only if that left something unrouted or used jumpers, within the time budget
+            variants = [("negotiated", None, base)] + variants
         under_w = 50.0 if keep_out else 3.0
         best = None
-        for idx, (seed, upc) in enumerate(variants):
+        for idx, (alg, seed, upc) in enumerate(variants):
             if idx and (time.time() - t0 > self.opt.time_budget or (self.cancel and self.cancel())):
                 break
             o = _copy.copy(self.opt)
-            o.attempts, o.order_seed, o.under_part_cost = 1, seed, upc
+            o.attempts, o.order_seed, o.under_part_cost, o.algorithm = 1, seed, upc, alg
+            o.polish = o.smooth = False                 # done once on the winner, below
             work = self.board.clone()
 
             def prog(msg: str, frac: float, idx=idx) -> None:
                 if self.progress:
                     self.progress("Try %d of %d: %s" % (idx + 1, len(variants), msg),
                                   (idx + min(1.0, frac)) / len(variants))
-            res = run(AutoRouter(work, o, prog, self.cancel))
+            router = AutoRouter(work, o, prog, self.cancel)
+            res = run(router)
             length = sum(dist(t.points[i], t.points[i + 1]) for t in work.traces for i in range(len(t.points) - 1))
             # copper under part bodies counts extra: it is legal, but it blocks the pins of that part
             # and is what people dislike most (a fat trace straight through the middle of a chip)
             under = _under_parts_length(work)
             score = (work.unrouted_count(), res.jumpers, round(length + under_w * under, 1))
             if best is None or score < best[0]:
-                best = (score, work, res, idx + 1)
+                best = (score, work, res, idx + 1, router)
             if score[0] == 0 and score[1] == 0:
                 break
         assert best is not None
-        _score, work, res, which = best
+        _score, work, res, which, router = best
+        if getattr(router, "_done", None) is not None and (self.opt.polish or self.opt.smooth):
+            router.opt.polish, router.opt.smooth = self.opt.polish, self.opt.smooth
+            router.progress = lambda msg, frac: self.progress and self.progress(msg, frac)
+            router._t0 = time.time()                    # the polish gets its own time limit
+            router._finish(res)
         self.board.traces = work.traces
         self.board.jumpers = work.jumpers
         self.board.touch()
         res.seconds = time.time() - t0
         if len(variants) > 1:
-            res.messages.append("best of the tries: number %d" % which)
+            res.messages.append("best of the tries: number %d (%s)" % (which, variants[which - 1][0]))
         return res
 
     def route_nets(self, names: List[str]) -> RouteResult:
         """Re-route only these nets (their automatic copper is removed first; hand-drawn copper stays)."""
-        if self.opt.attempts > 1:
+        if (self.opt.attempts > 1 and self.opt.algorithm != "negotiated") or self.opt.algorithm == "auto":
             return self._best_of(lambda r: r.route_nets(list(names)))
         b = self.board
         names = [n for n in names if n in b.nets and len(b.nets[n].pins) >= 2 and n != _fill_net(b)]
@@ -988,6 +1132,10 @@ class AutoRouter:
             todo = self._order(names)
             failed: List[str] = []
             total = max(1, len(todo))
+            n_all = len(todo)
+            if self.opt.algorithm == "negotiated":
+                todo = self._route_negotiated(todo, result)
+                total = max(1, len(todo))
             for n, name in enumerate(todo):
                 self._say("Routing %s (%d/%d)" % (name, n + 1, total), 0.7 * n / total)
                 if not self._route_net(name):
@@ -1028,16 +1176,9 @@ class AutoRouter:
                         still.append(name)
                 failed = still
             result.failed_nets = failed
-            result.routed_nets = len(todo) - len(failed)
-            result.jumpers = sum(1 for j in b_jumpers(self.board) if j.auto)
-            if self.opt.smooth:
-                self._say("Smoothing corners", 0.97)
-                smooth_corners(self.board, self.index, [t for t in self.board.traces if not t.manual])
-                self._say("Straightening pad exits", 0.98)
-                from .tidy import tidy_traces
-                tidy_traces(self.board, [t for t in self.board.traces if not t.manual])
-                from .tidy import settle_branch_ends
-                settle_branch_ends(self.board)
+            result.routed_nets = n_all - len(failed)
+            self._done = [n for n in names if n not in failed]
+            self._finish(result)
         except RoutingCancelled:
             result.messages.append("Routing was stopped early; partial result kept.")
             result.failed_nets = [n for n in names if self.board.nets.get(n) and
@@ -1046,6 +1187,93 @@ class AutoRouter:
         self.board.touch()
         return result
 
+    def _finish(self, result: RouteResult) -> None:
+        """Polish (shorter routes, fewer jumpers), then smooth and tidy. The best-of tries skip this
+        and run it once on the winner, so it does not eat into the time for more tries."""
+        if self.opt.polish:
+            self._say("Shortening routes", 0.93)
+            self._polish(self._done, result)
+        result.jumpers = sum(1 for j in b_jumpers(self.board) if j.auto)
+        if self.opt.smooth:
+            self._say("Smoothing corners", 0.97)
+            smooth_corners(self.board, self.index, [t for t in self.board.traces if not t.manual])
+            self._say("Straightening pad exits", 0.98)
+            from .tidy import tidy_traces
+            tidy_traces(self.board, [t for t in self.board.traces if not t.manual])
+            from .tidy import settle_branch_ends
+            settle_branch_ends(self.board)
+
+    # ------------------------------------------------------------------ polish
+    def _net_cost(self, name: str) -> Tuple[int, float]:
+        recs = self.records.get(name, [])
+        jumps = sum(1 for r in recs if r["kind"] == "jumper")
+        length = 0.0
+        for r in recs:
+            if r["kind"] == "trace":
+                pts = r["obj"].points
+                length += sum(dist(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
+        return jumps, length
+
+    def _polish(self, names: List[str], result: RouteResult) -> None:
+        """Rip-up-and-retry each finished net once against the final copper, keep it only if better.
+
+        A net routed early had to guess where the others would go; one routed late had to go round
+        all of them. With everything in place, routing a net again (alone, the rest fixed) often
+        finds a shorter path or one without its jumper. The old copper is put back exactly if the
+        new try is not strictly better (fewer jumpers, or the same jumpers and at least 1 mm less
+        copper), so this never makes a board worse.
+        """
+        def detour(n: str) -> float:
+            pts = [self.board.pin_pos(p) for p in self.board.nets[n].pins if self.board.has_pin(p)]
+            j, L = self._net_cost(n)
+            span = 0.0
+            if len(pts) >= 2:
+                span = (max(p[0] for p in pts) - min(p[0] for p in pts)) + (max(p[1] for p in pts) - min(p[1] for p in pts))
+            return j * 1000.0 + (L - span)
+        allow_j = self.opt.use_jumpers and self.board.settings.allow_jumpers
+        kept = 0
+        stopped = False
+        for _pass in range(self.opt.polish_passes):
+            better = 0
+            for name in sorted(names, key=detour, reverse=True):
+                if self.board.rigid_links(name):
+                    continue
+                if (self.cancel and self.cancel()) or time.time() - self._t0 > self.opt.time_limit:
+                    stopped = True
+                    break
+                old = self._net_cost(name)
+                saved = [(r["kind"], list(r["nodes"]), getattr(r["obj"], "rigid", False))
+                         for r in self.records.get(name, [])]
+                self._rip(name)
+                self.groups.pop(name, None)
+                try:
+                    ok = self._route_net(name)
+                    if not ok and old[0] and allow_j and self.board.nets[name].jumpers_ok:
+                        self._rip(name)
+                        self.groups.pop(name, None)
+                        ok = self._route_net(name, jumps=True)
+                except RoutingCancelled:
+                    ok, stopped = False, True
+                new = self._net_cost(name)
+                if ok and (new[0] < old[0] or (new[0] == old[0] and new[1] < old[1] - 1.0)):
+                    better += 1
+                    continue
+                self._rip(name)
+                self.groups.pop(name, None)
+                w = self.width[name]
+                for kind, nodes, rigid in saved:
+                    if kind == "trace":
+                        self._commit(name, [nodes], [], w, rigid)
+                    else:
+                        self._commit(name, [], [(nodes[0], nodes[1])], w)
+                if stopped:
+                    break
+            kept += better
+            if not better or stopped:
+                break
+        if kept:
+            result.messages.append("shortened %d net(s) after routing" % kept)
+
     def _unrouted_nets(self) -> Set[str]:
         return {w[0] for w in self.board.airwires()}
 
@@ -1053,6 +1281,15 @@ class AutoRouter:
 def _fill_net(board: Board):
     """In deadbug island mode the ground net is joined by the ground fill, so it is not routed."""
     if not board.settings.island_mode:
+        return None
+    from .islands import ground_net
+    return ground_net(board)
+
+
+def _plane_net(board: Board):
+    """With the back-side ground plane on, the ground net is routed only for pins the plane does
+    not already join (deadbug pins, SMD pins): drilled pins and vias sit on the plane."""
+    if not board.settings.backplane:
         return None
     from .islands import ground_net
     return ground_net(board)

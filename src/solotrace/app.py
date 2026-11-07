@@ -10,20 +10,23 @@ import json
 import math
 import os
 import threading
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from typing import Dict, List, Optional, Tuple
 
 from . import APP_NAME, __build_date__, __version__, title as app_title
 from . import demos, gerber, library, render
-from .board import (Board, Island, ISLAND_MAX, ISLAND_MIN, MAX_WIDTH, MIN_WIDTH, Placed, Trace, clamp_island,
+from .library import _natural, short_name
+from .board import (Board, Island, ISLAND_MAX, ISLAND_MIN, MAX_WIDTH, MIN_WIDTH, Placed, Trace, Via, clamp_island,
                     clamp_width, current_capacity)
-from .drc import run_drc, summarize
+from . import plane as planemod
+from .drc import after_part_edit, part_collisions, run_drc, summarize
 from .geom import Cap, dist, seg_point_dist, shape_dist
 from .placer import Placer
 from .router import AutoRouter, RouteOptions
 from . import theme
-from .islands import plan as island_plan, guess_ground, make_pads_deadbug
+from .islands import plan as island_plan, ready as island_ready, guess_ground, make_pads_deadbug
 from .theme import FONT, FONT_B, FONT_S, UI, Tooltip
 from .tidy import (apply_drag, attached_ends, cut_between, follow_trunk, piece_bounds, project_on_trace,
                    settle_branch_ends, split_trace, tidy_trace, tidy_traces, trim_piece, trim_segment,
@@ -34,7 +37,8 @@ COL = {
     "hole": "#16301c", "outline": "#e8f0e8", "outline_dim": "#6f8f77", "sel": "#35d0ff", "air": "#f2e24a",
     "rigid": "#ff6b3d", "rigid_dim": "#b0563a", "air_shadow": "#0b1a0f", "pinlabel": "#ffe08a",
     "jump": "#6fb7ff", "drc": "#ff4040", "ghost": "#9fe0ff", "text": "#ffffff", "hover": "#6f8f5a",
-    "fill": "#a8783a", "fill_dim": "#5c4a2d",
+    "fill": "#a8783a", "fill_dim": "#5c4a2d", "plane": "#2a4a3a", "plane_cu": "#6d7a55", "plane_cu_dim": "#4e5a44",
+    "via": "#e0c070", "mirrored": "#ff4fd8",
 }
 WIDTH_PRESETS = (0.4, 0.8, 1.5, 2.5, 5.0, 10.0)
 ISLAND_SIZES = (2.54, 3.81, 5.08, 6.35, 7.62, 10.16, 12.7, 15.24)
@@ -45,27 +49,17 @@ AUTOSAVE_FILE = os.path.join(CONFIG_DIR, "autosave.solotrace")
 AUTOSAVE_MS = 120000
 
 
-_SHORT = (("Resistor ", ""), (" standing", ""), ("Diode ", ""), ("Inductor ", ""), ("Electrolytic cap, ", ""),
-          ("Film / box cap, ", ""), ("Ceramic disc cap, ", ""), ("Pin header ", ""), ("Screw terminal ", ""),
-          ("JST-XH header ", ""), ("Wire link ", ""))
+def mirror_message(b, ref: str) -> str:
+    """What a mirrored part means for the person building the board (the same words in both UIs)."""
+    if not b.is_mirrored(ref):
+        return "%s is mounted normally." % ref
+    if b.on_copper_side(ref):
+        return ("%s is MIRRORED: mounted UNDER the board, on the copper side, with its pins through the holes from "
+                "below (or soldered flat to the copper as deadbug pads). Its pinout is mirrored left to right in this "
+                "view and its outline goes on the bottom silkscreen. Check pin 1 before you solder." % ref)
+    return ("%s is MIRRORED: an SMD part on the COMPONENT side. Its pads are still on the copper side, so you "
+            "can only solder it there if it has leads through holes. Usually you want it unmirrored." % ref)
 
-
-def short_name(name: str, sub: str) -> str:
-    """Shorter tree label: the sub-group already says what kind of part it is."""
-    if not sub:
-        return name
-    out = name
-    for a, b in _SHORT:
-        out = out.replace(a, b)
-    if out.startswith("DIP-") and "(" in out:
-        out = out.split(" ")[0]
-    return out[:1].upper() + out[1:] if out else name
-
-
-def _natural(s: str):
-    """Sort key so DIP-8 comes before DIP-14 and 2.54 mm before 10.16 mm."""
-    import re
-    return [float(t) if t.replace(".", "", 1).isdigit() else t.lower() for t in re.findall(r"\d+\.?\d*|\D+", s)]
 
 WIP_TEXT = "WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN"
 
@@ -95,11 +89,22 @@ HELP_TEXT = """SoloTrace quick guide
    A part's pins sitting on an island join it (Manhattan / deadbug building, no traces needed).
    Board > Ground fill turns the rest of the board into ground copper, with a gap round every
    other net: quick and dirty RF. The ground net is then joined by the fill, not routed.
-9. Check with DRC, then export: Gerber, 1:1 PDF/SVG for toner transfer, or Laser G-code.
+9. Ground contact: with the fill or the back plane on, ground pads get thermal reliefs (a ring of
+   bare board bridged by spokes) so they can be soldered. Ground fill settings sets the spokes, or
+   sizes them for a current; a part's panel can make its ground pads heavy or solid.
+10. Board > Back-side ground plane: on a double-clad board the component side stays solid ground.
+   Via tool (V) adds vias (hole + wire soldered both sides) for deadbug / SMD ground pins and a
+   stitching grid; non-ground holes get clearance rings, or countersink them and leave the back solid.
+11. The big button under the parts search swaps the list between through-hole and SMD parts.
+   SMD parts sit on the copper side: press M to see the board as you solder it.
+   Shift+M MIRRORS a part: mounts it under the board (a display or module plugged in from the
+   copper side). Mirrored parts get a pink dashed frame and a MIRRORED tag so they stand out.
+12. Board > Auto-route algorithm: Auto (negotiated congestion, then classic) is the default.
+13. Check with DRC, then export: Gerber, 1:1 PDF/SVG for toner transfer, or Laser G-code.
 
 Mouse: wheel = zoom, right or middle drag = pan, right-click = menu, left = tool.
-Keys: S select, P place, W wire, T trace, X trim, C cut, J jumper, I island, R / Shift+R rotate, arrows nudge
-(Shift = 2.54 mm), Ctrl+D duplicate, Delete, Ctrl+Z / Ctrl+Y, F fit, M flip view.
+Keys: S select, P place, W wire, T trace, X trim, C cut, J jumper, I island, V via, R / Shift+R rotate, arrows nudge
+(Shift = 2.54 mm), Ctrl+D duplicate, Delete, Ctrl+Z / Ctrl+Y, F fit, M flip view, Shift+M mirror the part.
 Your board is autosaved every 2 minutes while it has unsaved changes (File > Recover autosave).
 """
 
@@ -157,6 +162,7 @@ class App:
         self.tool = "select"
         self.armed: Optional[str] = None
         self.arm_rot = 0
+        self.arm_mirror = False          # place the next part mirrored (mounted under the board)
         self.sel: Dict[str, object] = {}
         self.scale = 6.0
         self.ox = 40.0
@@ -224,16 +230,20 @@ class App:
                        "Shift + click two points to cut between them.",
                 "jumper": "Add a wire-link jumper by hand.",
                 "island": "Copper islands (Manhattan / deadbug pads): click to drop one, or drag out a rectangle. "
-                          "Shift + click switches round / rectangle. Put a part's pins on an island to join them."}
+                          "Shift + click switches round / rectangle. Put a part's pins on an island to join them.",
+                "via": "Vias for the back-side ground plane: a hole with a wire soldered on both sides. Click to add "
+                       "one on ground copper; drag to move; Delete removes it. Board > Back-side ground plane turns "
+                       "the plane on."}
         for key, label in (("select", "Select"), ("place", "Place"), ("wire", "Wire"),
                            ("trace", "Trace"), ("trim", "Trim"), ("cut", "Cut"), ("jumper", "Jumper"),
-                           ("island", "Island")):
+                           ("island", "Island"), ("via", "Via")):
             b = ttk.Radiobutton(bar, text=label, value=key, variable=self.tool_var, style="Tool.TRadiobutton",
                                 command=lambda k=key: self.set_tool(k))
             b.pack(side="left", padx=1)
             self.tool_btns[key] = b
             Tooltip(b, tips[key] + "  Key: %s" % {"select": "S", "place": "P", "wire": "W", "trace": "T",
-                                                    "trim": "X", "cut": "C", "jumper": "J", "island": "I"}[key])
+                                                    "trim": "X", "cut": "C", "jumper": "J", "island": "I",
+                                                    "via": "V"}[key])
         ttk.Separator(bar, orient="vertical", style="Bar.TSeparator").pack(side="left", fill="y", padx=6)
         ttk.Label(bar, text="Pads:", style="Bar.TLabel").pack(side="left")
         for v, t in (("tht", "Through-hole"), ("dead", "Deadbug"), ("mixed", "Both")):
@@ -285,9 +295,20 @@ class App:
                                "and the parts you placed most recently.")
         self._quick_ids: List[Optional[str]] = []
         self.search_var = tk.StringVar()
-        se = ttk.Entry(left, textvariable=self.search_var)
-        se.pack(fill="x", pady=(3, 4))
-        Tooltip(se, "Type to search, e.g. dip 8, to-220, 5 mm, standing")
+        srow = ttk.Frame(left)
+        srow.pack(fill="x", pady=(3, 4))
+        se = ttk.Entry(srow, textvariable=self.search_var)
+        se.pack(side="left", fill="x", expand=True)
+        Tooltip(se, "Type to search, e.g. dip 8, to-220, 5 mm, standing, soic")
+        # Parts mode: the big button under the search swaps the whole list between through-hole and SMD.
+        cfg0 = load_config()
+        mode = cfg0.get("parts_mode", "smd" if cfg0.get("pro") else "tht")
+        self.parts_mode = "smd" if mode == "smd" else "tht"
+        self.mode_icons = theme.mode_icons(self.root)
+        self.mode_btn = ttk.Button(left, style="Mode.TButton", compound="left", command=self._toggle_parts_mode)
+        self.mode_btn.pack(fill="x", pady=(0, 4))
+        self.mode_tip = Tooltip(self.mode_btn, "")
+        self._update_mode_btn()
         self.search_var.trace_add("write", lambda *a: self.fill_library())
         lf = ttk.Frame(left)
         lf.pack(fill="both", expand=True)
@@ -371,6 +392,7 @@ class App:
         e.add_command(label="Rotate", command=self.rotate, accelerator="R")
         e.add_command(label="Rotate back", command=lambda: self.rotate(-90), accelerator="Shift+R")
         e.add_command(label="Duplicate part", command=self.duplicate, accelerator="Ctrl+D")
+        e.add_command(label="Mirror part (mount it under the board)", command=self.mirror_selected, accelerator="Shift+M")
         e.add_command(label="Delete", command=self.delete_selection, accelerator="Del")
         e.add_separator()
         e.add_command(label="Trim tool", command=lambda: self.set_tool("trim"), accelerator="X")
@@ -382,12 +404,28 @@ class App:
         b.add_command(label="Auto-place", command=self.auto_place)
         b.add_command(label="Auto-route", command=self.auto_route)
         b.add_checkbutton(label="Auto-route may add jumpers", variable=self.jumpers_var, command=self._toggle_jumpers)
+        self.router_var = tk.StringVar(value=self.board.settings.router)
+        rm = tk.Menu(b, tearoff=0)
+        for val, lab in (("auto", "Auto: negotiated first, then classic tries if anything is left (default)"),
+                         ("negotiated", "Negotiated congestion (PathFinder): all nets at once, prices rise on contested copper"),
+                         ("classic", "Classic: one net at a time, rip-up, best of 6 net orders")):
+            rm.add_radiobutton(label=lab, value=val, variable=self.router_var, command=self._set_router)
+        b.add_cascade(label="Auto-route algorithm", menu=rm)
+        self.placer_var = tk.StringVar(value=self.board.settings.placer)
+        pm = tk.Menu(b, tearoff=0)
+        for val, lab in (("anneal", "Annealing: ratsnest length and crossings (default)"),
+                         ("routability", "Routability: also estimates copper congestion and boxed-in pads; adaptive cooling")):
+            pm.add_radiobutton(label=lab, value=val, variable=self.placer_var, command=self._set_placer)
+        b.add_cascade(label="Auto-place algorithm", menu=pm)
         b.add_checkbutton(label="Keep traces out from under parts", variable=self.keepout_var,
                           command=self._toggle_keepout)
         b.add_separator()
         b.add_checkbutton(label="Ground fill (RF / Manhattan)", variable=self.island_var,
                           command=self._toggle_islands)
         b.add_command(label="Ground fill settings...", command=self.island_dialog)
+        b.add_command(label="Back-side ground plane (double-clad board)...", command=self.backplane_dialog)
+        b.add_command(label="Add stitching vias", command=self.add_stitch_vias)
+        b.add_command(label="Via at every ground pin without a hole", command=self.add_pin_vias)
         b.add_separator()
         b.add_command(label="Remove automatic routes", command=self.clear_auto)
         b.add_command(label="Remove ALL routes", command=self.clear_all)
@@ -399,6 +437,12 @@ class App:
         x.add_command(label="1:1 PDF (design view)...", command=lambda: self.export_print("pdf", False))
         x.add_command(label="1:1 SVG...", command=lambda: self.export_print("svg", True))
         x.add_command(label="Bill of materials (CSV)...", command=self.export_bom)
+        x.add_separator()
+        x.add_command(label="Back-side ground plane: 1:1 PDF (component-side view)...",
+                      command=lambda: self.export_print("pdf", False, "top"))
+        x.add_command(label="Back-side ground plane: 1:1 SVG...", command=lambda: self.export_print("svg", False, "top"))
+        x.add_command(label="Countersink list (holes to clear in a solid back plane)...", command=self.show_countersink_list)
+        x.add_separator()
         x.add_separator()
         x.add_command(label="Laser G-code (Elegoo Phecda)...", command=self.laser_dialog)
         m.add_cascade(label="Export", menu=x)
@@ -435,7 +479,7 @@ class App:
                                                    else self.delete_selection))
         r.bind("<Return>", lambda e: self._key(self.finish_trace))
         for k, t in (("s", "select"), ("p", "place"), ("w", "wire"), ("t", "trace"), ("j", "jumper"), ("x", "trim"),
-                     ("c", "cut"), ("i", "island")):
+                     ("c", "cut"), ("i", "island"), ("v", "via")):
             r.bind(k, lambda e, t=t: self._key(lambda: self.set_tool(t)))
         r.bind("r", lambda e: self._key(self.rotate))
         r.bind("R", lambda e: self._key(lambda: self.rotate(-90)))
@@ -445,6 +489,7 @@ class App:
             r.bind("<Shift-%s>" % key, lambda e, dx=dx, dy=dy: self._key(lambda: self.nudge(dx if not self.mirror else -dx, dy, True)))
         r.bind("f", lambda e: self._key(self.fit))
         r.bind("m", lambda e: self._key(self.toggle_mirror))
+        r.bind("M", lambda e: self._key(self.mirror_selected))
 
     def _key(self, fn) -> None:
         try:
@@ -482,6 +527,8 @@ class App:
         self.jumpers_var.set(self.board.settings.allow_jumpers)
         self.keepout_var.set(self.board.settings.keep_out_under_parts)
         self.island_var.set(self.board.settings.island_mode)
+        self.router_var.set(self.board.settings.router)
+        self.placer_var.set(self.board.settings.placer)
         self.cut_start = None
         self.sel = {}
         self.marks = []
@@ -533,6 +580,32 @@ class App:
         self.oy = sy - (self.board.height - wy) * self.scale
         self.request_redraw()
 
+    def mirror_selected(self) -> None:
+        """Shift+M: mirror the part being placed, or the selected part (mount it on the other side)."""
+        if self.tool == "place" and self.armed:
+            self.arm_mirror = not self.arm_mirror
+            self.status(("The next part goes on MIRRORED: mounted under the board (copper side), pins mirrored. "
+                         "Shift+M again to place it normally.") if self.arm_mirror else "The next part goes on normally.")
+            self.request_overlay()
+            return
+        ref = self.sel.get("part")
+        if not ref or ref not in self.board.parts:
+            self.status("Select a part first (or pick one to place), then Shift+M mirrors it.")
+            return
+        self.set_part_mirrored(ref, not self.board.is_mirrored(ref))
+
+    def set_part_mirrored(self, ref: str, on: bool) -> None:
+        b = self.board
+        if ref not in b.parts or b.is_mirrored(ref) == bool(on):
+            return
+        self.push_undo()
+        b.mirror_part(ref)
+        self.mark_dirty()
+        if not self.part_report(ref, "Mirrored"):
+            self.status(mirror_message(b, ref))
+        self.show_props()
+        self.request_redraw()
+
     def toggle_mirror(self) -> None:
         self.mirror = not self.mirror
         self.status("Viewing the %s side" % ("COPPER (solder)" if self.mirror else "COMPONENT"))
@@ -551,7 +624,10 @@ class App:
         open_state = {iid: tv.item(iid, "open") for iid in tv.get_children("")}
         tv.delete(*tv.get_children(""))
         groups: Dict[str, Dict[str, List[str]]] = {}
+        want_smd = self.parts_mode == "smd"
         for pid, d in self.lib.items():
+            if (d.kind == "smd") != want_smd:      # the list shows one kind at a time; the button swaps
+                continue
             grp, sub = library.form_factor(d)
             hay = ("%s %s %s %s %s" % (d.name, pid, d.category, grp, sub)).lower()
             if words and not all(w in hay for w in words):
@@ -574,6 +650,36 @@ class App:
                               open=bool(words) or open_state.get(parent, False) or len(groups[grp]) == 1)
                 for pid in sorted(groups[grp][sub], key=lambda k: _natural(self.lib[k].name)):
                     tv.insert(parent, "end", iid="p:" + pid, text=short_name(self.lib[pid].name, sub))
+
+    def _update_mode_btn(self) -> None:
+        """The button always shows the OTHER kind of part: what you get when you click it."""
+        if self.parts_mode == "smd":
+            self.mode_btn.configure(text="  Through-hole parts", image=self.mode_icons["tht"])
+            self.mode_tip.text = ("The list shows SMD parts now. Click to go back to the through-hole parts "
+                                  "(the normal ones with legs through the board).")
+        else:
+            self.mode_btn.configure(text="  SMD parts", image=self.mode_icons["smd"])
+            self.mode_tip.text = ("Click to swap the list for the common large SMD parts (0603 to 2512 chips, "
+                                  "SOT-23, SOT-223, SOIC, DPAK, SMA/SMB diodes, tantalum and electrolytic caps). "
+                                  "SMD parts sit on the COPPER side; press M to see the board as you solder it. "
+                                  "SoloTrace is a through-hole program first; this is the extra.")
+
+    def set_parts_mode(self, mode: str) -> None:
+        self.parts_mode = "smd" if mode == "smd" else "tht"
+        cfg = load_config()
+        cfg["parts_mode"] = self.parts_mode
+        cfg.pop("pro", None)
+        save_config(cfg)
+        self._update_mode_btn()
+        self.fill_library()
+        if self.parts_mode == "smd":
+            self.status("SMD parts: they sit on the COPPER side, so they look mirrored in this view; press M to see "
+                        "the board as you will solder it. Needs a steady hand: no solder mask on a home-etched board.")
+        else:
+            self.status("Through-hole parts (SMD parts already on the board stay).")
+
+    def _toggle_parts_mode(self) -> None:
+        self.set_parts_mode("tht" if self.parts_mode == "smd" else "smd")
 
     # ---------------------------------------------------- favourites / recent
     def _favs(self) -> List[str]:
@@ -633,6 +739,7 @@ class App:
         """Choose a part to place (from the tree, favourites or recent) and show it in the preview."""
         self.armed = pid
         self.arm_rot = 0
+        self.arm_mirror = False
         self.preview_id = pid
         self.draw_preview()
         self._update_fav_btn()
@@ -770,6 +877,8 @@ class App:
                  "cut": "Cut: click a trace and that piece goes, up to the nearest joints; the rest of the net stays. "
                         "Shift + click two points to cut between them.",
                  "jumper": "Click the first end, then the second end in a straight line (5 to 15 mm).",
+                 "via": "Via: click on ground copper (a ground pad, trace, island or the ground fill) to add a via: a "
+                        "hole with a wire soldered on both sides, joining it to the back-side ground plane. Esc to stop.",
                  "island": "Island: click to drop a %s %.4g x %.4g mm copper pad, or drag out a rectangle. Shift + click "
                            "switches round / rectangle. Click an island to select it; drag its corner squares to "
                            "resize." % (self.island_new["shape"] == "round" and "round" or "rectangular",
@@ -778,11 +887,13 @@ class App:
         self.request_redraw()
 
     def escape(self) -> None:
+        if self.drag and "draw_island" in self.drag:
+            self.drag = None                     # Esc while dragging out an island: no island
         self.trace_pts = []
         self.pending_pin = None
         self.jump_start = None
         self.cut_start = None
-        if self.tool in ("place", "wire", "trace", "jumper", "trim", "cut", "island"):
+        if self.tool in ("place", "wire", "trace", "jumper", "trim", "cut", "island", "via"):
             self.set_tool("select")
         self.sel = {}
         self.show_props()
@@ -824,10 +935,21 @@ class App:
             x0, y0, x1, y1 = b.court_rect(ref)
             if x0 - 0.5 <= wx <= x1 + 0.5 and y0 - 0.5 <= wy <= y1 + 0.5:
                 return {"part": ref}
+        vi = self.via_at(wx, wy)
+        if vi is not None:
+            return {"via": vi}
         isl = self.island_at(wx, wy)
         if isl is not None:
             return {"island": isl}
         return {}
+
+    def via_at(self, wx: float, wy: float) -> Optional[int]:
+        r = self.board.settings.via_pad / 2.0 + max(0.2, 3.0 / self.scale)
+        for i in range(len(self.board.vias) - 1, -1, -1):
+            v = self.board.vias[i]
+            if math.hypot(v.x - wx, v.y - wy) <= r:
+                return i
+        return None
 
     def island_at(self, wx: float, wy: float) -> Optional[int]:
         """The top-most copper island under this point (None if there is none)."""
@@ -911,10 +1033,17 @@ class App:
         self.canvas.focus_set()
         wx, wy = self.s2w(e.x, e.y)
         t = self.tool
-        if t == "island" or (t == "select" and self.island_handle(e.x, e.y)):
+        if t == "via":
+            self.via_press(wx, wy)
+        elif t == "island" or (t == "select" and self.island_handle(e.x, e.y)):
             self.island_press(e, wx, wy)
         elif t == "select":
             hit = self.hit_test(wx, wy)
+            if "part" in hit and "pin" not in hit and self.sel == hit:
+                # clicking a selected part's body again picks the copper island under it, if any
+                isl = self.island_at(wx, wy)
+                if isl is not None:
+                    hit = {"island": isl}
             self.sel = hit
             self.drag = None
             ref = hit.get("part")
@@ -924,6 +1053,9 @@ class App:
             elif "island" in hit:
                 isl = self.board.islands[hit["island"]]
                 self.drag = {"island": hit["island"], "dx": isl.x - wx, "dy": isl.y - wy, "moved": False}
+            elif "via" in hit:
+                v = self.board.vias[hit["via"]]
+                self.drag = {"via": hit["via"], "dx": v.x - wx, "dy": v.y - wy, "moved": False}
             elif "trace" in hit:
                 tr = self.board.traces[hit["trace"]]
                 self.drag = {"trace": hit["trace"], "seg": hit["seg"], "base": list(tr.points),
@@ -1033,12 +1165,23 @@ class App:
             return
         if self.tool not in ("select", "island") or not self.drag:
             return
+        self._drag_t = time.time()
         wx, wy = self.s2w(e.x, e.y)
         d = self.drag
-        if self.board.settings.island_mode:
-            self.board._island_fast = True           # skip the floating-fill check until the mouse is let go
         if "island" in d or "draw_island" in d:
             self.island_drag(d, wx, wy)
+            return
+        if "via" in d:
+            if d["via"] < len(self.board.vias):
+                v = self.board.vias[d["via"]]
+                nx, ny = self.snap((wx + d["dx"], wy + d["dy"]), ISLAND_GRID)
+                if (nx, ny) != (v.x, v.y):
+                    if not d["moved"]:
+                        self.push_undo()
+                        d["moved"] = True
+                    v.x, v.y = nx, ny
+                    self.board.touch()
+                    self.request_redraw()
             return
         if "ref" in d:
             nx, ny = self.snap((wx + d["dx"], wy + d["dy"]))
@@ -1048,6 +1191,14 @@ class App:
                     self.push_undo()
                     d["moved"] = True
                 self.board.move_part(d["ref"], nx, ny)
+                # live collision check while dragging: red rings where its pads hit another net
+                hits = [i for i in part_collisions(self.board, d["ref"]) if i.severity != "info"]
+                self.marks = [(i.x, i.y) for i in hits]
+                if hits:
+                    self.status("%s: %d collision(s) here (%s). Let go somewhere clear, or Ctrl+Z after."
+                                % (d["ref"], len(hits), hits[0].message))
+                else:
+                    self.status("%s: no collisions here." % d["ref"])
                 self.request_redraw()
         elif "trace" in d:
             if not d["moved"] and abs(e.x - d["sx"]) + abs(e.y - d["sy"]) < 5:
@@ -1064,9 +1215,6 @@ class App:
             self.request_redraw()
 
     def on_release(self, e) -> None:
-        if getattr(self.board, "_island_fast", False):
-            self.board._island_fast = False          # full ground-fill check again now the drag is over
-            self.request_redraw()
         wp = getattr(self, "_wire_press", None)
         self._wire_press = None
         if self.tool == "wire" and wp and self.pending_pin and abs(e.x - wp[0]) + abs(e.y - wp[1]) > 8:
@@ -1081,9 +1229,15 @@ class App:
             self.island_release(d, *self.s2w(e.x, e.y))
             self.drag = None
             return
+        if d and "via" in d:
+            if d.get("moved"):
+                self.mark_dirty()
+                self.quick_drc("Via moved.")
+            self.drag = None
+            return
         if d and d.get("moved"):
             if "ref" in d:
-                self.status("Moved. Existing traces stay where they were; re-route if needed.")
+                self.part_report(d["ref"], "Moved")
             else:
                 ti = d["trace"]
                 if ti < len(self.board.traces):
@@ -1144,12 +1298,31 @@ class App:
         style = self.default_style.get()
         if d.kind in ("hole",):
             style = "tht"
-        pl = b.add_part(self.armed, x, y, self.arm_rot, False, style=style)
+        flip = (d.kind == "smd") != self.arm_mirror
+        pl = b.add_part(self.armed, x, y, self.arm_rot, flip, style=style)
         self._note_recent(self.armed)
         self.sel = {"part": pl.ref}
-        self.status("Placed %s. Click again to place another, Esc to stop." % pl.ref)
+        if self.arm_mirror:
+            self.status("Placed %s MIRRORED. %s" % (pl.ref, mirror_message(b, pl.ref)))
+        elif d.kind == "smd":
+            self.status("Placed %s on the COPPER side (SMD): it is mirrored in this view, press M to see it as you "
+                        "will solder it. Click again to place another, Esc to stop." % pl.ref)
+        else:
+            self.status("Placed %s. Click again to place another, Esc to stop." % pl.ref)
+        if part_collisions(self.board, pl.ref):
+            self.part_report(pl.ref, "Placed")
         self.show_props()
         self.request_redraw()
+
+    def part_report(self, ref: str, what: str = "Moved") -> List:
+        """After a part has moved, turned, been mirrored or placed: mark what it now collides with
+        (red rings) and say so in the status bar. Traces never follow a part, so this is where a pad
+        dropped on another net's trace is caught, without waiting for Check."""
+        issues, msg = after_part_edit(self.board, ref, what)
+        self.marks = [(i.x, i.y) for i in issues if i.severity != "info"]
+        self.status(msg)
+        self.request_redraw()
+        return [i for i in issues if i.kind == "clearance"]
 
     def rotate(self, step: int = 90) -> None:
         if self.tool == "place":
@@ -1157,6 +1330,7 @@ class App:
         elif "part" in self.sel and self.sel["part"] in self.board.parts:
             self.push_undo()
             self.board.rotate_part(self.sel["part"], step)
+            self.part_report(self.sel["part"], "Turned")
         self.request_redraw()
 
     def delete_selection(self) -> None:
@@ -1171,6 +1345,8 @@ class App:
             del b.jumpers[s["jumper"]]
         elif "island" in s and s["island"] < len(b.islands):
             del b.islands[s["island"]]
+        elif "via" in s and s["via"] < len(b.vias):
+            del b.vias[s["via"]]
         elif "pin" in s:
             b.disconnect("%s.%s" % (s["part"], s["pin"]))
         elif "part" in s:
@@ -1200,9 +1376,22 @@ class App:
     def trace_click(self, wx: float, wy: float) -> None:
         b = self.board
         pin = self.pin_near(wx, wy, 1.4)
+        isl = self.island_at(wx, wy) if pin is None else None
+        isl_net = b.island_net(isl) if isl is not None else None
         if not self.trace_pts:
+            if pin is None and isl_net:
+                # start on a copper island that is already on a net
+                self.trace_net = isl_net
+                sp = self.snap((wx, wy), ISLAND_GRID)
+                if self.island_at(*sp) != isl:          # a small island: snapping would leave it
+                    sp = (round(wx, 3), round(wy, 3))
+                self.trace_pts = [sp]
+                self.status("Net %s (from island #%d). Click corners; finish on a pin or island of the same net."
+                            % (isl_net, isl + 1))
+                return
             if pin is None:
-                self.status("Start a trace on a pin that is already connected (use the Wire tool first).")
+                self.status("Start a trace on a pin that is already connected (use the Wire tool first), "
+                            "or on a copper island that is joined to a net.")
                 return
             n = b.net_of(pin)
             if n is None:
@@ -1222,6 +1411,15 @@ class App:
                 self.trace_pts.append(self._join_octi(self.trace_pts[-1], end))
             self.finish_trace(final=True)
             return
+        if isl is not None and isl_net == self.trace_net and len(self.trace_pts) >= 1:
+            # landing on an island of the same net ends the trace there, on the point clicked (inside
+            # the island); finish_trace turns a free-angle last leg into 45 degrees + straight
+            end = (round(wx, 3), round(wy, 3))
+            if end != self.trace_pts[-1]:
+                self.trace_pts.append(end)
+            if len(self.trace_pts) >= 2:
+                self.finish_trace(final=True)
+                return
         p = self.snap_dir(self.trace_pts[-1], (wx, wy))
         if p != self.trace_pts[-1]:
             self.trace_pts.append(p)
@@ -1317,6 +1515,9 @@ class App:
         elif self.tool == "place" and self.armed:
             head("Placing %s" % self.lib[self.armed].name)
             m.add_command(label="Turn part 90 degrees", command=self.rotate, accelerator="R")
+            amv = tk.BooleanVar(value=self.arm_mirror)
+            m.add_checkbutton(label="Place it mirrored (under the board)", variable=amv, accelerator="Shift+M",
+                              command=self.mirror_selected)
             m.add_command(label="Stop placing", command=self.escape, accelerator="Esc")
         else:
             hit = self.hit_test(wx, wy)
@@ -1352,6 +1553,11 @@ class App:
                                   command=lambda: self._net_jumpers(t.net, jv.get()))
                 m.add_command(label="Re-route net %s" % t.net, command=lambda: self.auto_route(only=t.net))
                 m.add_command(label="Delete trace", command=self.delete_selection, accelerator="Del")
+            elif "via" in hit and hit["via"] < len(b.vias):
+                head("Via #%d (hole + wire soldered both sides, to the back-side ground plane)" % (hit["via"] + 1))
+                m.add_command(label="Delete via", command=self.delete_selection, accelerator="Del")
+                m.add_command(label="Add stitching vias", command=self.add_stitch_vias)
+                m.add_command(label="Back-side ground plane settings...", command=self.backplane_dialog)
             elif "island" in hit and hit["island"] < len(b.islands):
                 ii = hit["island"]
                 isl = b.islands[ii]
@@ -1412,6 +1618,10 @@ class App:
                 m.add_command(label="Rotate 90 degrees", command=self.rotate, accelerator="R")
                 m.add_command(label="Rotate back 90 degrees", command=lambda: self.rotate(-90), accelerator="Shift+R")
                 m.add_command(label="Duplicate", command=self.duplicate, accelerator="Ctrl+D")
+                mvv = tk.BooleanVar(value=b.is_mirrored(ref))
+                m.add_checkbutton(label="Mirrored (mount it under the board)" if not b.is_smd(ref)
+                                  else "Mirrored (SMD on the component side)", variable=mvv, accelerator="Shift+M",
+                                  command=lambda: self.set_part_mirrored(ref, mvv.get()))
                 lk = tk.BooleanVar(value=pl.locked)
                 m.add_checkbutton(label="Lock (auto-place leaves it alone)", variable=lk,
                                   command=lambda: self._set_lock(ref, lk.get()))
@@ -1448,6 +1658,8 @@ class App:
                     m.add_command(label="Place %s here" % self.lib[self.armed].name if self.armed in self.lib else "Place part here",
                                   command=lambda: self.place_here(wx, wy))
                 m.add_command(label="Add a copper island here", command=lambda: self.add_island(wx, wy))
+                if b.settings.backplane:
+                    m.add_command(label="Add a via here", command=lambda: self.via_press(wx, wy))
                 m.add_command(label="Auto-place", command=self.auto_place)
                 m.add_command(label="Auto-route", command=self.auto_route)
                 m.add_command(label="Tidy all traces", command=self.tidy_all)
@@ -1534,6 +1746,23 @@ class App:
         self.board.settings.allow_jumpers = bool(self.jumpers_var.get())
         self.status("Auto-route %s add wire-link jumpers." % ("may" if self.board.settings.allow_jumpers else "will NOT"))
 
+    def _set_router(self) -> None:
+        self.push_undo()
+        self.board.settings.router = self.router_var.get()
+        self.status({"auto": "Auto-route: negotiated congestion first, then the classic tries only if something is "
+                             "left unrouted or needs a jumper.",
+                     "negotiated": "Auto-route: negotiated congestion (PathFinder). All nets are routed together; the "
+                                   "price of contested copper rises pass after pass until they sort themselves out.",
+                     "classic": "Auto-route: classic sequential router, best of up to 6 net orders."}[self.board.settings.router])
+
+    def _set_placer(self) -> None:
+        self.push_undo()
+        self.board.settings.placer = self.placer_var.get()
+        self.status({"anneal": "Auto-place: annealing on ratsnest length and crossings.",
+                     "routability": "Auto-place: annealing that also estimates where copper will not fit (congestion) "
+                                    "and penalises pads boxed in by other parts; cooling adapts to the acceptance rate. "
+                                    "Slower; often fewer crossings."}[self.board.settings.placer])
+
     def _toggle_keepout(self) -> None:
         self.push_undo()
         self.board.settings.keep_out_under_parts = bool(self.keepout_var.get())
@@ -1545,7 +1774,8 @@ class App:
         st = self.board.settings
         on = bool(self.island_var.get())
         dead = False
-        if on and any(pl.style != "dead" or pl.pad_styles for pl in self.board.parts.values()):
+        if on and any((pl.style != "dead" or pl.pad_styles) and not self.board.is_smd(r)
+                      for r, pl in self.board.parts.items()):
             dead = messagebox.askyesno(
                 APP_NAME, "A ground-fill board is usually built with the parts soldered straight onto the copper.\n\n"
                 "Make every pad a deadbug pad (no holes to drill)?", parent=self.root)
@@ -1658,6 +1888,56 @@ class App:
         self.quick_drc("Tidied %d trace(s)." % n)
 
     # -------------------------------------------------------------- part edits
+    # -------------------------------------------------------------------- vias
+    def via_press(self, wx: float, wy: float) -> None:
+        b = self.board
+        i = self.via_at(wx, wy)
+        if i is not None:
+            v = b.vias[i]
+            self.sel = {"via": i}
+            self.drag = {"via": i, "dx": v.x - wx, "dy": v.y - wy, "moved": False}
+            self.show_props()
+            self.request_redraw()
+            return
+        x, y = self.snap((wx, wy), ISLAND_GRID)
+        self.push_undo()
+        b.vias.append(Via(x, y))
+        b.touch()
+        self.mark_dirty()
+        self.sel = {"via": len(b.vias) - 1}
+        self.show_props()
+        self.request_redraw()
+        if not b.settings.backplane:
+            self.status("Via added. The back-side ground plane is OFF (Board > Back-side ground plane): until it is on, "
+                        "a via is just a ground pad with a hole.")
+        elif planemod.via_fits(b, x, y, join_pad=True):
+            self.status("Via added: a %.2g mm hole with a wire soldered on both sides. Click to add more, Esc to stop."
+                        % b.settings.via_drill)
+        else:
+            self.status("Via added, but it is not on ground copper, or too close to another net or a part body: "
+                        "Check will say what is wrong. Drag it, or add a trace to it.")
+
+    def _props_via(self, p, i: int) -> None:
+        b = self.board
+        v = b.vias[i]
+        from .islands import ground_net
+        g = ground_net(b)
+        ttk.Label(p, text="Via #%d at %.2f, %.2f mm" % (i + 1, v.x, v.y), font=FONT_B).pack(anchor="w", pady=(4, 0))
+        ttk.Label(p, text="A %.2g mm hole with a bit of bare wire through it, soldered on both sides: it joins the "
+                          "copper here to the back-side ground plane%s." % (
+                              b.settings.via_drill, " (net %s)" % g if g else ""),
+                  wraplength=250, justify="left").pack(anchor="w", pady=(2, 6))
+        if not b.settings.backplane:
+            ttk.Label(p, text="The back-side plane is off: Board > Back-side ground plane.", style="Muted.TLabel",
+                      wraplength=250).pack(anchor="w")
+        elif not planemod.via_fits(b, v.x, v.y, join_pad=True):
+            ttk.Label(p, text="This via is not on ground copper, or too close to another net, a part body or a "
+                              "non-ground hole. Drag it somewhere better.", style="Muted.TLabel", wraplength=250).pack(anchor="w")
+        bar = ttk.Frame(p)
+        bar.pack(anchor="w", pady=6)
+        ttk.Button(bar, text="Delete via", width=0, command=self.delete_selection).pack(side="left")
+        ttk.Button(bar, text="Plane settings...", width=0, command=self.backplane_dialog).pack(side="left", padx=4)
+
     # ----------------------------------------------------------------- islands
     def add_island(self, wx: float, wy: float, w: Optional[float] = None, h: Optional[float] = None,
                    shape: Optional[str] = None) -> int:
@@ -1887,7 +2167,8 @@ class App:
         b.touch()
         self.sel = {"part": np_.ref}
         self.show_props()
-        self.status("Duplicated %s as %s. Drag it where you want it." % (ref, np_.ref))
+        if not self.part_report(np_.ref, "Duplicated %s as" % ref):
+            self.status("Duplicated %s as %s. Drag it where you want it." % (ref, np_.ref))
         self.request_redraw()
 
     def nudge(self, dx: int, dy: int, big: bool = False) -> None:
@@ -1908,7 +2189,7 @@ class App:
         pl = self.board.parts[ref]
         self.push_undo()
         self.board.move_part(ref, pl.x + dx * g, pl.y + dy * g)
-        self.request_redraw()
+        self.part_report(ref, "Nudged")
 
     # ------------------------------------------------------- recent / autosave
     def _remember_recent(self, path: str) -> None:
@@ -1988,6 +2269,8 @@ class App:
             ttk.Button(p, text="Delete jumper", command=self.delete_selection).pack(anchor="w", pady=6)
         elif "island" in s and s["island"] < len(b.islands):
             self._props_island(p, s["island"])
+        elif "via" in s and s["via"] < len(b.vias):
+            self._props_via(p, s["via"])
         elif "part" in s and s["part"] in b.parts:
             self._props_part(p)
         elif "net" in s and s["net"] in b.nets:
@@ -2055,15 +2338,43 @@ class App:
         ttk.Button(crow, text="Set", width=4, command=from_text).pack(side="left", padx=4)
         ttk.Label(p, text="Labels in pin order, separated by spaces; '.' skips a pin. Common layouts only: "
                           "check your part's datasheet.", style="Muted.TLabel", wraplength=270).pack(anchor="w")
+        from .islands import ground_net
+        gnd = ground_net(b)
+        if gnd and any(n.name == gnd for n in [b.net_of("%s.%s" % (ref, pd.name)) for pd in d.pads] if n):
+            gc = ttk.Frame(p)
+            gc.pack(fill="x", pady=(4, 0))
+            ttk.Label(gc, text="Ground contact", font=FONT_B).pack(side="left")
+            gv = tk.StringVar(value={"": "Thermal relief (board setting)", "heavy": "Heavy: spokes twice as wide",
+                                     "solid": "Solid: no relief (high current, RF decoupling)"}[
+                                         "solid" if pl.solid_ground else pl.ground_contact])
+            gcb = ttk.Combobox(gc, textvariable=gv, state="readonly", width=30, values=[
+                "Thermal relief (board setting)", "Heavy: spokes twice as wide",
+                "Solid: no relief (high current, RF decoupling)"])
+            gcb.pack(side="left", padx=4)
+            gcb.bind("<<ComboboxSelected>>", lambda e: self._set_ground_contact(
+                ref, {"T": "", "H": "heavy", "S": "solid"}[gv.get()[0]]))
         row2 = ttk.Frame(p)
         row2.pack(fill="x", pady=2)
         ttk.Button(row2, text="Rotate 90", command=self.rotate).pack(side="left")
         lock = tk.BooleanVar(value=pl.locked)
         ttk.Checkbutton(row2, text="Lock", variable=lock, command=lambda: self._set_lock(ref, lock.get())).pack(side="left", padx=8)
-        ttk.Label(p, text="Pads of this part").pack(anchor="w", pady=(6, 0))
-        st = tk.StringVar(value=pl.style)
-        for v, t in (("tht", "Through-hole"), ("dead", "Deadbug (surface solder, no hole)"), ("mixed", "Both")):
-            ttk.Radiobutton(p, text=t, value=v, variable=st, command=lambda: self._set_style(ref, st.get())).pack(anchor="w")
+        mv = tk.BooleanVar(value=self.board.is_mirrored(ref))
+        ttk.Checkbutton(p, text=("Mirrored (SMD on the top side)" if d.kind == "smd"
+                                 else "Mirrored (mounted UNDER the board)"), variable=mv,
+                        style="Mirror.TCheckbutton",
+                        command=lambda: self.set_part_mirrored(ref, mv.get())).pack(anchor="w", pady=(4, 0))
+        if self.board.is_mirrored(ref):
+            tk.Label(p, text=mirror_message(self.board, ref), bg=COL["mirrored"], fg="white", wraplength=270,
+                     justify="left", font=("TkDefaultFont", 9, "bold"), padx=6, pady=4).pack(anchor="w", fill="x", pady=(2, 0))
+        if d.kind == "smd":
+            ttk.Label(p, text="SMD part: it sits on the COPPER side, so it is mirrored in the component-side view "
+                              "(press M to see it as you will solder it). Its pads are plain copper lands with no "
+                              "holes.", style="Muted.TLabel", wraplength=270).pack(anchor="w", pady=(6, 0))
+        else:
+            ttk.Label(p, text="Pads of this part").pack(anchor="w", pady=(6, 0))
+            st = tk.StringVar(value=pl.style)
+            for v, t in (("tht", "Through-hole"), ("dead", "Deadbug (surface solder, no hole)"), ("mixed", "Both")):
+                ttk.Radiobutton(p, text=t, value=v, variable=st, command=lambda: self._set_style(ref, st.get())).pack(anchor="w")
         if "pin" in self.sel:
             pin = "%s.%s" % (ref, self.sel["pin"])
             n = b.net_of(pin)
@@ -2112,6 +2423,28 @@ class App:
     def _set_lock(self, ref: str, v: bool) -> None:
         self.push_undo()
         self.board.parts[ref].locked = v
+
+    def _set_ground_contact(self, ref: str, how: str) -> None:
+        if ref in self.board.parts:
+            self.push_undo()
+            pl = self.board.parts[ref]
+            pl.ground_contact = how
+            pl.solid_ground = False
+            self.board.touch()
+            self.mark_dirty()
+            self.request_redraw()
+            self.status({"": "%s: ground pads get the board's thermal relief.",
+                         "heavy": "%s: ground pads get spokes twice as wide (more current, harder to solder).",
+                         "solid": "%s: ground pads join the fill / plane solidly (no relief)."}[how] % ref)
+
+    def _set_flip(self, ref: str, flip: bool) -> None:
+        if ref in self.board.parts:
+            self.push_undo()
+            self.board.parts[ref].flip = bool(flip)
+            self.board.touch()
+            self.mark_dirty()
+            self.show_props()
+            self.request_redraw()
 
     def _set_style(self, ref: str, style: str) -> None:
         self.push_undo()
@@ -2394,7 +2727,7 @@ class App:
     def shutdown(self) -> None:
         """Cancel pending callbacks so the window can be destroyed cleanly."""
         self._closing = True
-        for name in ("_redraw_id", "_qd", "_autosave_id", "_overlay_id"):
+        for name in ("_redraw_id", "_qd", "_autosave_id", "_overlay_id", "_fill_id"):
             i = getattr(self, name, None)
             if i:
                 try:
@@ -2444,7 +2777,19 @@ class App:
         x1, y1 = self.w2s(b.width, 0)
         xa, xb = min(x0, x1), max(x0, x1)
         c.create_rectangle(xa + 5, y0 + 5, xb + 5, y1 + 5, fill="#0f2114", outline="")      # soft shadow
-        c.create_rectangle(xa, y0, xb, y1, fill=COL["board"], outline="#9bd0a6", width=2)
+        pp = planemod.plan(b)
+        c.create_rectangle(xa, y0, xb, y1, fill=COL["plane"] if pp is not None else COL["board"], outline="#9bd0a6", width=2)
+        if pp is not None:
+            # the back-side ground plane, drawn UNDER the copper: bare rings show round non-ground pads, relief
+            # spokes poke out round ground leads, the rest of the board is tinted "plane"
+            pcol = COL["plane_cu"] if not self.mirror else COL["plane_cu_dim"]
+            x0r, y0r, x1r, y1r = pp.rect
+            A, B_ = self.w2s(x0r, y1r), self.w2s(x1r, y0r)
+            c.create_rectangle(min(A[0], B_[0]), A[1], max(A[0], B_[0]), B_[1], fill=pcol, outline="")
+            for s in pp.cut:
+                self.draw_shape(s, COL["plane"])
+            for s in pp.fat:
+                self.draw_shape(s, pcol)
         if self.show_grid.get() and sc >= 3.0:
             # one small square per grid point, and only the points that are on screen
             step = 2.54 if sc < 20 else 1.27
@@ -2462,7 +2807,9 @@ class App:
                 for sy in ys:
                     c.create_rectangle(sx - 1, sy - 1, sx + 1, sy + 1, fill=col, outline="")
         cu = b.copper()
+        b._island_fast = True              # draw at once; the floating-copper check follows when you pause
         ip = island_plan(b)
+        self._schedule_full_fill()
         if ip is not None:
             # ground fill: the fill, the gaps cut round every other net, then the fattened copper
             dimf = not self.mirror
@@ -2483,6 +2830,8 @@ class App:
             if tag and tag[0] == "jpad" and sel.get("jumper") == tag[1]:
                 hi = True
             if tag and tag[0] == "isl" and sel.get("island") == tag[1]:
+                hi = True
+            if tag and tag[0] == "via" and sel.get("via") == tag[1]:
                 hi = True
             if tag and tag[0] == "pad" and sel.get("part") == tag[1] and (sel.get("pin") in (None, tag[2])):
                 hi = True
@@ -2528,6 +2877,14 @@ class App:
             sx, sy = self.w2s(x, y)
             r = max(1.0, d / 2 * sc)
             c.create_oval(sx - r, sy - r, sx + r, sy + r, fill=COL["hole"], outline=COL["hole"])
+        for vi, v in enumerate(b.vias):
+            # a via is marked with a small cross over its pad, so it is not mistaken for a plain pad
+            sx, sy = self.w2s(v.x, v.y)
+            r = max(3.0, b.settings.via_pad / 2 * sc)
+            col = COL["sel"] if sel.get("via") == vi else COL["via"]
+            c.create_line(sx - r, sy, sx + r, sy, fill=col, width=1)
+            c.create_line(sx, sy - r, sx, sy + r, fill=col, width=1)
+            c.create_oval(sx - r, sy - r, sx + r, sy + r, outline=col, width=1)
         # jumpers
         for j in b.jumpers:
             a, e = self.w2s(*j.a), self.w2s(*j.b)
@@ -2535,9 +2892,27 @@ class App:
         # part outlines
         ocol = COL["outline_dim"] if self.mirror else COL["outline"]
         for ref in b.parts:
+            mirrored = b.is_mirrored(ref)
+            if mirrored:
+                # a mirrored part must stand out: a thick dashed pink frame round its body and a tag
+                cx0, cy0, cx1, cy1 = b.court_rect(ref)
+                a, e = self.w2s(cx0, cy0), self.w2s(cx1, cy1)
+                c.create_rectangle(min(a[0], e[0]) - 3, min(a[1], e[1]) - 3, max(a[0], e[0]) + 3, max(a[1], e[1]) + 3,
+                                   outline=COL["mirrored"], width=3, dash=(8, 4))
+                # the tag sits just inside the top of the frame, on a pink band, clear of the pins and the name
+                tx, ty = self.w2s((cx0 + cx1) / 2, cy1)
+                tag = "MIRRORED (under board)" if b.on_copper_side(ref) else "MIRRORED (top side)"
+                t_id = c.create_text(tx, min(a[1], e[1]) + 4, text=tag, fill="white",
+                                     font=("TkDefaultFont", max(7, min(11, int(sc * 1.0))), "bold"), anchor="n")
+                bb = c.bbox(t_id)
+                if bb:
+                    band = c.create_rectangle(bb[0] - 4, bb[1] - 1, bb[2] + 4, bb[3] + 1, fill=COL["mirrored"],
+                                              outline=COL["mirrored"])
+                    c.tag_lower(band, t_id)
+            pcol = COL["sel"] if sel.get("part") == ref else (COL["mirrored"] if mirrored else ocol)
             for x1_, y1_, x2_, y2_ in render.part_segments(b, ref):
                 a, e = self.w2s(x1_, y1_), self.w2s(x2_, y2_)
-                c.create_line(a[0], a[1], e[0], e[1], fill=COL["sel"] if sel.get("part") == ref else ocol, width=1.5 if sel.get("part") == ref else 1)
+                c.create_line(a[0], a[1], e[0], e[1], fill=pcol, width=1.5 if sel.get("part") == ref or mirrored else 1)
             if sc >= 4:
                 cx0, cy0, cx1, cy1 = b.court_rect(ref)
                 pl = b.parts[ref]
@@ -2571,6 +2946,32 @@ class App:
         theme.round_corners(c, 12, UI["panel"])
         self.draw_dynamic()
         self.unrouted_label()
+
+    def _schedule_full_fill(self) -> None:
+        """Work out the full ground fill (floating copper removed) 0.4 s after the last change."""
+        fid = getattr(self, "_fill_id", None)
+        if fid:
+            try:
+                self.root.after_cancel(fid)
+            except Exception:
+                pass
+            self._fill_id = None
+        b = self.board
+        if not b.settings.island_mode or island_ready(b) or self._closing:
+            return
+
+        def go() -> None:
+            self._fill_id = None
+            if self._closing or self.board is not b:
+                return
+            if self.drag and time.time() - getattr(self, "_drag_t", 0.0) < 0.35:
+                # still moving something: try again after the next pause (a stuck press without a
+                # release does not hold the fill back for ever)
+                self._schedule_full_fill()
+                return
+            island_plan(b, full=True)
+            self.request_redraw()
+        self._fill_id = self.root.after(400, go)
 
     def request_overlay(self) -> None:
         """Redraw only the things that follow the mouse (cheap), unless a full redraw is due anyway."""
@@ -2697,7 +3098,7 @@ class App:
             gb.width, gb.height = b.width, b.height
             gb.defs = {self.armed: d}
             x, y = self.snap((wx, wy))
-            gb.parts = {"G": Placed("G", self.armed, x, y, self.arm_rot, False, "", "tht")}
+            gb.parts = {"G": Placed("G", self.armed, x, y, self.arm_rot, (d.kind == "smd") != self.arm_mirror, "", "tht")}
             gb.touch()
             for s in gb.copper():
                 self.draw_shape(s, COL["ghost"])
@@ -2802,11 +3203,16 @@ class App:
         if not self.board.parts or not self.board.nets:
             messagebox.showinfo(APP_NAME, "Place some parts and connect pins with the Wire tool first.")
             return
+        if self.board.islands and not messagebox.askyesno(
+                APP_NAME, "This board has copper islands. Auto-place moves the parts but not the islands, so pins "
+                "will end up off their islands or on the wrong ones (shorts).\n\nAuto-place anyway?",
+                parent=self.root):
+            return
         work = self.board.clone()
 
         def func(job: Job):
             pl = Placer(work, progress=lambda m, f: (setattr(job, "msg", m), setattr(job, "frac", f)),
-                        cancel=lambda: job.cancel)
+                        cancel=lambda: job.cancel, mode=work.settings.placer)
             return pl.run(time_limit=25.0)
 
         def done(res) -> None:
@@ -2816,7 +3222,11 @@ class App:
                     self.board.parts[ref].x, self.board.parts[ref].y, self.board.parts[ref].rot = p.x, p.y, p.rot
             self.board.clear_auto_routes()
             self.board.touch()
-            self.status("Placement done: " + res.summary() + ". Automatic routes were removed.")
+            hits = [i for i in run_drc(self.board, check_unrouted=False) if i.kind == "clearance"]
+            self.marks = [(i.x, i.y) for i in hits]
+            self.status("Placement done: " + res.summary() + ". Automatic routes were removed."
+                        + (" %d COLLISION(S) between parts and the hand-drawn traces that stayed, marked red: "
+                           "re-route or redraw them." % len(hits) if hits else ""))
             self.request_redraw()
 
         self.run_job("Placing", func, done)
@@ -2828,7 +3238,7 @@ class App:
         work = self.board.clone()
 
         def func(job: Job):
-            r = AutoRouter(work, RouteOptions(time_limit=180.0),
+            r = AutoRouter(work, RouteOptions(time_limit=180.0, algorithm=work.settings.router),
                            progress=lambda m, f: (setattr(job, "msg", m), setattr(job, "frac", f)),
                            cancel=lambda: job.cancel)
             if not only:
@@ -2922,6 +3332,8 @@ class App:
         self.jumpers_var.set(board.settings.allow_jumpers)
         self.keepout_var.set(board.settings.keep_out_under_parts)
         self.island_var.set(board.settings.island_mode)
+        self.router_var.set(board.settings.router)
+        self.placer_var.set(board.settings.placer)
         self.set_title()
         self.show_props()
         self.fit()
@@ -3030,19 +3442,125 @@ class App:
             names = gerber.write_zip(self.board, p)
             self.status("Wrote %s (%s)" % (p, ", ".join(names)))
 
-    def export_print(self, kind: str, mirror: bool) -> None:
+    def export_print(self, kind: str, mirror: bool, layer: str = "bottom") -> None:
+        if layer == "top" and not self.board.settings.backplane:
+            messagebox.showinfo(APP_NAME, "The back-side ground plane is off (Board > Back-side ground plane).")
+            return
         ext = "." + kind
+        tag = "back-plane" if layer == "top" else ("mirrored" if mirror else "design")
         p = filedialog.asksaveasfilename(defaultextension=ext, initialfile="%s_%s%s" % (
-            self.board.name.replace(" ", "_"), "mirrored" if mirror else "design", ext))
+            self.board.name.replace(" ", "_"), tag, ext))
         if not p:
             return
         if kind == "pdf":
             with open(p, "wb") as fh:
-                fh.write(render.to_pdf(self.board, mirror=mirror))
+                fh.write(render.to_pdf(self.board, mirror=mirror, layer=layer))
         else:
             with open(p, "w", encoding="utf-8") as fh:
-                fh.write(render.to_svg(self.board, mirror=mirror))
-        self.status("Wrote %s. Print at 100%% scale (no 'fit to page')." % p)
+                fh.write(render.to_svg(self.board, mirror=mirror, layer=layer))
+        self.status("Wrote %s. Print at 100%% scale (no 'fit to page').%s" % (
+            p, " The back plane is seen from the component side, so it is not mirrored." if layer == "top" else ""))
+
+    # ------------------------------------------------------------ back plane
+    def backplane_dialog(self) -> None:
+        from .dialogs import BackplaneDialog
+        BackplaneDialog(self)
+
+    def set_backplane(self, on: bool, net: str, vals: dict, relief: bool) -> None:
+        b = self.board
+        st = b.settings
+        self.push_undo()
+        was = st.backplane
+        st.backplane = on
+        if net or not st.island_mode:
+            st.island_net = net
+        st.backplane_relief = relief
+        for k, v in vals.items():
+            setattr(st, k, v)
+        b.touch()
+        self.mark_dirty()
+        self.redraw()
+        self.show_props()
+        from .islands import ground_net
+        g = ground_net(b)
+        if on and g:
+            self.status("Back-side ground plane on, ground net %s. Ground leads with holes are joined by the plane; "
+                        "add vias (V) for deadbug or SMD ground pins and a stitching grid. Check lists what is left." % g)
+        elif on:
+            self.status("Back-side ground plane on, but there is no net to use as ground yet; wire some pins first.")
+        elif was:
+            self.status("Back-side ground plane off. Vias stay on the board; delete them if you no longer want them.")
+        else:
+            self.status("Back plane settings saved.")
+
+    def add_stitch_vias(self) -> None:
+        b = self.board
+        if not b.settings.backplane:
+            messagebox.showinfo(APP_NAME, "Turn on Board > Back-side ground plane first.")
+            return
+        pts = planemod.stitch_points(b)
+        if not pts:
+            self.status("No room for stitching vias: they need to sit on ground copper or the ground fill, clear of "
+                        "parts and other nets.")
+            return
+        self.push_undo()
+        for x, y in pts:
+            b.vias.append(Via(x, y))
+        b.touch()
+        self.mark_dirty()
+        self.request_redraw()
+        sp = b.settings.stitch_spacing
+        self.status("Added %d stitching via(s) on a %g mm grid (good to about %s). Each is a hole with a wire soldered "
+                    "on both sides." % (len(pts), sp, planemod.fmt_freq(planemod.stitch_frequency(sp))))
+
+    def add_pin_vias(self) -> None:
+        b = self.board
+        if not b.settings.backplane:
+            messagebox.showinfo(APP_NAME, "Turn on Board > Back-side ground plane first.")
+            return
+        pts = planemod.via_at_ground_pins(b)
+        if not pts:
+            self.status("Every ground pin is already joined to the plane (or has no room for a via beside it).")
+            return
+        self.push_undo()
+        for x, y in pts:
+            b.vias.append(Via(x, y))
+        b.touch()
+        self.mark_dirty()
+        self.request_redraw()
+        self.status("Added %d via(s) at the end of deadbug / SMD ground pads; the lead folds over the via, solder both "
+                    "sides." % len(pts))
+
+    def show_countersink_list(self) -> None:
+        b = self.board
+        if not b.settings.backplane:
+            messagebox.showinfo(APP_NAME, "The back-side ground plane is off (Board > Back-side ground plane).")
+            return
+        rows = planemod.countersink_list(b)
+        lines = ["Countersink list for %s: leave the back copper solid, drill every hole, then clear the copper round "
+                 "these %d non-ground holes with a 2 to 2.5 mm drill tip or countersink (just enough to break the "
+                 "copper ring). Ground leads and vias are NOT in this list: solder them on both sides."
+                 % (b.name, len(rows)), "", "X (mm)   Y (mm)   drill   what"]
+        for x, y, dr, what in sorted(rows, key=lambda r: (r[1], r[0])):
+            lines.append("%7.2f  %7.2f   %.2f    %s" % (x, y, dr, what))
+        lines.append("")
+        lines.append("Coordinates are the design view (component side), origin at the lower-left corner, Y up.")
+        txt = "\n".join(lines)
+        top = tk.Toplevel(self.root)
+        top.title("Countersink list")
+        t = tk.Text(top, width=70, height=24, wrap="none", font=("TkFixedFont", 9))
+        t.insert("1.0", txt)
+        t.config(state="disabled")
+        t.pack(fill="both", expand=True)
+
+        def save() -> None:
+            p = filedialog.asksaveasfilename(parent=top, defaultextension=".txt",
+                                             initialfile=b.name.replace(" ", "_") + "_countersink.txt")
+            if p:
+                with open(p, "w", encoding="utf-8") as fh:
+                    fh.write(txt + "\n")
+                self.status("Wrote %s" % p)
+        ttk.Button(top, text="Save as text...", command=save).pack(pady=4)
 
     def export_bom(self) -> None:
         p = filedialog.asksaveasfilename(defaultextension=".csv", initialfile=self.board.name.replace(" ", "_") + "_bom.csv")

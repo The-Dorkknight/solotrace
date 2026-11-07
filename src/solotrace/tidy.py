@@ -203,6 +203,8 @@ def _touch_profile(board: Board, t: Trace, pts: Sequence[Point], widths: Sequenc
             else:
                 touched.add(s.tag)
     ends = {}
+    if len(pts) < 2:
+        return touched, ends
     for o in board.traces:
         if o.net != t.net:
             continue
@@ -220,6 +222,8 @@ def keeps_joints(board: Board, t: Trace, old_pts: Sequence[Point], old_w: Sequen
     one touched, and every other trace that ended on it still ends at least as deep inside it.
     Without this, moving a trunk leaves its branches hanging (or a pad it ran over cut off).
     ``board.traces`` must not contain ``t``."""
+    if len(new_pts) < 2:
+        return False
     before, ends_b = _touch_profile(board, t, old_pts, old_w)
     after, _ends_a = _touch_profile(board, t, new_pts, new_w)
     if not before <= after:

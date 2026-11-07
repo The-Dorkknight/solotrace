@@ -154,6 +154,32 @@ def manhattan_amp() -> Board:
     return b
 
 
+def smd_regulator() -> Board:
+    """5 V regulator built with the SMD parts: SOT-223 LM1117, tantalum caps, an SMA diode and an
+    0805 LED resistor, plus two through-hole headers. SMD parts sit on the copper side, so they are
+    mirrored in the component-side view (press M to see them as you solder)."""
+    from .library import BUILTIN, pinout_presets
+    b = Board(45, 30, "SMD regulator")
+    b.settings.classes["Power"] = 1.2        # SMD pads are small: 2 mm power traces would swallow them
+    b.add_part("HDR_1x2", 5.08, 20.32, rot=90, ref="J1", value="9-12V in")
+    b.add_part("SMD_D_SMA", 10.16, 7.62, ref="D1", value="S1M")
+    b.add_part("SMD_TANT_B", 15.24, 20.32, rot=270, ref="C1", value="10u")
+    b.add_part("SMD_SOT223", 26.67, 17.78, ref="U1", value="LM1117-5")
+    b.add_part("SMD_TANT_B", 34.29, 20.32, rot=270, ref="C2", value="22u")
+    b.add_part("SMD_CHIP_0805", 25.4, 6.35, ref="R1", value="1k")
+    b.add_part("SMD_CHIP_0805", 33.02, 6.35, ref="D2", value="LED 0805")
+    b.add_part("HDR_1x2", 40.64, 20.32, rot=90, ref="J2", value="5V out")
+    b.parts["U1"].pin_labels = dict(pinout_presets(BUILTIN["SMD_SOT223"])[0][1])
+    b.parts["J1"].pin_labels = {"1": "-", "2": "+"}
+    b.parts["J2"].pin_labels = {"1": "-", "2": "+"}
+    _net(b, "GND", "J1.1", "C1.2", "U1.1", "C2.2", "J2.1", "D2.1", cls="Power")
+    _net(b, "VIN", "J1.2", "D1.2", cls="Power")
+    _net(b, "VRAW", "D1.1", "C1.1", "U1.3", cls="Power")
+    _net(b, "V5", "U1.2", "U1.4", "C2.1", "J2.2", "R1.1", cls="Power")
+    _net(b, "LED", "R1.2", "D2.2")
+    return b
+
+
 def logic_dip14(seed: int = 7) -> Board:
     """Two DIP-14 gates, a DIP-8 and a few passives; many signals, so jumpers may appear."""
     b = Board(80, 60, "Logic mix")
@@ -210,6 +236,37 @@ def random_board(n_parts: int = 12, seed: int = 1, w: float = 120, h: float = 80
     return b
 
 
+def xiao_logger() -> Board:
+    """A tiny data logger: Seeed XIAO ESP32-C3, a 0.96 inch I2C OLED mounted MIRRORED under the board
+    (screen facing out of the copper side, so the board can sit flat in a box lid), the blue SPI micro
+    SD module, a button and a 4-pin sensor header."""
+    from .library import BUILTIN, default_pin_labels
+    b = Board(80, 60, "XIAO logger")
+    b.add_part("MOD_XIAO_C3", 10.16, 50.8, ref="U1", value="XIAO ESP32-C3")
+    b.add_part("MOD_OLED096_I2C", 66.04, 55.88, ref="DS1", value="SSD1306")
+    b.add_part("MOD_MICROSD_SPI", 40.64, 30.48, rot=90, ref="J1", value="micro SD")
+    b.add_part("HDR_1x4", 7.62, 10.16, ref="J2", value="sensor")
+    b.add_part("SW_TACT_6", 33.02, 50.8, ref="SW1", value="log")
+    b.mirror_part("DS1")
+
+    def pin(ref: str, label: str) -> str:
+        labs = default_pin_labels(BUILTIN[b.parts[ref].part_id])
+        return "%s.%s" % (ref, next(k for k, v in labs.items() if v == label))
+    b.parts["J2"].pin_labels = {"1": "GND", "2": "3V3", "3": "SCL", "4": "SDA"}
+    nets = {"GND": [pin("U1", "GND"), pin("DS1", "GND"), pin("J1", "GND"), "J2.1", "SW1.1"],
+            "+3V3": [pin("U1", "3V3"), pin("DS1", "VCC"), "J2.2"],
+            "+5V": [pin("U1", "5V"), pin("J1", "VCC")],
+            "SCL": [pin("U1", "D5"), pin("DS1", "SCL"), "J2.3"], "SDA": [pin("U1", "D4"), pin("DS1", "SDA"), "J2.4"],
+            "SCK": [pin("U1", "D8"), pin("J1", "SCK")], "MISO": [pin("U1", "D9"), pin("J1", "MISO")],
+            "MOSI": [pin("U1", "D10"), pin("J1", "MOSI")], "SD_CS": [pin("U1", "D2"), pin("J1", "CS")],
+            "BTN": [pin("U1", "D3"), "SW1.4"]}
+    for name, pins in nets.items():
+        for p in pins[1:]:
+            b.connect(pins[0], p, name)
+    b.touch()
+    return b
+
+
 DEMOS: Dict[str, Callable[[], Board]] = {
     "555 LED flasher": flasher_555,
     "5 V regulator": regulator_7805,
@@ -217,4 +274,6 @@ DEMOS: Dict[str, Callable[[], Board]] = {
     "Logic mix": logic_dip14,
     "RF oscillator (ground fill, routed)": rf_oscillator,
     "Manhattan RF amplifier (copper islands)": manhattan_amp,
+    "SMD regulator (SMD parts)": smd_regulator,
+    "XIAO ESP32-C3 logger (OLED mirrored under the board)": xiao_logger,
 }

@@ -158,5 +158,71 @@ class GroundFill(unittest.TestCase):
         self.assertEqual(islands.ground_net(c), "VCC")
 
 
+class EdgeCases(unittest.TestCase):
+    """Bugs found by the 0.4.1 edge-case sweep; each test fails on 0.4.0."""
+
+    def test_renaming_the_ground_net_keeps_the_fill_on_it(self):
+        b = two_resistors()
+        b.settings.island_mode = True
+        b.settings.island_net = "GND"
+        b.rename_net("GND", "0V_RAIL")
+        self.assertEqual(islands.ground_net(b), "0V_RAIL")
+
+    def test_a_supply_net_is_never_guessed_as_ground(self):
+        b = Board(30, 30)
+        b.add_part("R_V_0.25W_2.54", 10.16, 10.16, ref="R1")
+        b.add_part("R_V_0.25W_2.54", 20.32, 10.16, ref="R2")
+        b.connect("R1.1", "R2.1", "V-")
+        b.connect("R1.2", "R2.2", "SIG")
+        self.assertEqual(islands.guess_ground(b), "SIG")
+
+    def test_a_ground_trace_through_a_narrow_gap_joins_the_fill(self):
+        from solotrace.board import Trace
+        b = Board(40, 30)
+        b.add_part("R_V_0.25W_2.54", 8, 20, ref="R1", style="dead")
+        b.add_part("R_V_0.25W_2.54", 30, 20, ref="R2", style="dead")
+        b.connect("R1.2", "R2.2", "GND")
+        b.settings.island_mode = True
+        b.islands += [Island(20, 7.25, 2, 13.5), Island(20, 22.25, 2, 14.5)]     # a wall with a 1 mm gap
+        b.traces.append(Trace("GND", [(12, 14.5), (28, 14.5)], [0.4], True))    # ground trace through it
+        b.touch()
+        self.assertEqual(len(set(islands.plan(b, full=True).pins.values())), 1)
+        self.assertEqual([w for w in b.airwires() if w[0] == "GND"], [])
+        b.traces = []
+        b.touch()
+        self.assertEqual(len(set(islands.plan(b, full=True).pins.values())), 2)  # without it: two pieces
+
+    def test_islands_are_always_valid(self):
+        i = Island(1, 2, -5, 0.2, "hexagon", -1)
+        self.assertEqual((i.w, i.h, i.shape, i.corner), (1.0, 1.0, "rect", 0.0))
+        i.w = 1000
+        i.shape = "star"
+        self.assertEqual((i.w, i.shape), (400.0, "rect"))
+
+    def test_laser_warning_uses_the_real_gap(self):
+        b = two_resistors()
+        b.settings.island_mode = True
+        b.settings.island_gap = 0.1               # below the 0.3 mm clearance, so the real gap is 0.3
+        self.assertEqual(laser.validate(b, laser.LaserOptions(trace_comp=0.1)), [])
+        self.assertTrue(laser.validate(b, laser.LaserOptions(trace_comp=0.14)))
+
+    def test_editor_quick_plan_and_full_plan(self):
+        b = demos.flasher_555()
+        b.settings.island_mode = True
+        islands.make_pads_deadbug(b)
+        AutoRouter(b).route_all()
+        b._island_fast = True
+        quick = islands.plan(b)
+        self.assertFalse(islands.ready(b))
+        self.assertEqual(quick.dropped, 0)                     # no floating-copper check yet
+        full = islands.plan(b, full=True)
+        self.assertTrue(islands.ready(b))
+        self.assertGreater(full.dropped, 0)
+        self.assertIs(islands.plan(b), full)                   # once ready, the editor gets the full one
+        # exports never use the quick plan
+        b.touch()
+        self.assertIn(("floating",), {c.tag for c in islands.plan(b, full=True).cut})
+
+
 if __name__ == "__main__":
     unittest.main()

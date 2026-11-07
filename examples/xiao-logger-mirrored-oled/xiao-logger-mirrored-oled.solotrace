@@ -1,0 +1,1290 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "XIAO logger",
+ "width": 80.0,
+ "height": 60.0,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "island_mode": false,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.0,
+  "island_drop_floating": true,
+  "relief": true,
+  "relief_spokes": 4,
+  "relief_width": 0.8,
+  "relief_amps": 0.0,
+  "relief_gap": 0.5,
+  "relief_islands": true,
+  "relief_diag": true,
+  "backplane": false,
+  "backplane_clearance": 0.55,
+  "backplane_relief": true,
+  "via_drill": 0.7,
+  "via_pad": 1.8,
+  "stitch_spacing": 10.0,
+  "router": "auto",
+  "placer": "anneal",
+  "classes": {
+   "Signal": 0.8,
+   "Power": 2.0,
+   "High current": 5.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "DS1",
+   "part": "MOD_OLED096_I2C",
+   "x": 58.41999999999997,
+   "y": 3.81,
+   "rot": 180,
+   "flip": true,
+   "value": "SSD1306",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "J1",
+   "part": "MOD_MICROSD_SPI",
+   "x": 20.309999999999977,
+   "y": 40.94999999999998,
+   "rot": 90,
+   "flip": false,
+   "value": "micro SD",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "J2",
+   "part": "HDR_1x4",
+   "x": 33.02000000000002,
+   "y": 17.780000000000012,
+   "rot": 270,
+   "flip": false,
+   "value": "sensor",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "GND",
+    "2": "3V3",
+    "3": "SCL",
+    "4": "SDA"
+   }
+  },
+  {
+   "ref": "SW1",
+   "part": "SW_TACT_6",
+   "x": 10.159999999999997,
+   "y": 51.110000000000014,
+   "rot": 270,
+   "flip": false,
+   "value": "log",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "U1",
+   "part": "MOD_XIAO_C3",
+   "x": 8.89,
+   "y": 26.980000000000008,
+   "rot": 0,
+   "flip": false,
+   "value": "XIAO ESP32-C3",
+   "style": "tht",
+   "locked": false
+  }
+ ],
+ "nets": [
+  {
+   "name": "GND",
+   "class": "Signal",
+   "pins": [
+    "U1.13",
+    "DS1.1",
+    "J1.6",
+    "J2.1",
+    "SW1.1"
+   ]
+  },
+  {
+   "name": "+3V3",
+   "class": "Signal",
+   "pins": [
+    "U1.12",
+    "DS1.2",
+    "J2.2"
+   ]
+  },
+  {
+   "name": "+5V",
+   "class": "Signal",
+   "pins": [
+    "U1.14",
+    "J1.5"
+   ]
+  },
+  {
+   "name": "SCL",
+   "class": "Signal",
+   "pins": [
+    "U1.6",
+    "DS1.3",
+    "J2.3"
+   ]
+  },
+  {
+   "name": "SDA",
+   "class": "Signal",
+   "pins": [
+    "U1.5",
+    "DS1.4",
+    "J2.4"
+   ]
+  },
+  {
+   "name": "SCK",
+   "class": "Signal",
+   "pins": [
+    "U1.9",
+    "J1.2"
+   ]
+  },
+  {
+   "name": "MISO",
+   "class": "Signal",
+   "pins": [
+    "U1.10",
+    "J1.4"
+   ]
+  },
+  {
+   "name": "MOSI",
+   "class": "Signal",
+   "pins": [
+    "U1.11",
+    "J1.3"
+   ]
+  },
+  {
+   "name": "SD_CS",
+   "class": "Signal",
+   "pins": [
+    "U1.3",
+    "J1.1"
+   ]
+  },
+  {
+   "name": "BTN",
+   "class": "Signal",
+   "pins": [
+    "U1.4",
+    "SW1.4"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "net": "BTN",
+   "points": [
+    [
+     5.66,
+     44.61
+    ],
+    [
+     5.66,
+     22.28
+    ],
+    [
+     8.58,
+     19.36
+    ],
+    [
+     8.89,
+     19.36
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "SCL",
+   "points": [
+    [
+     33.02,
+     12.7
+    ],
+    [
+     28.575,
+     8.255
+    ],
+    [
+     14.915,
+     8.255
+    ],
+    [
+     8.89,
+     14.28
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "SCL",
+   "points": [
+    [
+     63.5,
+     3.81
+    ],
+    [
+     63.5,
+     3.175
+    ],
+    [
+     62.23,
+     1.905
+    ],
+    [
+     43.815,
+     1.905
+    ],
+    [
+     33.02,
+     12.7
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "SDA",
+   "points": [
+    [
+     33.02,
+     10.16
+    ],
+    [
+     29.845,
+     6.985
+    ],
+    [
+     10.795,
+     6.985
+    ],
+    [
+     6.985,
+     10.795
+    ],
+    [
+     6.985,
+     15.24
+    ],
+    [
+     8.565,
+     16.82
+    ],
+    [
+     8.89,
+     16.82
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "SDA",
+   "points": [
+    [
+     66.04,
+     3.81
+    ],
+    [
+     28.575,
+     41.275
+    ],
+    [
+     28.575,
+     48.26
+    ],
+    [
+     21.59,
+     55.245
+    ],
+    [
+     6.35,
+     55.245
+    ],
+    [
+     3.81,
+     52.705
+    ],
+    [
+     3.81,
+     21.59
+    ],
+    [
+     8.58,
+     16.82
+    ],
+    [
+     8.89,
+     16.82
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "+5V",
+   "points": [
+    [
+     20.31,
+     51.11
+    ],
+    [
+     20.645,
+     51.11
+    ],
+    [
+     24.13,
+     47.625
+    ],
+    [
+     24.13,
+     26.98
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "MOSI",
+   "points": [
+    [
+     20.31,
+     46.03
+    ],
+    [
+     20.645,
+     46.03
+    ],
+    [
+     22.225,
+     44.45
+    ],
+    [
+     22.225,
+     20.955
+    ],
+    [
+     23.82,
+     19.36
+    ],
+    [
+     24.13,
+     19.36
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     20.31,
+     53.65
+    ],
+    [
+     12.7,
+     53.65
+    ],
+    [
+     10.16,
+     51.11
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     33.02,
+     17.78
+    ],
+    [
+     30.79,
+     17.78
+    ],
+    [
+     24.13,
+     24.44
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     58.42,
+     3.81
+    ],
+    [
+     44.45,
+     17.78
+    ],
+    [
+     33.02,
+     17.78
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     24.13,
+     24.44
+    ],
+    [
+     24.44,
+     24.44
+    ],
+    [
+     26.035,
+     26.035
+    ],
+    [
+     26.035,
+     48.26
+    ],
+    [
+     20.645,
+     53.65
+    ],
+    [
+     20.31,
+     53.65
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "SCK",
+   "points": [
+    [
+     20.31,
+     43.49
+    ],
+    [
+     19.36,
+     43.49
+    ],
+    [
+     18.415,
+     42.545
+    ],
+    [
+     18.415,
+     19.685
+    ],
+    [
+     23.82,
+     14.28
+    ],
+    [
+     24.13,
+     14.28
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "MISO",
+   "points": [
+    [
+     20.31,
+     48.57
+    ],
+    [
+     19.995,
+     48.57
+    ],
+    [
+     15.875,
+     44.45
+    ],
+    [
+     15.875,
+     17.145
+    ],
+    [
+     22.86,
+     10.16
+    ],
+    [
+     25.4,
+     10.16
+    ],
+    [
+     26.035,
+     10.795
+    ],
+    [
+     26.035,
+     15.24
+    ],
+    [
+     24.455,
+     16.82
+    ],
+    [
+     24.13,
+     16.82
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "+3V3",
+   "points": [
+    [
+     33.02,
+     15.24
+    ],
+    [
+     30.79,
+     15.24
+    ],
+    [
+     24.13,
+     21.9
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "+3V3",
+   "points": [
+    [
+     60.96,
+     3.81
+    ],
+    [
+     60.96,
+     4.445
+    ],
+    [
+     45.085,
+     20.32
+    ],
+    [
+     35.56,
+     20.32
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "+3V3",
+   "points": [
+    [
+     35.56,
+     15.24
+    ],
+    [
+     33.02,
+     15.24
+    ]
+   ],
+   "widths": [
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "SD_CS",
+   "points": [
+    [
+     20.31,
+     40.95
+    ],
+    [
+     20.31,
+     30.49
+    ],
+    [
+     20.32,
+     30.48
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "SD_CS",
+   "points": [
+    [
+     7.62,
+     30.48
+    ],
+    [
+     6.985,
+     29.845
+    ],
+    [
+     6.985,
+     23.495
+    ],
+    [
+     8.58,
+     21.9
+    ],
+    [
+     8.89,
+     21.9
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  }
+ ],
+ "jumpers": [
+  {
+   "net": "+3V3",
+   "a": [
+    35.56,
+    20.32
+   ],
+   "b": [
+    35.56,
+    15.24
+   ],
+   "auto": true
+  },
+  {
+   "net": "SD_CS",
+   "a": [
+    20.32,
+    30.48
+   ],
+   "b": [
+    7.62,
+    30.48
+   ],
+   "auto": true
+  }
+ ],
+ "islands": [],
+ "vias": [],
+ "defs": {
+  "HDR_1x4": {
+   "id": "HDR_1x4",
+   "name": "Pin header 1x4, 2.54 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "4",
+     "x": 7.62,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.27,
+     -1.27,
+     8.89,
+     1.27
+    ]
+   ],
+   "court": [
+    -1.27,
+    -1.27,
+    8.89,
+    1.27
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "2-row headers number across the columns: 1 top, 2 below it, 3 next top..."
+  },
+  "MOD_MICROSD_SPI": {
+   "id": "MOD_MICROSD_SPI",
+   "name": "Micro SD card module, SPI, 6 pins (42 x 24 mm, 5 V)",
+   "category": "Modules",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "4",
+     "x": 7.62,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "5",
+     "x": 10.16,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "6",
+     "x": 12.7,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -5.47,
+     -38.02,
+     18.53,
+     3.98
+    ],
+    [
+     "circle",
+     0.0,
+     0.0,
+     1.35
+    ]
+   ],
+   "court": [
+    -5.47,
+    -38.02,
+    18.53,
+    3.98
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "The common blue module with a regulator and level shifter (runs from 5 V), header on the top short edge: CS SCK MOSI MISO VCC GND left to right. Pin order and size from one parts file; some sellers print the pins in another order, so read yours (Pin labels lets you type them). Mounting holes not included."
+  },
+  "MOD_OLED096_I2C": {
+   "id": "MOD_OLED096_I2C",
+   "name": "OLED 0.96 inch 128x64, I2C, 4 pins",
+   "category": "Modules",
+   "prefix": "DS",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "4",
+     "x": 7.62,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -9.84,
+     -26.3,
+     17.46,
+     1.5
+    ],
+    [
+     "circle",
+     0.0,
+     0.0,
+     1.35
+    ]
+   ],
+   "court": [
+    -9.84,
+    -26.3,
+    17.46,
+    1.5
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "SSD1306 module, board 27.3 x 27.8 mm, 4-pin header centred on the top edge, pins GND VCC SCL SDA left to right as you look at the screen. Some sellers swap VCC and GND: read the print on yours and use Pin labels > VCC GND SCL SDA. Mounted screen-up on the component side it is shown as is; to have the screen face the other way (under the board), Shift+M. The four mounting holes differ between sellers and are not included."
+  },
+  "MOD_XIAO_C3": {
+   "id": "MOD_XIAO_C3",
+   "name": "Seeed XIAO ESP32-C3 (21 x 17.8 mm)",
+   "category": "Modules",
+   "prefix": "U",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 0.0,
+     "y": -2.54,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 0.0,
+     "y": -5.08,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "4",
+     "x": 0.0,
+     "y": -7.62,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "5",
+     "x": 0.0,
+     "y": -10.16,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "6",
+     "x": 0.0,
+     "y": -12.7,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "7",
+     "x": 0.0,
+     "y": -15.24,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "8",
+     "x": 15.24,
+     "y": -15.24,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "9",
+     "x": 15.24,
+     "y": -12.7,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "10",
+     "x": 15.24,
+     "y": -10.16,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "11",
+     "x": 15.24,
+     "y": -7.62,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "12",
+     "x": 15.24,
+     "y": -5.08,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "13",
+     "x": 15.24,
+     "y": -2.54,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "14",
+     "x": 15.24,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.28,
+     -18.12,
+     16.52,
+     2.88
+    ],
+    [
+     "rect",
+     3.12,
+     2.88,
+     12.120000000000001,
+     4.38
+    ],
+    [
+     "circle",
+     0.0,
+     0.0,
+     1.35
+    ]
+   ],
+   "court": [
+    -1.28,
+    -18.12,
+    16.52,
+    2.88
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Seeed's own footprint: 2 x 7 at 2.54 mm, rows 15.24 mm apart, USB-C at the top (shown as a box). D0=GPIO2 D1=3 D2=4 D3=5 D4/SDA=6 D5/SCL=7 D6/TX=21 D7/RX=20 D8/SCK=8 D9/MISO=9 D10/MOSI=10. Castellated: with deadbug pads (Pads of this part > Deadbug) you can solder it flat on the copper, or Shift+M to mirror it so it sits on the copper side. The pads under the board (battery, JTAG) are not included."
+  },
+  "SW_TACT_6": {
+   "id": "SW_TACT_6",
+   "name": "Tactile switch 6 mm (6.5 x 4.5 mm pins)",
+   "category": "Switches & misc",
+   "prefix": "SW",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 6.5,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 0.0,
+     "y": -4.5,
+     "shape": "round",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "4",
+     "x": 6.5,
+     "y": -4.5,
+     "shape": "round",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     0.25,
+     -4.75,
+     6.25,
+     0.25
+    ],
+    [
+     "circle",
+     3.25,
+     -2.25,
+     1.7
+    ]
+   ],
+   "court": [
+    0.25,
+    -4.75,
+    6.25,
+    0.25
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Pins on the same side are joined inside. Check your switch, sizes vary slightly."
+  }
+ }
+}

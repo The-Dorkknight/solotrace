@@ -439,5 +439,184 @@ class Window(unittest.TestCase):
         self.assertFalse(a.board.settings.island_mode)
 
 
+    def test_island_edge_cases(self):
+        from unittest import mock
+        from solotrace.board import Board, Island
+        from solotrace import demos, drc
+        a = self.app
+        a.load_board(Board(60, 40))
+        self.pump(3)
+        c = a.canvas
+        # Esc while dragging out an island: no island
+        a.set_tool("island")
+        s0, s1 = a.w2s(5, 5), a.w2s(15, 12)
+        c.event_generate("<ButtonPress-1>", x=int(s0[0]), y=int(s0[1]))
+        c.event_generate("<B1-Motion>", x=int(s1[0]), y=int(s1[1]))
+        a.escape()
+        c.event_generate("<ButtonRelease-1>", x=int(s1[0]), y=int(s1[1]))
+        self.pump(3)
+        self.assertEqual(a.board.islands, [])
+        # an island hidden under a part body: a second (slow) click on the selected part picks it
+
+        class E:
+            pass
+        bd = Board(60, 40)
+        bd.add_part("L_RAD_5", 30, 20, ref="L1", style="dead")
+        bd.islands.append(Island(32.5, 20, 2, 2))
+        bd.touch()
+        a.load_board(bd)
+        a.set_tool("select")
+        e = E()
+        e.x, e.y = (int(v) for v in a.w2s(32.5, 20))
+        e.state = 0
+        a.on_press(e)
+        self.assertEqual(a.sel, {"part": "L1"})
+        a.drag = None
+        a.on_press(e)
+        self.assertEqual(a.sel, {"island": 0})
+        # a trace can start on an island and end on another island of the same net
+        b = demos.manhattan_amp()
+        a.load_board(b)
+        a.set_tool("trace")
+        i5, i6 = b.islands[5], b.islands[6]
+        a.trace_click(i5.x - 5, i5.y)
+        a.trace_click(i5.x - 5, i5.y - 6)
+        a.trace_click(i6.x, i6.y - 6)
+        self.assertEqual([t.net for t in a.board.traces], ["COLL"])
+        self.assertEqual(drc.summarize(drc.run_drc(a.board)), "No problems found.")
+        # auto-place asks first on a board with islands
+        with mock.patch("solotrace.app.messagebox.askyesno", return_value=False) as ask:
+            a.auto_place()
+        self.assertTrue(ask.called)
+        self.assertIsNone(a.job)
+        # the full ground fill follows a quick redraw by itself
+        from solotrace import islands
+        a.board.touch()
+        a.redraw()
+        t = time.time()
+        while not islands.ready(a.board) and time.time() - t < 10:
+            self.pump(2)
+        self.assertTrue(islands.ready(a.board))
+
+
+    def test_shift_m_mirrors_a_part_and_it_is_highlighted(self):
+        a = self.app
+        a.arm_part("DIP8_N")
+        a.set_tool("place")
+        a.mirror_selected()                      # Shift+M while placing
+        self.assertTrue(a.arm_mirror)
+        a.place_here(30, 30)
+        ref = a.sel["part"]
+        self.assertTrue(a.board.is_mirrored(ref))
+        a.redraw()
+        self.pump(2)
+        tags = [a.canvas.itemcget(i, "text") for i in a.canvas.find_all() if a.canvas.type(i) == "text"]
+        self.assertTrue(any(t.startswith("MIRRORED") for t in tags))
+        a.escape()
+        a.sel = {"part": ref}
+        a.mirror_selected()                      # Shift+M on the selected part
+        self.assertFalse(a.board.is_mirrored(ref))
+        a.do_undo()
+        self.assertTrue(a.board.is_mirrored(a.sel.get("part", ref)) if a.sel.get("part") in a.board.parts
+                        else a.board.is_mirrored(ref))
+
+    def test_parts_mode_button_swaps_the_list_and_places_smd_on_the_copper_side(self):
+        a = self.app
+        tv = a.lib_tree
+        a.set_parts_mode("tht")
+        self.assertNotIn("g:SMD", tv.get_children(""))
+        self.assertIn("g:Chips (DIP)", tv.get_children(""))
+        self.assertEqual(str(a.mode_btn.cget("text")).strip(), "SMD parts")
+        a._toggle_parts_mode()                       # the button click
+        self.pump(3)
+        self.assertEqual(a.parts_mode, "smd")
+        self.assertEqual(tv.get_children(""), ("g:SMD",))   # SMD only
+        self.assertEqual(str(a.mode_btn.cget("text")).strip(), "Through-hole parts")
+        from solotrace.app import load_config
+        self.assertEqual(load_config().get("parts_mode"), "smd")
+        self.assertNotIn("pro", load_config())
+        a.armed = "SMD_SOIC8"
+        a.set_tool("place")
+        self.click(30.48, 25.4)
+        ref = next(r for r, pl in a.board.parts.items() if pl.part_id == "SMD_SOIC8")
+        self.assertTrue(a.board.parts[ref].flip)
+        self.assertIn("COPPER side", a.status_var.get())
+        a.sel = {"part": ref}
+        a.show_props()
+        self.pump(2)
+        a._set_flip(ref, False)
+        self.assertFalse(a.board.parts[ref].flip)
+        a._toggle_parts_mode()
+        self.assertEqual(a.parts_mode, "tht")
+        self.assertNotIn("g:SMD", tv.get_children(""))
+
+    def test_via_tool_plane_dialog_and_ground_contact(self):
+        from solotrace import demos, plane
+        from unittest import mock
+        a = self.app
+        a.load_board(demos.rf_oscillator())
+        self.pump(3)
+        a.set_backplane(True, "", {"stitch_spacing": 12.0}, True)
+        self.assertTrue(a.board.settings.backplane)
+        self.assertEqual(a.board.settings.stitch_spacing, 12.0)
+        a.add_pin_vias()
+        n1 = len(a.board.vias)
+        self.assertGreater(n1, 0)
+        a.add_stitch_vias()
+        self.assertGreater(len(a.board.vias), n1)
+        self.assertIn("stitching via", a.status_var.get())
+        # the Via tool adds one, selects it, and Delete removes it
+        a.set_tool("via")
+        n2 = len(a.board.vias)
+        import math
+        spot = next((x, y) for x in (1.27, 3.81, 6.35, 8.89) for y in (1.27, 3.81, 6.35)
+                    if all(math.hypot(v.x - x, v.y - y) > 3.0 for v in a.board.vias))
+        self.click(*spot)
+        self.assertEqual(len(a.board.vias), n2 + 1)
+        self.assertEqual(a.sel, {"via": n2})
+        a.delete_selection()
+        self.assertEqual(len(a.board.vias), n2)
+        a.set_tool("select")
+        v = a.board.vias[0]
+        self.click(v.x, v.y)
+        self.assertEqual(a.sel, {"via": 0})
+        a.show_props()
+        self.pump(2)
+        # dialogs open and apply
+        a.backplane_dialog()
+        self.pump(5)
+        dlg = [w for w in self.root.winfo_children() if isinstance(w, tk.Toplevel)][-1]
+        dlg.destroy()
+        a.island_dialog()
+        self.pump(5)
+        dlg = [w for w in self.root.winfo_children() if isinstance(w, tk.Toplevel)][-1]
+        dlg.destroy()
+        # ground contact per part
+        a._set_ground_contact("C3", "solid")
+        self.assertEqual(a.board.parts["C3"].ground_contact, "solid")
+        a._set_ground_contact("C3", "heavy")
+        a.sel = {"part": "C3"}
+        a.show_props()
+        self.pump(2)
+        # countersink list window and the back-plane exports
+        with mock.patch("solotrace.app.filedialog.asksaveasfilename", return_value=""):
+            a.show_countersink_list()
+            self.pump(3)
+            a.export_print("pdf", False, "top")
+        for w in self.root.winfo_children():
+            if isinstance(w, tk.Toplevel):
+                w.destroy()
+        # router / placer menus
+        a.router_var.set("negotiated")
+        a._set_router()
+        self.assertEqual(a.board.settings.router, "negotiated")
+        a.placer_var.set("routability")
+        a._set_placer()
+        self.assertEqual(a.board.settings.placer, "routability")
+        a.auto_route()
+        self.wait_job()
+        self.assertEqual(a.board.unrouted_count(), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

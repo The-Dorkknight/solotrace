@@ -47,8 +47,9 @@ class Geometry(unittest.TestCase):
 
 class Library(unittest.TestCase):
     def test_count_and_ids(self):
+        n = sum(1 for d in library.BUILTIN.values() if d.kind != "smd" and not d.id.startswith("MOD_"))
+        self.assertTrue(30 <= n <= 100, n)  # the brief: about 30 to 100 through-hole parts (SMD parts and modules are extra)
         n = len(library.BUILTIN)
-        self.assertTrue(30 <= n <= 100, n)  # the brief: about 30 to 100 parts
         self.assertEqual(len({d.id for d in library.BUILTIN.values()}), n)
 
     def test_required_parts_exist(self):

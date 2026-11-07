@@ -18,6 +18,8 @@ jobs:
           python3 -m pip install --user --break-system-packages gerbonara || true
       - name: Version line
         run: python3 src/main.py --version
+      - name: The in-browser app in docs/app matches the source
+        run: python3 tools/build_web_app.py --check
       - name: Run the tests (headless display)
         run: xvfb-run -a python3 -W ignore -m unittest discover -s tests -v
       - name: Export an example board end to end

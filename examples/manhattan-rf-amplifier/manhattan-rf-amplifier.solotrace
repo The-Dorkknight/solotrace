@@ -26,6 +26,21 @@
   "island_gap": 0.6,
   "island_grow": 0.0,
   "island_drop_floating": true,
+  "relief": true,
+  "relief_spokes": 4,
+  "relief_width": 0.8,
+  "relief_amps": 0.0,
+  "relief_gap": 0.5,
+  "relief_islands": true,
+  "relief_diag": true,
+  "backplane": false,
+  "backplane_clearance": 0.55,
+  "backplane_relief": true,
+  "via_drill": 0.7,
+  "via_pad": 1.8,
+  "stitch_spacing": 10.0,
+  "router": "auto",
+  "placer": "anneal",
   "classes": {
    "Signal": 0.8,
    "Power": 2.0,
@@ -280,6 +295,7 @@
    "corner": 0.5
   }
  ],
+ "vias": [],
  "defs": {
   "C_DISC_5.08": {
    "id": "C_DISC_5.08",

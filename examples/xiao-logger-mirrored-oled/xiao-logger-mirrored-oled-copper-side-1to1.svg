@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80mm" height="60mm" viewBox="0 0 80 60">
+<title>XIAO logger - SoloTrace mirrored</title>
+<rect x="0" y="0" width="80" height="60" fill="#ffffff"/>
+<polygon points="71.6600,33.8700 70.5600,33.8700 70.2600,33.5700 70.2600,32.4700 70.5600,32.1700 71.6600,32.1700 71.9600,32.4700 71.9600,33.5700" fill="#000000"/>
+<line x1="71.1100" y1="35.5600" x2="71.1100" y2="35.5600" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="71.1100" y1="38.1000" x2="71.1100" y2="38.1000" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="71.1100" y1="40.6400" x2="71.1100" y2="40.6400" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="71.1100" y1="43.1800" x2="71.1100" y2="43.1800" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="71.1100" y1="45.7200" x2="71.1100" y2="45.7200" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="71.1100" y1="48.2600" x2="71.1100" y2="48.2600" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="55.8700" y1="48.2600" x2="55.8700" y2="48.2600" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="55.8700" y1="45.7200" x2="55.8700" y2="45.7200" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="55.8700" y1="43.1800" x2="55.8700" y2="43.1800" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="55.8700" y1="40.6400" x2="55.8700" y2="40.6400" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="55.8700" y1="38.1000" x2="55.8700" y2="38.1000" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="55.8700" y1="35.5600" x2="55.8700" y2="35.5600" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="55.8700" y1="33.0200" x2="55.8700" y2="33.0200" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<polygon points="22.1300,55.3400 21.0300,55.3400 20.7300,55.6400 20.7300,56.7400 21.0300,57.0400 22.1300,57.0400 22.4300,56.7400 22.4300,55.6400" fill="#000000"/>
+<line x1="19.0400" y1="56.1900" x2="19.0400" y2="56.1900" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="16.5000" y1="56.1900" x2="16.5000" y2="56.1900" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="13.9600" y1="56.1900" x2="13.9600" y2="56.1900" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<polygon points="58.8400,19.6000 58.8400,18.5000 59.1400,18.2000 60.2400,18.2000 60.5400,18.5000 60.5400,19.6000 60.2400,19.9000 59.1400,19.9000" fill="#000000"/>
+<line x1="59.6900" y1="16.5100" x2="59.6900" y2="16.5100" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="59.6900" y1="13.9700" x2="59.6900" y2="13.9700" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="59.6900" y1="11.4300" x2="59.6900" y2="11.4300" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="59.6900" y1="8.8900" x2="59.6900" y2="8.8900" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="59.6900" y1="6.3500" x2="59.6900" y2="6.3500" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<polygon points="47.8300,41.6700 47.8300,42.7700 47.5300,43.0700 46.4300,43.0700 46.1300,42.7700 46.1300,41.6700 46.4300,41.3700 47.5300,41.3700" fill="#000000"/>
+<line x1="46.9800" y1="44.7600" x2="46.9800" y2="44.7600" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="46.9800" y1="47.3000" x2="46.9800" y2="47.3000" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="46.9800" y1="49.8400" x2="46.9800" y2="49.8400" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="69.8400" y1="8.8900" x2="69.8400" y2="8.8900" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="69.8400" y1="15.3900" x2="69.8400" y2="15.3900" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="74.3400" y1="8.8900" x2="74.3400" y2="8.8900" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="74.3400" y1="15.3900" x2="74.3400" y2="15.3900" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="74.3400" y1="15.3900" x2="74.3400" y2="37.7200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="74.3400" y1="37.7200" x2="71.4200" y2="40.6400" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="71.4200" y1="40.6400" x2="71.1100" y2="40.6400" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="46.9800" y1="47.3000" x2="51.4250" y2="51.7450" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="51.4250" y1="51.7450" x2="65.0850" y2="51.7450" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="65.0850" y1="51.7450" x2="71.1100" y2="45.7200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="16.5000" y1="56.1900" x2="16.5000" y2="56.8250" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="16.5000" y1="56.8250" x2="17.7700" y2="58.0950" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="17.7700" y1="58.0950" x2="36.1850" y2="58.0950" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="36.1850" y1="58.0950" x2="46.9800" y2="47.3000" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="46.9800" y1="49.8400" x2="50.1550" y2="53.0150" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="50.1550" y1="53.0150" x2="69.2050" y2="53.0150" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="69.2050" y1="53.0150" x2="73.0150" y2="49.2050" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="73.0150" y1="49.2050" x2="73.0150" y2="44.7600" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="73.0150" y1="44.7600" x2="71.4350" y2="43.1800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="71.4350" y1="43.1800" x2="71.1100" y2="43.1800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="13.9600" y1="56.1900" x2="51.4250" y2="18.7250" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="51.4250" y1="18.7250" x2="51.4250" y2="11.7400" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="51.4250" y1="11.7400" x2="58.4100" y2="4.7550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="58.4100" y1="4.7550" x2="73.6500" y2="4.7550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="73.6500" y1="4.7550" x2="76.1900" y2="7.2950" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="76.1900" y1="7.2950" x2="76.1900" y2="38.4100" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="76.1900" y1="38.4100" x2="71.4200" y2="43.1800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="71.4200" y1="43.1800" x2="71.1100" y2="43.1800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.6900" y1="8.8900" x2="59.3550" y2="8.8900" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.3550" y1="8.8900" x2="55.8700" y2="12.3750" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="55.8700" y1="12.3750" x2="55.8700" y2="33.0200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.6900" y1="13.9700" x2="59.3550" y2="13.9700" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.3550" y1="13.9700" x2="57.7750" y2="15.5500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="57.7750" y1="15.5500" x2="57.7750" y2="39.0450" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="57.7750" y1="39.0450" x2="56.1800" y2="40.6400" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="56.1800" y1="40.6400" x2="55.8700" y2="40.6400" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.6900" y1="6.3500" x2="67.3000" y2="6.3500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="67.3000" y1="6.3500" x2="69.8400" y2="8.8900" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="46.9800" y1="42.2200" x2="49.2100" y2="42.2200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="49.2100" y1="42.2200" x2="55.8700" y2="35.5600" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="21.5800" y1="56.1900" x2="35.5500" y2="42.2200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="35.5500" y1="42.2200" x2="46.9800" y2="42.2200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="55.8700" y1="35.5600" x2="55.5600" y2="35.5600" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="55.5600" y1="35.5600" x2="53.9650" y2="33.9650" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="53.9650" y1="33.9650" x2="53.9650" y2="11.7400" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="53.9650" y1="11.7400" x2="59.3550" y2="6.3500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.3550" y1="6.3500" x2="59.6900" y2="6.3500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.6900" y1="16.5100" x2="60.6400" y2="16.5100" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="60.6400" y1="16.5100" x2="61.5850" y2="17.4550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="61.5850" y1="17.4550" x2="61.5850" y2="40.3150" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="61.5850" y1="40.3150" x2="56.1800" y2="45.7200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="56.1800" y1="45.7200" x2="55.8700" y2="45.7200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.6900" y1="11.4300" x2="60.0050" y2="11.4300" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="60.0050" y1="11.4300" x2="64.1250" y2="15.5500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="64.1250" y1="15.5500" x2="64.1250" y2="42.8550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="64.1250" y1="42.8550" x2="57.1400" y2="49.8400" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="57.1400" y1="49.8400" x2="54.6000" y2="49.8400" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="54.6000" y1="49.8400" x2="53.9650" y2="49.2050" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="53.9650" y1="49.2050" x2="53.9650" y2="44.7600" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="53.9650" y1="44.7600" x2="55.5450" y2="43.1800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="55.5450" y1="43.1800" x2="55.8700" y2="43.1800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="46.9800" y1="44.7600" x2="49.2100" y2="44.7600" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="49.2100" y1="44.7600" x2="55.8700" y2="38.1000" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="19.0400" y1="56.1900" x2="19.0400" y2="55.5550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="19.0400" y1="55.5550" x2="34.9150" y2="39.6800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="34.9150" y1="39.6800" x2="44.4400" y2="39.6800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="44.4400" y1="44.7600" x2="46.9800" y2="44.7600" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.6900" y1="19.0500" x2="59.6900" y2="29.5100" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="59.6900" y1="29.5100" x2="59.6800" y2="29.5200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="72.3800" y1="29.5200" x2="73.0150" y2="30.1550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="73.0150" y1="30.1550" x2="73.0150" y2="36.5050" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="73.0150" y1="36.5050" x2="71.4200" y2="38.1000" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="71.4200" y1="38.1000" x2="71.1100" y2="38.1000" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="44.4400" y1="39.6800" x2="44.4400" y2="39.6800" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="44.4400" y1="44.7600" x2="44.4400" y2="44.7600" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="59.6800" y1="29.5200" x2="59.6800" y2="29.5200" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="72.3800" y1="29.5200" x2="72.3800" y2="29.5200" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<circle cx="71.1100" cy="33.0200" r="0.2000" fill="#ffffff"/>
+<circle cx="71.1100" cy="35.5600" r="0.2000" fill="#ffffff"/>
+<circle cx="71.1100" cy="38.1000" r="0.2000" fill="#ffffff"/>
+<circle cx="71.1100" cy="40.6400" r="0.2000" fill="#ffffff"/>
+<circle cx="71.1100" cy="43.1800" r="0.2000" fill="#ffffff"/>
+<circle cx="71.1100" cy="45.7200" r="0.2000" fill="#ffffff"/>
+<circle cx="71.1100" cy="48.2600" r="0.2000" fill="#ffffff"/>
+<circle cx="55.8700" cy="48.2600" r="0.2000" fill="#ffffff"/>
+<circle cx="55.8700" cy="45.7200" r="0.2000" fill="#ffffff"/>
+<circle cx="55.8700" cy="43.1800" r="0.2000" fill="#ffffff"/>
+<circle cx="55.8700" cy="40.6400" r="0.2000" fill="#ffffff"/>
+<circle cx="55.8700" cy="38.1000" r="0.2000" fill="#ffffff"/>
+<circle cx="55.8700" cy="35.5600" r="0.2000" fill="#ffffff"/>
+<circle cx="55.8700" cy="33.0200" r="0.2000" fill="#ffffff"/>
+<circle cx="21.5800" cy="56.1900" r="0.2000" fill="#ffffff"/>
+<circle cx="19.0400" cy="56.1900" r="0.2000" fill="#ffffff"/>
+<circle cx="16.5000" cy="56.1900" r="0.2000" fill="#ffffff"/>
+<circle cx="13.9600" cy="56.1900" r="0.2000" fill="#ffffff"/>
+<circle cx="59.6900" cy="19.0500" r="0.2000" fill="#ffffff"/>
+<circle cx="59.6900" cy="16.5100" r="0.2000" fill="#ffffff"/>
+<circle cx="59.6900" cy="13.9700" r="0.2000" fill="#ffffff"/>
+<circle cx="59.6900" cy="11.4300" r="0.2000" fill="#ffffff"/>
+<circle cx="59.6900" cy="8.8900" r="0.2000" fill="#ffffff"/>
+<circle cx="59.6900" cy="6.3500" r="0.2000" fill="#ffffff"/>
+<circle cx="46.9800" cy="42.2200" r="0.2000" fill="#ffffff"/>
+<circle cx="46.9800" cy="44.7600" r="0.2000" fill="#ffffff"/>
+<circle cx="46.9800" cy="47.3000" r="0.2000" fill="#ffffff"/>
+<circle cx="46.9800" cy="49.8400" r="0.2000" fill="#ffffff"/>
+<circle cx="69.8400" cy="8.8900" r="0.2000" fill="#ffffff"/>
+<circle cx="69.8400" cy="15.3900" r="0.2000" fill="#ffffff"/>
+<circle cx="74.3400" cy="8.8900" r="0.2000" fill="#ffffff"/>
+<circle cx="74.3400" cy="15.3900" r="0.2000" fill="#ffffff"/>
+<circle cx="44.4400" cy="39.6800" r="0.2000" fill="#ffffff"/>
+<circle cx="44.4400" cy="44.7600" r="0.2000" fill="#ffffff"/>
+<circle cx="59.6800" cy="29.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="72.3800" cy="29.5200" r="0.2000" fill="#ffffff"/>
+<rect x="0.05" y="0.05" width="79.9" height="59.9" fill="none" stroke="#808080" stroke-width="0.1"/>
+</svg>

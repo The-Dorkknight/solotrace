@@ -8,7 +8,8 @@ The PolyForm Noncommercial licence in `LICENSE.md` covers only the code and docu
 
 | Item | How it is used | Licence |
 | --- | --- | --- |
-| Python and tkinter | Runs the program; the program needs nothing else | Python Software Foundation licence ([python.org/psf/license](https://docs.python.org/3/license.html)) |
+| Python (and tkinter for the optional desktop window) | Runs the program; the program needs nothing else | Python Software Foundation licence ([python.org/psf/license](https://docs.python.org/3/license.html)) |
+| [Pyodide](https://pyodide.org) 0.29.5 | Only the in-browser version (`docs/app/`): the page loads it from the jsDelivr CDN (`cdn.jsdelivr.net/npm/pyodide@0.29.5/`) to run SoloTrace's Python in the browser. Not bundled in the repository | Mozilla Public License 2.0 ([licence](https://github.com/pyodide/pyodide/blob/main/LICENSE)); the CPython and other packages inside it keep their own licences |
 | [gerbonara](https://pypi.org/project/gerbonara/) | Optional, tests only: one test re-reads the exported Gerber and drill files. Not bundled, not needed to run the app | See the project page |
 | [Pillow](https://pypi.org/project/pillow/) | Optional, development only: `tools/make_icons.py` draws the icon set. Not bundled | See the project page |
 | Chromium + Playwright, ImageMagick | Only used while making the README screenshots and the Pages site check; not part of the project | Their own licences |

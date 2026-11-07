@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!-- Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight)
+     Licensed under the PolyForm Noncommercial License 1.0.0. No warranty.
+     SoloTrace web UI - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoloTrace</title>
+<link rel="icon" href="/static/icon.png" type="image/png">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="wip">WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN &mdash; web UI (no tkinter needed). Not tested on a real Elegoo Phecda yet.</div>
+
+<div id="topbar">
+  <div id="menubar">
+    <div class="menu" data-menu="file">File</div>
+    <div class="menu" data-menu="edit">Edit</div>
+    <div class="menu" data-menu="board">Board</div>
+    <div class="menu" data-menu="parts">Parts</div>
+    <div class="menu" data-menu="export">Export</div>
+    <div class="menu" data-menu="help">Help</div>
+  </div>
+  <div id="tools">
+    <button class="tool" data-tool="select" title="Select (S): click things, drag parts and trace sections">Select</button>
+    <button class="tool" data-tool="place" title="Place (P): pick a part on the left, click on the board">Place</button>
+    <button class="tool" data-tool="wire" title="Wire (W): click two pins to connect them (Shift = rigid)">Wire</button>
+    <button class="tool" data-tool="trace" title="Trace (T): draw a trace by hand from a connected pin">Trace</button>
+    <button class="tool" data-tool="trim" title="Trim (X): remove one section of a trace">Trim</button>
+    <button class="tool" data-tool="cut" title="Cut (C): remove a piece of trace up to the nearest joints">Cut</button>
+    <button class="tool" data-tool="jumper" title="Jumper (J): a wire link across a trace">Jumper</button>
+    <button class="tool" data-tool="island" title="Island (I): a copper pad for deadbug / Manhattan building">Island</button>
+    <button class="tool" data-tool="via" title="Via (V): a hole with a wire soldered both sides, to the back-side ground plane">Via</button>
+  </div>
+  <div id="topright">
+    <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
+    <button id="btn-fit" title="Fit the board in the window (F)">Fit</button>
+    <button id="btn-mirror" title="Flip the view between the component side and the copper side (M)">Flip view</button>
+    <button id="btn-route" class="accent" title="Auto-route every net (Board menu has more)">Auto-route</button>
+    <button id="btn-drc" title="Design rule check: clearances, widths, unrouted connections">Check</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="left">
+    <div class="side-head">Parts</div>
+    <select id="quick"><option value="">Favourites &amp; recent...</option></select>
+    <input id="search" type="search" placeholder="Search, e.g. dip 8, to-220, 5 mm, soic" autocomplete="off">
+    <button id="mode-btn" class="mode-btn" title="">
+      <svg id="mode-icon" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"></svg>
+      <span id="mode-text">SMD parts</span>
+    </button>
+    <div id="tree"></div>
+    <canvas id="preview" width="250" height="150"></canvas>
+    <div id="preview-row">
+      <button id="fav-btn" class="small" title="Add to favourites">&#9734; Favourite</button>
+      <span id="lib-info" class="muted">Pick a part to see it here.</span>
+    </div>
+  </div>
+
+  <div id="centre">
+    <canvas id="board"></canvas>
+    <div id="hovernet"></div>
+  </div>
+
+  <div id="right">
+    <div class="side-head">Selection</div>
+    <div id="panel"></div>
+    <div id="drc-box" hidden>
+      <div class="side-head">Check <button id="drc-close" class="small">close</button></div>
+      <div id="drc-summary" class="muted"></div>
+      <div id="drc-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="statusbar">
+  <span id="status"></span>
+  <span id="job" hidden><progress id="job-bar" max="100" value="0"></progress><button id="job-cancel" class="small">Cancel</button></span>
+  <span id="cursor"></span>
+  <span id="route-badge" class="badge">no nets yet</span>
+  <span id="stamp" class="muted"></span>
+</div>
+
+<div id="menu-popup" class="popup" hidden></div>
+<div id="modal-back" hidden><div id="modal"></div></div>
+<input type="file" id="file-open" accept=".solotrace,.json" hidden>
+<input type="file" id="file-netlist" accept=".txt,.net" hidden>
+<input type="file" id="file-kicad" accept=".kicad_mod" hidden>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

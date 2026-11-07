@@ -16,6 +16,7 @@ from . import __version__
 from .board import Board
 from .geom import Cap, Poly
 from .islands import plan as island_plan
+from .plane import plan as plane_plan
 from .render import silk_segments
 
 SCALE = 1000000   # 4.6 format, millimetres
@@ -90,8 +91,8 @@ def _draw(g: _Gerber, s) -> None:
 
 
 def copper_layer(board: Board) -> str:
-    g = _Gerber("Copper,L1,Bot")
-    p = island_plan(board)
+    g = _Gerber("Copper,L2,Bot" if board.settings.backplane else "Copper,L1,Bot")
+    p = island_plan(board, full=True)
     if p is None:
         for s in board.copper():
             _draw(g, s)
@@ -109,6 +110,22 @@ def copper_layer(board: Board) -> str:
     return g.text()
 
 
+def plane_layer(board: Board) -> str:
+    """The back-side (component side) ground plane: solid copper with antipads and reliefs."""
+    g = _Gerber("Copper,L1,Top")
+    p = plane_plan(board)
+    if p is None:
+        return g.text()
+    g.region(p.rect_poly().pts)
+    g.body.append("%LPC*%")
+    for s in p.cut:
+        _draw(g, s)
+    g.body.append("%LPD*%")
+    for s in p.fat:
+        _draw(g, s)
+    return g.text()
+
+
 def outline_layer(board: Board) -> str:
     g = _Gerber("Profile,NP")
     W, H = board.width, board.height
@@ -118,9 +135,9 @@ def outline_layer(board: Board) -> str:
     return g.text()
 
 
-def silk_layer(board: Board) -> str:
-    g = _Gerber("Legend,Top")
-    for x1, y1, x2, y2 in silk_segments(board):
+def silk_layer(board: Board, side: str = "top") -> str:
+    g = _Gerber("Legend,Top" if side == "top" else "Legend,Bot")
+    for x1, y1, x2, y2 in silk_segments(board, side):
         g.stroke(x1, y1, x2, y2, 0.15)
     return g.text()
 
@@ -148,12 +165,19 @@ def drill_file(board: Board) -> str:
 
 def make_files(board: Board) -> Dict[str, str]:
     base = board.name.replace(" ", "_") or "board"
-    return {
+    files = {
         "%s-Copper_Bottom.gbl" % base: copper_layer(board),
         "%s-Edge_Cuts.gm1" % base: outline_layer(board),
-        "%s-Silkscreen_Top.gto" % base: silk_layer(board),
+        "%s-Silkscreen_Top.gto" % base: silk_layer(board, "top"),
         "%s-PTH.drl" % base: drill_file(board),
     }
+    if board.settings.backplane:
+        files["%s-Copper_Top.gtl" % base] = plane_layer(board)
+    if any(board.on_copper_side(r) for r in board.parts):
+        # SMD parts and mirrored (under-the-board) parts sit on the copper side: their outlines go on
+        # the bottom legend
+        files["%s-Silkscreen_Bottom.gbo" % base] = silk_layer(board, "bottom")
+    return files
 
 
 def write_zip(board: Board, path: str) -> List[str]:

@@ -1,0 +1,6 @@
+References,Qty,Value,Part,Part id,Mounted on
+DS1,1,SSD1306,"OLED 0.96 inch 128x64, I2C, 4 pins",MOD_OLED096_I2C,copper side (MIRRORED)
+J1,1,micro SD,"Micro SD card module, SPI, 6 pins (42 x 24 mm, 5 V)",MOD_MICROSD_SPI,component side
+J2,1,sensor,"Pin header 1x4, 2.54 mm",HDR_1x4,component side
+SW1,1,log,Tactile switch 6 mm (6.5 x 4.5 mm pins),SW_TACT_6,component side
+U1,1,XIAO ESP32-C3,Seeed XIAO ESP32-C3 (21 x 17.8 mm),MOD_XIAO_C3,component side

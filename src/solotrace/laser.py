@@ -114,10 +114,11 @@ def validate(board: Board, o: LaserOptions) -> List[str]:
         w.append("Isolation gap is very small compared with the line interval.")
     if o.trace_comp < -0.3:
         w.append("A negative trace compensation this large will eat into thin traces.")
-    if board.settings.island_mode and 2 * o.trace_comp >= board.settings.island_gap - 0.05:
+    from .islands import gap_of
+    if board.settings.island_mode and 2 * o.trace_comp >= gap_of(board) - 0.05:
         w.append("Trace adjust %.2f mm grows the copper on both sides of each %.2f mm island gap and would "
                  "close it: lower the trace adjust or widen the gap (Board > Ground fill settings)."
-                 % (o.trace_comp, board.settings.island_gap))
+                 % (o.trace_comp, gap_of(board)))
     if board.height / max(o.line_interval, 1e-6) > o.max_lines:
         w.append("Too many scan lines; increase the line interval.")
     return w
@@ -317,20 +318,38 @@ def _mirror_lines(lines, W: float):
     return out
 
 
-def generate(board: Board, o: Optional[LaserOptions] = None, title: str = "copper") -> LaserJob:
+def generate(board: Board, o: Optional[LaserOptions] = None, title: str = "copper",
+             layer: str = "bottom") -> LaserJob:
+    """G-code for the copper (bottom) side, or with ``layer="top"`` for the back-side ground
+    plane. The plane is burned looking at the component side, so that job is not mirrored
+    whatever the option says (a note in the header says so)."""
     o = o or LaserOptions()
+    if layer == "top":
+        import copy as _copy
+        o = _copy.copy(o)
+        o.mirror = False
     job = LaserJob()
     job.warnings = validate(board, o)
     if o.mode not in MODES:
         raise ValueError("unknown mode %s" % o.mode)
     W, H = board.width, board.height
-    shapes = board.copper()
     fill = None
-    from .islands import plan as island_plan
-    ip = island_plan(board)
-    if ip is not None:
-        shapes = list(shapes) + list(ip.fat)
-        fill = (ip.rect, ip.cut)
+    ip = None
+    if layer == "top":
+        from .plane import plan as plane_plan
+        pp = plane_plan(board)
+        if pp is None:
+            raise ValueError("the back-side ground plane is off")
+        shapes = list(pp.fat)
+        fill = (pp.rect, pp.cut)
+        title = title + " (back-side ground plane)"
+    else:
+        shapes = board.copper()
+        from .islands import plan as island_plan
+        ip = island_plan(board, full=True)
+        if ip is not None:
+            shapes = list(shapes) + list(ip.fat)
+            fill = (ip.rect, ip.cut)
     dots = [(x, y, o.dot_dia / 2.0) for x, y, _d in board.drills()] if o.drill_dots else []
     hz = _scan(shapes, W, H, o, dots, fill)
     # preview in design coordinates
@@ -338,6 +357,11 @@ def generate(board: Board, o: Optional[LaserOptions] = None, title: str = "coppe
         for a, c in ivs:
             job.segments.append((a, y, c, y))
     code = _header(board.name, o, W, H, title)
+    if layer == "top":
+        code.insert(3, "; BACK-SIDE GROUND PLANE: burn this looking at the COMPONENT side. Not mirrored. "
+                       "Work zero = lower-left corner of the board as seen from the component side.")
+        code.insert(4, "; Alternative with no registration at all: leave the back solid and countersink the "
+                       "non-ground holes (Export > Countersink list).")
     if ip is not None:
         code.insert(3, "; Ground fill on net %s, %.2f mm gap round every other net%s"
                     % (ip.ground or "(none)", ip.gap, " (isolation burns the same as negative here)"

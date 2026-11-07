@@ -135,33 +135,100 @@ class IslandDialog:
         ttk.Label(d, text="Fatten other nets' copper by up to (mm)").grid(row=4, column=0, sticky="w", **pad)
         self.grow = tk.StringVar(value="%g" % st.island_grow)
         ttk.Entry(d, textvariable=self.grow, width=10).grid(row=4, column=1, sticky="w", **pad)
-        n_tht = sum(1 for pl in b.parts.values() if pl.style != "dead" or pl.pad_styles)
+        n_tht = sum(1 for r, pl in b.parts.items() if (pl.style != "dead" or pl.pad_styles) and not b.is_smd(r))
         self.dead = tk.BooleanVar(value=(not st.island_mode) and n_tht > 0)
         ttk.Checkbutton(d, text="Make every pad a deadbug pad (no holes to drill; %d part(s) to change)" % n_tht,
                         variable=self.dead).grid(row=5, column=0, columnspan=2, sticky="w", **pad)
         self.drop = tk.BooleanVar(value=st.island_drop_floating)
         ttk.Checkbutton(d, text="Remove pieces of fill that no ground pin sits on (floating copper)",
                         variable=self.drop).grid(row=6, column=0, columnspan=2, sticky="w", **pad)
+        rf = ttk.LabelFrame(d, text="Ground contact (thermal reliefs)", padding=4)
+        rf.grid(row=7, column=0, columnspan=2, sticky="we", padx=8, pady=(6, 2))
+        self.relief = tk.BooleanVar(value=st.relief)
+        ttk.Checkbutton(rf, text="Thermal reliefs: a ring of bare board round each ground pad, bridged by spokes\n"
+                                 "(so the iron does not have to heat the whole board)", variable=self.relief,
+                        command=self._relief_info).grid(row=0, column=0, columnspan=4, sticky="w")
+        ttk.Label(rf, text="Spokes").grid(row=1, column=0, sticky="w")
+        self.spokes = tk.StringVar(value=str(st.relief_spokes))
+        sp = ttk.Spinbox(rf, from_=2, to=8, textvariable=self.spokes, width=4, command=self._relief_info)
+        sp.grid(row=1, column=1, sticky="w")
+        ttk.Label(rf, text="Spoke width (mm)").grid(row=1, column=2, sticky="w", padx=(8, 0))
+        self.swidth = tk.StringVar(value="%g" % st.relief_width)
+        ttk.Entry(rf, textvariable=self.swidth, width=6).grid(row=1, column=3, sticky="w")
+        ttk.Label(rf, text="Ring width (mm)").grid(row=2, column=0, sticky="w")
+        self.sgap = tk.StringVar(value="%g" % st.relief_gap)
+        ttk.Entry(rf, textvariable=self.sgap, width=6).grid(row=2, column=1, sticky="w")
+        ttk.Label(rf, text="Or size spokes for (A)").grid(row=2, column=2, sticky="w", padx=(8, 0))
+        self.amps = tk.StringVar(value="%g" % st.relief_amps if st.relief_amps > 0 else "")
+        ae = ttk.Entry(rf, textvariable=self.amps, width=6)
+        ae.grid(row=2, column=3, sticky="w")
+        self.rislands = tk.BooleanVar(value=st.relief_islands)
+        ttk.Checkbutton(rf, text="Relieve copper islands on the ground net too (bigger spokes on big islands)",
+                        variable=self.rislands).grid(row=3, column=0, columnspan=4, sticky="w")
+        self.rdiag = tk.BooleanVar(value=st.relief_diag)
+        ttk.Checkbutton(rf, text="Round pads: spokes at 45 degrees (ovals and rectangles always use their sides)",
+                        variable=self.rdiag).grid(row=4, column=0, columnspan=4, sticky="w")
+        self.rinfo = tk.StringVar()
+        ttk.Label(rf, textvariable=self.rinfo, wraplength=370, justify="left", foreground="#555").grid(
+            row=5, column=0, columnspan=4, sticky="w", pady=(2, 0))
+        for v in (self.spokes, self.swidth, self.amps):
+            v.trace_add("write", lambda *a: self._relief_info())
+        self._relief_info()
         ttk.Label(d, text="The gap is never less than the copper-to-copper gap of the board (%g mm). Copper "
                           "is fattened only where it keeps the gap from other nets, ground copper and the edge; "
                           "copper islands you placed keep their size. "
                           "For laser etching keep the gap at least 3 to 4 line intervals." % st.clearance,
-                  wraplength=380, justify="left", foreground="#555").grid(row=7, column=0, columnspan=2, sticky="w", **pad)
+                  wraplength=380, justify="left", foreground="#555").grid(row=8, column=0, columnspan=2, sticky="w", **pad)
         bar = ttk.Frame(d)
-        bar.grid(row=8, column=0, columnspan=2, pady=8)
+        bar.grid(row=9, column=0, columnspan=2, pady=8)
         ttk.Button(bar, text="Apply", command=lambda: self.apply(False)).pack(side="left", padx=4)
         ttk.Button(bar, text="OK", command=lambda: self.apply(True)).pack(side="left", padx=4)
         ttk.Button(bar, text="Cancel", command=top.destroy).pack(side="left", padx=4)
+
+    def _relief_values(self):
+        n = max(2, min(8, int(float(self.spokes.get() or 4))))
+        w = _num(self.swidth, 0.2, 4, "Spoke width")
+        g = _num(self.sgap, 0.2, 3, "Ring width")
+        a = float(self.amps.get()) if self.amps.get().strip() else 0.0
+        if a < 0 or a > 60:
+            raise ValueError("Current must be between 0 and 60 A.")
+        return n, w, g, a
+
+    def _relief_info(self, *_a) -> None:
+        from .islands import relief_current, spoke_width
+        from .board import Settings
+        try:
+            n, w, g, a = self._relief_values()
+        except ValueError as exc:
+            self.rinfo.set(str(exc))
+            return
+        st = self.app.board.settings
+        tmp = Settings.from_dict(st.to_dict())
+        tmp.relief_spokes, tmp.relief_width, tmp.relief_gap, tmp.relief_amps = n, w, g, a
+        sw = spoke_width(tmp)
+        amps = relief_current(tmp)
+        txt = "%d spokes x %.2f mm carry about %.1f A together (IPC-2221, %g oz copper, %g C rise; a guide, and " \
+              "conservative for short spokes)." % (n, sw, amps, st.copper_oz, st.temp_rise)
+        if a > 0 and sw > w + 1e-9:
+            txt = "Sized for %g A: " % a + txt
+        if sw >= 2.0:
+            txt += " Spokes this wide leave little ring: hand soldering gets harder; above about 3 A per pad the " \
+                   "industry simply makes the pad solid (mark the part 'solid' in its panel)."
+        self.rinfo.set(txt)
 
     def apply(self, close: bool) -> None:
         try:
             gap = _num(self.gap, 0.1, 5, "Gap")
             grow = _num(self.grow, 0, 10, "Fatten")
+            n, w, g, a = self._relief_values()
         except ValueError as exc:
             messagebox.showerror("SoloTrace", str(exc), parent=self.d)
             return
         net = self.net.get()
-        self.app.board.settings.island_drop_floating = bool(self.drop.get())
+        st = self.app.board.settings
+        st.island_drop_floating = bool(self.drop.get())
+        st.relief, st.relief_spokes, st.relief_width, st.relief_gap, st.relief_amps = bool(self.relief.get()), n, w, g, a
+        st.relief_islands, st.relief_diag = bool(self.rislands.get()), bool(self.rdiag.get())
         self.app.set_islands(bool(self.on.get()), "" if net == self.guess_text else net, gap, grow,
                              bool(self.dead.get()))
         self.dead.set(False)
@@ -170,6 +237,113 @@ class IslandDialog:
 
 
 # ---------------------------------------------------------------------------------------
+class BackplaneDialog:
+    """Back-side ground plane for a double-clad board: vias, clearance rings, stitching."""
+
+    def __init__(self, app) -> None:
+        from .islands import guess_ground
+        from .plane import fmt_freq, stitch_frequency
+        self.app = app
+        b = app.board
+        st = b.settings
+        top = self.d = tk.Toplevel(app.root)
+        top.title("Back-side ground plane (double-clad board)")
+        top.transient(app.root)
+        d = ttk.Frame(top, padding=6)
+        d.pack(fill="both", expand=True)
+        pad = {"padx": 8, "pady": 3}
+        ttk.Label(d, text="For a double-sided copper-clad board: all traces stay on the copper side as usual, and the "
+                          "component side is left as one sheet of copper used as ground. Ground leads are soldered on "
+                          "both sides; a VIA is a hole with a bit of wire soldered both sides (Via tool, key V); every "
+                          "other hole gets a bare ring in the plane so its lead does not touch ground.",
+                  wraplength=420, justify="left").grid(row=0, column=0, columnspan=2, sticky="w", **pad)
+        self.on = tk.BooleanVar(value=st.backplane)
+        ttk.Checkbutton(d, text="Use the back of the board as a ground plane", variable=self.on).grid(
+            row=1, column=0, columnspan=2, sticky="w", **pad)
+        ttk.Label(d, text="Ground net").grid(row=2, column=0, sticky="w", **pad)
+        g = guess_ground(b) or "none"
+        self.guess_text = "(guess: %s)" % g
+        self.net = tk.StringVar(value=st.island_net if st.island_net in b.nets else self.guess_text)
+        ttk.Combobox(d, textvariable=self.net, values=[self.guess_text] + sorted(b.nets), state="readonly",
+                     width=18).grid(row=2, column=1, sticky="w", **pad)
+        self.vars: Dict[str, tk.StringVar] = {}
+        rows = [("backplane_clearance", "Bare ring round each non-ground hole, beyond the hole (mm)", st.backplane_clearance),
+                ("via_drill", "Via hole (mm; 0.7 for 0.6 mm wire)", st.via_drill),
+                ("via_pad", "Via pad on the trace side (mm)", st.via_pad),
+                ("stitch_spacing", "Stitching via grid (mm)", st.stitch_spacing)]
+        for i, (k, label, val) in enumerate(rows):
+            ttk.Label(d, text=label, wraplength=300, justify="left").grid(row=3 + i, column=0, sticky="w", **pad)
+            v = tk.StringVar(value="%g" % val)
+            self.vars[k] = v
+            ttk.Entry(d, textvariable=v, width=8).grid(row=3 + i, column=1, sticky="w", **pad)
+        self.relief = tk.BooleanVar(value=st.backplane_relief)
+        ttk.Checkbutton(d, text="Thermal reliefs in the plane round ground leads and vias\n(spoke settings are under "
+                                "Ground fill settings)", variable=self.relief).grid(row=7, column=0, columnspan=2,
+                                                                                    sticky="w", **pad)
+        self.finfo = tk.StringVar()
+        ttk.Label(d, textvariable=self.finfo, wraplength=420, justify="left", foreground="#555").grid(
+            row=8, column=0, columnspan=2, sticky="w", **pad)
+
+        def upd(*_a) -> None:
+            try:
+                sp = float(self.vars["stitch_spacing"].get())
+            except ValueError:
+                self.finfo.set("")
+                return
+            self.finfo.set("Stitching vias %g mm apart keep the plane and the front ground one mesh up to about %s "
+                           "(lambda/20 in FR4). The LC worry: two copper sheets joined at ONE point do resonate, but on "
+                           "a 100 mm board that is near 700 MHz; joined at every ground pin plus this grid they are a "
+                           "low-impedance mesh, which is how multilayer boards are built."
+                           % (sp, fmt_freq(stitch_frequency(sp))))
+        self.vars["stitch_spacing"].trace_add("write", upd)
+        upd()
+        bar = ttk.Frame(d)
+        bar.grid(row=9, column=0, columnspan=2, sticky="w", **pad)
+        ttk.Button(bar, text="Add stitching vias now", width=0, command=self.stitch).pack(side="left")
+        ttk.Button(bar, text="Via at every ground pin without a hole", width=0, command=self.pin_vias).pack(side="left", padx=4)
+        ttk.Button(bar, text="Countersink list...", width=0, command=self.countersink).pack(side="left")
+        ttk.Label(d, text="No etching on the back at all: leave it solid, drill, and countersink every non-ground "
+                          "hole with a 2 to 2.5 mm drill tip (the list above). Or etch / burn the exported top "
+                          "copper layer; then front-to-back alignment must be within the ring allowance.",
+                  wraplength=420, justify="left", foreground="#555").grid(row=10, column=0, columnspan=2, sticky="w", **pad)
+        bar2 = ttk.Frame(d)
+        bar2.grid(row=11, column=0, columnspan=2, pady=8)
+        ttk.Button(bar2, text="Apply", command=lambda: self.apply(False)).pack(side="left", padx=4)
+        ttk.Button(bar2, text="OK", command=lambda: self.apply(True)).pack(side="left", padx=4)
+        ttk.Button(bar2, text="Cancel", command=top.destroy).pack(side="left", padx=4)
+
+    def _read(self) -> Optional[dict]:
+        try:
+            return {"backplane_clearance": _num(self.vars["backplane_clearance"], 0.1, 3, "Ring"),
+                    "via_drill": _num(self.vars["via_drill"], 0.3, 3, "Via hole"),
+                    "via_pad": _num(self.vars["via_pad"], 1.0, 5, "Via pad"),
+                    "stitch_spacing": _num(self.vars["stitch_spacing"], 2, 100, "Stitching grid")}
+        except ValueError as exc:
+            messagebox.showerror("SoloTrace", str(exc), parent=self.d)
+            return None
+
+    def apply(self, close: bool) -> None:
+        vals = self._read()
+        if vals is None:
+            return
+        net = self.net.get()
+        self.app.set_backplane(bool(self.on.get()), "" if net == self.guess_text else net, vals, bool(self.relief.get()))
+        if close:
+            self.d.destroy()
+
+    def stitch(self) -> None:
+        self.apply(False)
+        self.app.add_stitch_vias()
+
+    def pin_vias(self) -> None:
+        self.apply(False)
+        self.app.add_pin_vias()
+
+    def countersink(self) -> None:
+        self.apply(False)
+        self.app.show_countersink_list()
+
+
 class FootprintWizard:
     """Build your own part: type or click pads, or start from a preset or a KiCad file."""
 
@@ -467,6 +641,15 @@ class LaserDialog:
                         "Wear laser eye protection and ventilate. Run the test cards before a real board.",
                         bg="#b8860b", fg="white", justify="left", wraplength=330, padx=4, pady=3)
         warn.pack(fill="x")
+        self.v["layer"] = tk.StringVar(value="bottom")
+        if self.board.settings.backplane:
+            lf = ttk.LabelFrame(left, text="Which side", padding=4)
+            lf.pack(fill="x", pady=4)
+            ttk.Radiobutton(lf, text="Copper side (traces)", value="bottom", variable=self.v["layer"],
+                            command=self.refresh).pack(anchor="w")
+            ttk.Radiobutton(lf, text="Back-side ground plane (component side; burns only the clearance rings "
+                                     "and reliefs; not mirrored)", value="top", variable=self.v["layer"],
+                            command=self.refresh).pack(anchor="w")
         mf = ttk.LabelFrame(left, text="What to burn", padding=4)
         mf.pack(fill="x", pady=4)
         self.v["mode"] = tk.StringVar(value=self.o.mode)
@@ -543,7 +726,7 @@ class LaserDialog:
         try:
             if o.line_interval < 0.01:
                 raise ValueError("Line spacing must be at least 0.01 mm.")
-            self.job = generate(self.board, o, self.board.name)
+            self.job = generate(self.board, o, self.board.name, layer=self.v["layer"].get())
         except Exception as exc:
             messagebox.showerror("SoloTrace", str(exc), parent=self.d)
             return
@@ -573,7 +756,9 @@ class LaserDialog:
         if any("larger than" in w for w in self.job.warnings):
             messagebox.showerror("SoloTrace", "The board does not fit the Phecda work area.", parent=self.d)
             return
-        p = filedialog.asksaveasfilename(parent=self.d, defaultextension=".gcode", initialfile=self._name("laser.gcode"),
+        p = filedialog.asksaveasfilename(parent=self.d, defaultextension=".gcode",
+                                         initialfile=self._name("laser-back-plane.gcode" if self.v["layer"].get() == "top"
+                                                                else "laser.gcode"),
                                          filetypes=[("G-code", "*.gcode *.nc"), ("All files", "*")])
         if p:
             with open(p, "w", encoding="utf-8", newline="\n") as fh:

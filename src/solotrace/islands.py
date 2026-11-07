@@ -30,7 +30,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from .geom import Cap, Poly, bbox_gap, merge_intervals, shape_dist, shape_intervals, subtract_intervals
 
-GROUND_NAMES = re.compile(r"^(gnd|ground|0v|vss|agnd|dgnd|com|earth|v-)$", re.I)
+GROUND_NAMES = re.compile(r"^(gnd|ground|0v|vss|agnd|dgnd|pgnd|com|earth)$", re.I)
 
 
 def guess_ground(board) -> Optional[str]:
@@ -44,13 +44,17 @@ def guess_ground(board) -> Optional[str]:
             return n
     if not names:
         return None
-    return max(names, key=lambda n: (len(board.nets[n].pins), n))
+    # otherwise the net with the most pins, but never a net that looks like a supply (VCC, V+, V-, 12V...)
+    supply = re.compile(r"^(v|vcc|vdd|vee|vin|vout|vbat|v\+|v-|\+?\d+(\.\d+)?v|-\d+(\.\d+)?v)", re.I)
+    return max(names, key=lambda n: (not supply.match(n.strip()), len(board.nets[n].pins), n))
 
 
 def ground_net(board) -> Optional[str]:
-    """The ground net of an island-mode board (None when island mode is off or there are no nets)."""
+    """The ground net when the ground fill or the back-side plane is on (else None).
+
+    Both use the same net: the one named in the settings, else a guess (GND, 0V, VSS...)."""
     s = board.settings
-    if not s.island_mode:
+    if not (s.island_mode or s.backplane):
         return None
     if s.island_net and s.island_net in board.nets:
         return s.island_net
@@ -89,6 +93,8 @@ class IslandPlan:
         self.pins: Dict[str, int] = {}      # ground pin -> piece of fill it sits on
         self.floating: List = []            # pieces of fill no ground pin sits on (when kept)
         self.dropped = 0                    # pieces of floating fill cut away
+        self.reliefs = 0                    # ground pads that got a thermal relief
+        self.gcu: List = []                 # ground copper that counts as fill when pieces are told apart
 
     def rect_poly(self) -> Poly:
         x0, y0, x1, y1 = self.rect
@@ -123,18 +129,37 @@ def _poly_ivals(s, y: float, grow: float) -> List[Tuple[float, float]]:
     return shape_intervals(s, y, 0.0)
 
 
-def plan(board) -> Optional[IslandPlan]:
-    """The island layout of the board, or None when island mode is off. Cached per board change."""
+def _key(board) -> tuple:
+    s = board.settings
+    return (board.rev, s.island_net, s.island_gap, s.island_grow, s.island_drop_floating, s.clearance,
+            s.edge_clearance, board.width, board.height, tuple(board.nets))
+
+
+def ready(board) -> bool:
+    """True when the full ground fill (floating copper removed) is worked out for the board as it is."""
+    cache = getattr(board, "_island_cache", None)
+    return not board.settings.island_mode or bool(cache and cache[0] == _key(board))
+
+
+def plan(board, full: bool = False) -> Optional[IslandPlan]:
+    """The ground-fill layout of the board, or None when the fill is off. Cached per board change.
+
+    The editor sets ``board._island_fast``: then, until the full plan is ready, a quick plan without
+    the floating-copper check is returned (the editor works the full one out when you pause).
+    ``full=True`` (checks and every export) always returns the full plan.
+    """
     s = board.settings
     if not s.island_mode:
         return None
-    fast = bool(getattr(board, "_island_fast", False))     # set by the editor while you drag something
-    key = (board.rev, fast, s.island_net, s.island_gap, s.island_grow, s.island_drop_floating, s.clearance,
-           s.edge_clearance,
-           board.width, board.height, tuple(board.nets))
+    key = _key(board)
     cache = getattr(board, "_island_cache", None)
     if cache and cache[0] == key:
         return cache[1]
+    fast = not full and bool(getattr(board, "_island_fast", False))
+    if fast:
+        fc = getattr(board, "_island_fast_cache", None)
+        if fc and fc[0] == key:
+            return fc[1]
     gnd = ground_net(board)
     gap = gap_of(board)
     want = max(0.0, float(s.island_grow))
@@ -184,10 +209,15 @@ def plan(board) -> Optional[IslandPlan]:
         cut.extend(_grown(sh, g + gap, sh.net, ("cut", i)))
     rect = (border, border, W - border, H - border)
     p = IslandPlan(rect, cut, fat, gnd, gap, grow)
+    # ground copper (pads, traces, islands of the ground net) is joined to the fill wherever it
+    # touches it, so a thin ground trace through a narrow gap still joins two pieces of fill
+    p.gcu = [sh for sh in cu if gnd is not None and sh.net == gnd]
+    if gnd is not None and s.relief:
+        _add_reliefs(board, p, cu, bbs, grid, cell, gnd)
     if fast:
         # keep which ground pins share the fill from the last full check, so rubber bands do not flicker
         p.pins = dict(cache[1].pins) if cache else {}
-        board._island_cache = (key, p)
+        board._island_fast_cache = (key, p)
         return p
     p.pins, p.floating = _analyse(board, p)
     if s.island_drop_floating and p.floating and gnd is not None:
@@ -210,6 +240,152 @@ def plan(board) -> Optional[IslandPlan]:
     return p
 
 
+def _ray_extent(sh, cx: float, cy: float, dx: float, dy: float, lo: float, hi: float) -> float:
+    """Distance from (cx, cy) along (dx, dy) to the edge of the shape (bisection; hi is outside)."""
+    for _ in range(14):
+        mid = (lo + hi) / 2.0
+        p = Cap(cx + dx * mid, cy + dy * mid, cx + dx * mid, cy + dy * mid, 0.0)
+        if shape_dist(p, sh) <= 1e-9:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2.0
+
+
+def relief_targets(board, cu) -> List[int]:
+    """Indexes of the ground copper shapes that get a thermal relief: pads, jumper pads and via
+    pads of the ground net, plus copper islands on it when the setting says so. Pads of a part
+    marked "solid ground" are left out."""
+    s = board.settings
+    gnd = ground_net(board)
+    out = []
+    for i, sh in enumerate(cu):
+        if gnd is None or sh.net != gnd or not sh.tag:
+            continue
+        k = sh.tag[0]
+        if k == "pad":
+            pl = board.parts.get(sh.tag[1])
+            if pl is None or pl.solid_ground or pl.ground_contact == "solid":
+                continue
+            out.append(i)
+        elif k in ("jpad", "via"):
+            out.append(i)
+        elif k == "isl" and s.relief_islands:
+            out.append(i)
+    return out
+
+
+def spoke_width(s) -> float:
+    """The board's spoke width: typed, or sized for the current the settings ask for."""
+    w = max(0.2, float(s.relief_width))
+    if s.relief_amps > 0:
+        from .board import width_for_current
+        n_sp = max(1, min(8, int(s.relief_spokes)))
+        w = max(w, width_for_current(float(s.relief_amps) / n_sp, s.copper_oz, s.temp_rise))
+    return min(w, 4.0)
+
+
+def relief_current(s) -> float:
+    """Current (A) the spokes of one relief carry together, IPC-2221 outer-layer formula, as a guide."""
+    from .board import current_capacity
+    n_sp = max(1, min(8, int(s.relief_spokes)))
+    return n_sp * current_capacity(spoke_width(s), s.copper_oz, s.temp_rise)
+
+
+def relief_shape(s, sh, bb, heavy: bool = False) -> Tuple[float, List[Tuple[float, float, float, float]]]:
+    """(spoke width, spokes) for one ground shape; a spoke is (sx, sy, dx, dy): where it starts,
+    relative to the shape's centre, and the unit direction it leaves in.
+
+    Round pads: the board's spoke count and width, radial at 45 degrees (or 0/90). Ovals and
+    rectangles (deadbug pads, copper islands): spokes leave the flat sides at right angles and
+    the ends along the long axis, never the corners, like KiCad and LibrePCB do. Big islands
+    get spokes scaled to their size: width 10 % of the shorter side (0.6 to 1.5 mm) and one
+    spoke per 5 mm of perimeter (4 to 12).
+    """
+    n_sp = max(1, min(8, int(s.relief_spokes)))
+    w = spoke_width(s)
+    if heavy:
+        w *= 2.0
+    wd, ht = bb[2] - bb[0], bb[3] - bb[1]
+    round_pad = sh.kind == "cap" and abs(sh.x1 - sh.x2) < 1e-9 and abs(sh.y1 - sh.y2) < 1e-9
+    if round_pad or abs(wd - ht) < 1e-6 and sh.kind == "cap":
+        base = 45.0 if s.relief_diag else 0.0
+        return w, [(0.0, 0.0, math.cos(math.radians(base + 360.0 * k / n_sp)),
+                    math.sin(math.radians(base + 360.0 * k / n_sp))) for k in range(n_sp)]
+    if sh.tag and sh.tag[0] == "isl" and min(wd, ht) >= 4.0:
+        w = max(w, min(1.5, 0.1 * min(wd, ht)))            # never thinner than the board's spokes
+        n_sp = max(n_sp, min(12, int(2 * (wd + ht) / 5.0)))
+    long_h = wd >= ht
+    L, S = max(wd, ht) / 2.0, min(wd, ht) / 2.0
+    per_side = max(1, (n_sp - 2) // 2) if n_sp >= 4 else max(1, n_sp // 2)
+    out: List[Tuple[float, float, float, float]] = []
+    for k in range(per_side):
+        t = (k + 1) / (per_side + 1) * 2.0 - 1.0            # -1..1 along the long axis
+        along = t * max(0.0, L - S * 0.9)                  # stay off the rounded corners
+        for sign in (1.0, -1.0):
+            if long_h:
+                out.append((along, 0.0, 0.0, sign))
+            else:
+                out.append((0.0, along, sign, 0.0))
+    if n_sp >= 4:
+        out += [(0.0, 0.0, 1.0, 0.0), (0.0, 0.0, -1.0, 0.0)] if long_h else [(0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, -1.0)]
+    return w, out
+
+
+def _add_reliefs(board, p, cu, bbs, grid, cell, gnd) -> None:
+    """Thermal reliefs: a ring of bare board round each ground pad, bridged by spokes.
+
+    The ring is cut out of the fill like any other cut; the spokes are ground copper drawn
+    after the cuts. A spoke that would come within the clearance of another net is left out,
+    and a pad that would lose every spoke keeps a solid connection instead (the ring is dropped
+    too), so no pad is ever cut off by its own relief.
+    """
+    s = board.settings
+    n_sp = max(1, min(8, int(s.relief_spokes)))
+    w = max(0.2, float(s.relief_width))
+    ring = max(0.2, float(s.relief_gap))
+    clr = s.clearance
+    for i in relief_targets(board, cu):
+        sh = cu[i]
+        bb = bbs[i]
+        if sh.kind == "cap":
+            cx, cy = (sh.x1 + sh.x2) / 2.0, (sh.y1 + sh.y2) / 2.0
+        else:
+            cx = sum(q[0] for q in sh.pts) / len(sh.pts)
+            cy = sum(q[1] for q in sh.pts) / len(sh.pts)
+        far = math.hypot(bb[2] - bb[0], bb[3] - bb[1]) / 2.0 + 0.1
+        heavy = False
+        if sh.tag[0] == "pad":
+            plc = board.parts.get(sh.tag[1])
+            heavy = bool(plc and plc.ground_contact == "heavy")
+        w, rays = relief_shape(s, sh, bb, heavy)
+        # copper of other nets near this pad (to keep spokes clear of it)
+        others = []
+        seen = set()
+        r_out = far + ring + 1.5 + clr + 0.6
+        for gx in range(int(math.floor((bb[0] - r_out) / cell)), int(math.floor((bb[2] + r_out) / cell)) + 1):
+            for gy in range(int(math.floor((bb[1] - r_out) / cell)), int(math.floor((bb[3] + r_out) / cell)) + 1):
+                for j in grid.get((gx, gy), ()):
+                    if j != i and j not in seen and cu[j].net != gnd:
+                        seen.add(j)
+                        others.append(cu[j])
+        spokes = []
+        for sx, sy, dx, dy in rays:
+            ox, oy = cx + sx, cy + sy
+            edge = _ray_extent(sh, ox, oy, dx, dy, 0.0, far)
+            L = edge + ring + w * 0.5 + 0.35          # well into the fill on the far side of the ring
+            sp = Cap(ox + dx * max(0.0, edge - 0.3), oy + dy * max(0.0, edge - 0.3),
+                     ox + dx * L, oy + dy * L, w / 2.0, gnd, ("spoke", i))
+            if all(shape_dist(sp, o) >= clr - 1e-6 for o in others):
+                spokes.append(sp)
+        if not spokes:
+            continue                          # keep the solid connection
+        p.cut.extend(_grown(sh, ring, gnd, ("relief", i)))
+        p.fat.extend(spokes)
+        p.gcu.extend(spokes)
+        p.reliefs += 1
+
+
 def _swap(shapes) -> List:
     """The same shapes with x and y swapped (to scan along the other axis)."""
     out: List = []
@@ -228,6 +404,7 @@ class _Swapped:
         x0, y0, x1, y1 = p.rect
         self.rect = (y0, x0, y1, x1)
         self.cut = _swap(p.cut)
+        self.gcu = _swap(getattr(p, "gcu", []))
         self.ground = p.ground
         self.nets = board.nets
         self._b = board
@@ -253,8 +430,10 @@ def _analyse(board, p, step: float = 0.05):
     n = max(1, int((y1 - y0) / step))
     dy = (y1 - y0) / n
     cuts = sorted(((c.bbox()[1], c.bbox()[3], c) for c in p.cut), key=lambda t: t[0])
+    gcs = sorted(((c.bbox()[1], c.bbox()[3], c) for c in getattr(p, "gcu", [])), key=lambda t: t[0])
     active: List[tuple] = []
-    nxt = 0
+    gactive: List[tuple] = []
+    nxt = gnxt = 0
     rows: List[Tuple[float, List[Tuple[float, float]]]] = []
     for k in range(n + 1):
         y = y0 + k * dy
@@ -262,10 +441,20 @@ def _analyse(board, p, step: float = 0.05):
             active.append(cuts[nxt])
             nxt += 1
         active = [t for t in active if t[1] >= y]
+        while gnxt < len(gcs) and gcs[gnxt][0] <= y:
+            gactive.append(gcs[gnxt])
+            gnxt += 1
+        gactive = [t for t in gactive if t[1] >= y]
         cv: List[Tuple[float, float]] = []
         for _a, _b, c in active:
             cv.extend(shape_intervals(c, y, 0.0))
-        rows.append((y, subtract_intervals([(x0, x1)], merge_intervals(cv))))
+        row = subtract_intervals([(x0, x1)], merge_intervals(cv))
+        if gactive:
+            gv: List[Tuple[float, float]] = []
+            for _a, _b, c in gactive:
+                gv.extend(shape_intervals(c, y, 0.0))
+            row = merge_intervals(row + [(max(lo, x0), min(hi, x1)) for lo, hi in gv if hi > x0 and lo < x1])
+        rows.append((y, row))
     parent: List[int] = []
     ids: List[List[int]] = []
 
@@ -364,7 +553,7 @@ def _strips(rows, dy: float, net) -> List:
 
 def fill_groups(board) -> Tuple[Dict[str, int], int]:
     """Which piece of ground fill each ground pin sits on: ({pin: piece}, number of pieces)."""
-    p = plan(board)
+    p = plan(board)                 # quick plan in the editor until the full one is ready
     if p is None or p.ground is None:
         return {}, 0
     return dict(p.pins), len(set(p.pins.values()))
@@ -372,14 +561,18 @@ def fill_groups(board) -> Tuple[Dict[str, int], int]:
 
 def floating_fill(board) -> List[Tuple[float, float, float]]:
     """Pieces of ground fill (at least 0.5 mm²) that no ground pin sits on and that were kept: (x, y, area)."""
-    p = plan(board)
+    p = plan(board, full=True)
     if p is None:
         return []
     return [(x, y, a) for x, y, a, _r in p.floating if a >= 0.5]
 
 
 def ground_groups(board, copper_groups: List[List[str]]) -> List[List[str]]:
-    """Groups of ground pins joined by copper OR by the same piece of ground fill."""
+    """Groups of ground pins joined by copper, by the same piece of ground fill, or (with the
+    back-side plane on) through the plane: every drilled ground pin and every via is on it.
+
+    ``copper_groups`` may contain "via:N" entries (Board.components(with_vias=True)); they are
+    used for the joining and left out of the result."""
     pieces, _n = fill_groups(board)
     groups = [list(g) for g in copper_groups]
     joined = {q for g in groups for q in g}
@@ -388,6 +581,14 @@ def ground_groups(board, copper_groups: List[List[str]]) -> List[List[str]]:
         if pin not in joined and board.has_pin(pin):
             groups.append([pin])
     parent = list(range(len(groups)))
+    if board.settings.backplane:
+        # one more "piece": the plane, which every drilled ground pin and every via sits on
+        plane_id = -1
+        for g in groups:
+            for q in g:
+                if q.startswith("via:") or (not q.startswith("via:") and board.pin_drilled(q)):
+                    pieces = dict(pieces)
+                    pieces[q] = plane_id
 
     def find(a: int) -> int:
         while parent[a] != a:
@@ -408,14 +609,16 @@ def ground_groups(board, copper_groups: List[List[str]]) -> List[List[str]]:
                     first[pc] = gi
     out: Dict[int, List[str]] = {}
     for gi, g in enumerate(groups):
-        out.setdefault(find(gi), []).extend(g)
+        out.setdefault(find(gi), []).extend(q for q in g if not q.startswith("via:"))
     return [g for g in out.values() if g]
 
 
 def make_pads_deadbug(board) -> int:
     """Set every part's pads to deadbug (surface, no drill). Returns how many parts changed."""
     n = 0
-    for pl in board.parts.values():
+    for ref, pl in board.parts.items():
+        if board.get_def(pl.part_id).kind == "smd":
+            continue                      # SMD pads are copper lands already
         if pl.style != "dead" or pl.pad_styles:
             pl.style = "dead"
             pl.pad_styles = {}

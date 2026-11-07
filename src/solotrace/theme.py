@@ -56,6 +56,11 @@ def apply(root: tk.Misc) -> ttk.Style:
     st.map("TRadiobutton", background=[("active", P)])
     st.configure("TButton", padding=(8, 3), relief="flat", background="#d5dce3", borderwidth=0)
     st.configure("Small.TButton", padding=(2, 2), font=FONT_S)
+    st.configure("Mirror.TCheckbutton", foreground="#c2189f", font=FONT_B)
+    # the parts-mode button: a whole copper rectangle across the sidebar with a picture and a name
+    st.configure("Mode.TButton", background=UI["copper"], foreground="white", font=FONT_B, padding=(10, 6),
+                 borderwidth=0, anchor="w")
+    st.map("Mode.TButton", background=[("pressed", UI["copper_dark"]), ("active", UI["copper_dark"])])
     st.map("TButton", background=[("pressed", "#bcc6cf"), ("active", "#c9d2da")])
     st.configure("TEntry", fieldbackground="#ffffff", padding=3)
     st.configure("TCombobox", fieldbackground="#ffffff", padding=2)
@@ -223,9 +228,43 @@ def group_icons(root: tk.Misc) -> dict:
     im = _img(root)                                   # board bits (pad with hole)
     _disc(im, 9, 9, 7.5, cu, 2.5)
     ic["Board bits"] = im
+    im = _img(root)                                   # SMD: a flat chip with gull-wing lands
+    im.put(ink, to=(5, 5, 13, 13))
+    for y in (5, 8, 11):
+        im.put(cu, to=(1, y, 5, y + 2))
+        im.put(cu, to=(13, y, 17, y + 2))
+    im.put("#ffffff", to=(6, 6, 8, 8))
+    ic["SMD"] = im
     im = _img(root)                                   # my parts (star-ish pencil)
     for k in range(12):
         im.put(UI["copper_dark"], to=(3 + k, 14 - k, 5 + k, 16 - k))
     im.put(ink, to=(2, 15, 4, 17))
     ic["My parts"] = im
+    return ic
+
+
+def mode_icons(root: tk.Misc) -> dict:
+    """The two pictures on the parts-mode button: a plastic TO-92 transistor (through-hole) and a
+    SOT-23 transistor (SMD), drawn pixel by pixel like the group icons so no image files are needed."""
+    ic = {}
+    size = 30
+    ink, lead, cu = "#2b2b2b", "#9aa3aa", UI["copper"]
+    im = tk.PhotoImage(width=size, height=size)          # TO-92: a half-round black body, three legs
+    _disc(im, 15, 12, 10, ink)
+    im.put(UI["panel"] if "panel" in UI else "#ffffff", to=(4, 13, 27, 30))
+    im.put(ink, to=(4, 11, 27, 14))
+    for x in (8, 14, 20):
+        im.put("#e6e9ec", to=(x, 14, x + 3, 29))
+    im.put("#6d6d6d", to=(7, 5, 9, 11))
+    ic["tht"] = im
+    im = tk.PhotoImage(width=size, height=size)          # SOT-23: a flat black body, two legs one side, one the other
+    im.put(ink, to=(9, 7, 21, 23))
+    im.put("#4a4a4a", to=(9, 7, 21, 9))
+    for y in (10, 18):                                   # gull-wing legs, silver so they show on the copper button
+        im.put("#e6e9ec", to=(3, y, 9, y + 3))
+        im.put("#b9c0c6", to=(3, y + 2, 9, y + 3))
+    im.put("#e6e9ec", to=(21, 14, 27, 17))
+    im.put("#b9c0c6", to=(21, 16, 27, 17))
+    im.put("#ffffff", to=(11, 10, 13, 12))
+    ic["smd"] = im
     return ic

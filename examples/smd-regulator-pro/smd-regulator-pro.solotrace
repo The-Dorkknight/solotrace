@@ -1,0 +1,842 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "SMD regulator",
+ "width": 45.0,
+ "height": 30.0,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "island_mode": false,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.0,
+  "island_drop_floating": true,
+  "relief": true,
+  "relief_spokes": 4,
+  "relief_width": 0.8,
+  "relief_amps": 0.0,
+  "relief_gap": 0.5,
+  "relief_islands": true,
+  "relief_diag": true,
+  "backplane": false,
+  "backplane_clearance": 0.55,
+  "backplane_relief": true,
+  "via_drill": 0.7,
+  "via_pad": 1.8,
+  "stitch_spacing": 10.0,
+  "router": "auto",
+  "placer": "anneal",
+  "classes": {
+   "Signal": 0.8,
+   "Power": 1.2,
+   "High current": 5.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "C1",
+   "part": "SMD_TANT_B",
+   "x": 15.24,
+   "y": 20.32,
+   "rot": 270,
+   "flip": true,
+   "value": "10u",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "C2",
+   "part": "SMD_TANT_B",
+   "x": 34.29,
+   "y": 20.32,
+   "rot": 270,
+   "flip": true,
+   "value": "22u",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "D1",
+   "part": "SMD_D_SMA",
+   "x": 10.16,
+   "y": 7.62,
+   "rot": 0,
+   "flip": true,
+   "value": "S1M",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "D2",
+   "part": "SMD_CHIP_0805",
+   "x": 33.02,
+   "y": 6.35,
+   "rot": 0,
+   "flip": true,
+   "value": "LED 0805",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "J1",
+   "part": "HDR_1x2",
+   "x": 5.08,
+   "y": 20.32,
+   "rot": 90,
+   "flip": false,
+   "value": "9-12V in",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "-",
+    "2": "+"
+   }
+  },
+  {
+   "ref": "J2",
+   "part": "HDR_1x2",
+   "x": 40.64,
+   "y": 20.32,
+   "rot": 90,
+   "flip": false,
+   "value": "5V out",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "-",
+    "2": "+"
+   }
+  },
+  {
+   "ref": "R1",
+   "part": "SMD_CHIP_0805",
+   "x": 25.4,
+   "y": 6.35,
+   "rot": 0,
+   "flip": true,
+   "value": "1k",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "U1",
+   "part": "SMD_SOT223",
+   "x": 26.67,
+   "y": 17.78,
+   "rot": 0,
+   "flip": true,
+   "value": "LM1117-5",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "GND",
+    "2": "OUT",
+    "3": "IN",
+    "4": "OUT"
+   }
+  }
+ ],
+ "nets": [
+  {
+   "name": "GND",
+   "class": "Power",
+   "pins": [
+    "J1.1",
+    "C1.2",
+    "U1.1",
+    "C2.2",
+    "J2.1",
+    "D2.1"
+   ]
+  },
+  {
+   "name": "VIN",
+   "class": "Power",
+   "pins": [
+    "J1.2",
+    "D1.2"
+   ]
+  },
+  {
+   "name": "VRAW",
+   "class": "Power",
+   "pins": [
+    "D1.1",
+    "C1.1",
+    "U1.3"
+   ]
+  },
+  {
+   "name": "V5",
+   "class": "Power",
+   "pins": [
+    "U1.2",
+    "U1.4",
+    "C2.1",
+    "J2.2",
+    "R1.1"
+   ]
+  },
+  {
+   "name": "LED",
+   "class": "Signal",
+   "pins": [
+    "R1.2",
+    "D2.2"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "net": "VRAW",
+   "points": [
+    [
+     15.24,
+     20.32
+    ],
+    [
+     17.78,
+     17.78
+    ],
+    [
+     22.07,
+     17.78
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "VRAW",
+   "points": [
+    [
+     15.24,
+     20.32
+    ],
+    [
+     10.16,
+     15.24
+    ],
+    [
+     10.16,
+     7.62
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "LED",
+   "points": [
+    [
+     30.82,
+     6.35
+    ],
+    [
+     28.915,
+     4.445
+    ],
+    [
+     24.13,
+     4.445
+    ],
+    [
+     23.2,
+     5.375
+    ],
+    [
+     23.2,
+     6.35
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "VIN",
+   "points": [
+    [
+     6.16,
+     7.62
+    ],
+    [
+     6.16,
+     9.67
+    ],
+    [
+     3.03,
+     12.8
+    ],
+    [
+     3.03,
+     21.6735
+    ],
+    [
+     4.2165,
+     22.86
+    ],
+    [
+     5.08,
+     22.86
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "V5",
+   "points": [
+    [
+     24.37,
+     17.78
+    ],
+    [
+     24.37,
+     24.18
+    ]
+   ],
+   "widths": [
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "V5",
+   "points": [
+    [
+     34.29,
+     20.32
+    ],
+    [
+     36.83,
+     22.86
+    ],
+    [
+     40.64,
+     22.86
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "V5",
+   "points": [
+    [
+     34.29,
+     20.32
+    ],
+    [
+     30.43,
+     24.18
+    ],
+    [
+     24.37,
+     24.18
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "V5",
+   "points": [
+    [
+     24.37,
+     17.78
+    ],
+    [
+     24.37,
+     9.23
+    ],
+    [
+     25.4,
+     8.2
+    ],
+    [
+     25.4,
+     6.35
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     34.29,
+     23.92
+    ],
+    [
+     34.29,
+     24.9222
+    ],
+    [
+     35.5628,
+     26.195
+    ],
+    [
+     40.48,
+     26.195
+    ],
+    [
+     42.69,
+     23.985
+    ],
+    [
+     42.69,
+     21.5928
+    ],
+    [
+     41.4172,
+     20.32
+    ],
+    [
+     40.64,
+     20.32
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     40.64,
+     20.32
+    ],
+    [
+     38.59,
+     20.32
+    ],
+    [
+     36.05,
+     17.78
+    ],
+    [
+     26.67,
+     17.78
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     15.24,
+     23.92
+    ],
+    [
+     11.64,
+     20.32
+    ],
+    [
+     5.08,
+     20.32
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     15.24,
+     23.92
+    ],
+    [
+     17.515,
+     26.195
+    ],
+    [
+     33.0172,
+     26.195
+    ],
+    [
+     34.29,
+     24.9222
+    ],
+    [
+     34.29,
+     23.92
+    ]
+   ],
+   "widths": [
+    1.2,
+    1.2,
+    1.2,
+    1.2
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     33.02,
+     17.78
+    ],
+    [
+     33.02,
+     6.35
+    ]
+   ],
+   "widths": [
+    1.2
+   ],
+   "manual": false
+  }
+ ],
+ "jumpers": [],
+ "islands": [],
+ "vias": [],
+ "defs": {
+  "HDR_1x2": {
+   "id": "HDR_1x2",
+   "name": "Pin header 1x2, 2.54 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.27,
+     -1.27,
+     3.81,
+     1.27
+    ]
+   ],
+   "court": [
+    -1.27,
+    -1.27,
+    3.81,
+    1.27
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "2-row headers number across the columns: 1 top, 2 below it, 3 next top..."
+  },
+  "SMD_CHIP_0805": {
+   "id": "SMD_CHIP_0805",
+   "name": "Chip 0805 (2012 metric) resistor / capacitor / inductor",
+   "category": "SMD",
+   "prefix": "R",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.3,
+     "h": 1.6,
+     "drill": 0.0,
+     "chamfer": 0.25
+    },
+    {
+     "n": "2",
+     "x": 2.2,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.3,
+     "h": 1.6,
+     "drill": 0.0,
+     "chamfer": 0.25
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     0.10000000000000009,
+     -0.625,
+     2.1,
+     0.625
+    ]
+   ],
+   "court": [
+    -0.65,
+    -0.8,
+    2.85,
+    0.8
+   ],
+   "kind": "smd",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Vishay wave-solder pattern (roomier than the reflow one). SMD: sits on the COPPER side, no holes. Pad sizes from the maker's land pattern (see docs/research/smd-land-patterns.md); check against your part."
+  },
+  "SMD_D_SMA": {
+   "id": "SMD_D_SMA",
+   "name": "Diode SMA (DO-214AC)",
+   "category": "SMD",
+   "prefix": "D",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.5,
+     "h": 1.7,
+     "drill": 0.0,
+     "chamfer": 0.25
+    },
+    {
+     "n": "2",
+     "x": 4.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.5,
+     "h": 1.7,
+     "drill": 0.0,
+     "chamfer": 0.25
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -0.1499999999999999,
+     -1.3,
+     4.15,
+     1.3
+    ],
+    [
+     "line",
+     0.3500000000000001,
+     -1.3,
+     0.3500000000000001,
+     1.3
+    ]
+   ],
+   "court": [
+    -1.25,
+    -1.3,
+    5.25,
+    1.3
+   ],
+   "kind": "smd",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": " Pin 1 is the cathode (band). SMD: sits on the COPPER side, no holes. Pad sizes from the maker's land pattern (see docs/research/smd-land-patterns.md); check against your part."
+  },
+  "SMD_SOT223": {
+   "id": "SMD_SOT223",
+   "name": "SOT-223 (3 pins + tab)",
+   "category": "SMD",
+   "prefix": "U",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.2,
+     "h": 1.6,
+     "drill": 0.0,
+     "chamfer": 0.24
+    },
+    {
+     "n": "2",
+     "x": 2.3,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.2,
+     "h": 1.6,
+     "drill": 0.0,
+     "chamfer": 0.24
+    },
+    {
+     "n": "3",
+     "x": 4.6,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.2,
+     "h": 1.6,
+     "drill": 0.0,
+     "chamfer": 0.24
+    },
+    {
+     "n": "4",
+     "x": 2.3,
+     "y": 6.4,
+     "shape": "rect",
+     "w": 3.3,
+     "h": 1.6,
+     "drill": 0.0,
+     "chamfer": 0.25
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -0.9500000000000002,
+     1.4500000000000002,
+     5.55,
+     4.95
+    ],
+    [
+     "circle",
+     -0.6000000000000001,
+     1.9000000000000001,
+     0.3
+    ]
+   ],
+   "court": [
+    -0.9500000000000002,
+    -0.8,
+    5.55,
+    7.2
+   ],
+   "kind": "smd",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Diodes Inc land pattern; pin 4 is the tab, joined to pin 2 inside the part. SMD: sits on the COPPER side, no holes. Pad sizes from the maker's land pattern (see docs/research/smd-land-patterns.md); check against your part."
+  },
+  "SMD_TANT_B": {
+   "id": "SMD_TANT_B",
+   "name": "Tantalum case B (3528)",
+   "category": "SMD",
+   "prefix": "C",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.15,
+     "h": 2.35,
+     "drill": 0.0,
+     "chamfer": 0.25
+    },
+    {
+     "n": "2",
+     "x": 3.5999999999999996,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.15,
+     "h": 2.35,
+     "drill": 0.0,
+     "chamfer": 0.25
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     0.04999999999999982,
+     -1.4,
+     3.55,
+     1.4
+    ],
+    [
+     "line",
+     0.5499999999999998,
+     -1.4,
+     0.5499999999999998,
+     1.4
+    ]
+   ],
+   "court": [
+    -1.075,
+    -1.4,
+    4.675,
+    1.4
+   ],
+   "kind": "smd",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "KEMET T491 level-A (roomiest) land. Pin 1 is + (the band marks the ANODE on tantalums). SMD: sits on the COPPER side, no holes. Pad sizes from the maker's land pattern (see docs/research/smd-land-patterns.md); check against your part."
+  }
+ }
+}

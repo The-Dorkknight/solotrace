@@ -37,6 +37,10 @@ def pump(n=20, d=0.02):
 
 
 def shot(name, crop=None):
+    from solotrace import islands
+    t = time.time()
+    while not islands.ready(app.board) and time.time() - t < 15:    # the full ground fill follows a redraw
+        pump(2)
     root.update()
     png = os.path.join(tmp, name + ".png")
     subprocess.run(["import", "-window", "root", png], check=True)
@@ -139,6 +143,67 @@ pump(20)
 shot("islands-dialog", top_crop(dlg))
 dlg.destroy()
 pump(5)
+# 4e. SMD mode: SMD regulator, copper-side view (as soldered), SOIC-8 armed in the parts tree
+load_example("smd-regulator-pro")
+app.set_parts_mode("smd")
+tv.item("g:SMD", open=True)
+tv.item("s:SMD:ICs (SOIC)", open=True)
+tv.selection_set("p:SMD_SOIC8")
+pump(10)
+app.set_tool("select")
+app.sel = {"part": "U1"}
+app.show_props()
+app.toggle_mirror()
+app.fit()
+pump(10)
+shot("gui-smd-pro")
+app.toggle_mirror()
+app.set_parts_mode("tht")
+tv.selection_remove(tv.selection())
+# 4g. modules: the XIAO logger with its OLED mirrored under the board (selected), Modules group open
+load_example("xiao-logger-mirrored-oled")
+tv.item("g:Modules & displays", open=True)
+tv.item("s:Modules & displays:ESP32-C3 / S3 mini (postage stamp)", open=True)
+tv.item("s:Modules & displays:OLED displays", open=True)
+tv.selection_set("p:MOD_XIAO_S3")
+tv.see("p:MOD_XIAO_S3")
+pump(10)
+app.set_tool("select")
+app.sel = {"part": "DS1"}
+app.show_props()
+app.fit()
+pump(10)
+shot("gui-modules-mirrored")
+tv.selection_remove(tv.selection())
+tv.item("g:Modules & displays", open=False)
+# 4f. back-side ground plane: vias, reliefs; a via selected; then the plane dialog
+load_example("555-flasher-back-plane")
+app.set_tool("select")
+app.sel = {"via": 0}
+app.show_props()
+app.fit()
+pump(10)
+shot("gui-back-plane")
+app.backplane_dialog()
+pump(20)
+dlg = [w for w in root.winfo_children() if isinstance(w, tk.Toplevel)][-1]
+dlg.geometry("+300+100")
+dlg.lift()
+pump(20)
+shot("back-plane-dialog", top_crop(dlg))
+dlg.destroy()
+pump(5)
+# 4g. thermal reliefs close up: the Manhattan board zoomed on two ground pads
+load_example("manhattan-rf-amplifier")
+app.sel = {"part": "R2"}
+app.show_props()
+app.fit()
+app.zoom_at(*app.w2s(16.0, 16.0), 2.6)
+pump(10)
+cw, ch = app.canvas.winfo_width(), app.canvas.winfo_height()
+cx, cy = app.canvas.winfo_rootx(), app.canvas.winfo_rooty()
+shot("thermal-reliefs", (min(cw, 700), min(ch, 520), cx + 60, cy + 60))
+app.fit()
 # 4b. right-click menu on a trace
 load_example("555-led-flasher")
 tv.selection_remove(tv.selection())

@@ -1,6 +1,13 @@
 # Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight)
 # Licensed under the PolyForm Noncommercial License 1.0.0. No warranty.
-"""Command line: open the editor, or route and export boards without a window."""
+"""Command line: open the editor in your web browser (the default since 0.8.0), the optional
+tkinter desktop window, or route and export boards without any window.
+
+    python3 src/main.py                    the editor in your browser (local server on 127.0.0.1)
+    python3 src/main.py board.solotrace    the same, with that board open
+    python3 src/main.py desktop [board]    the old tkinter desktop window (needs tkinter)
+    python3 src/main.py --tk [board]       the same
+"""
 from __future__ import annotations
 
 import argparse
@@ -21,9 +28,33 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("%s  [WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN]" % title())
         return 0
     cmds = {"route", "place", "export", "demo", "drc", "islands", "selftest"}
+    if argv and argv[0] == "web":
+        argv = argv[1:]
+    want_tk = bool(argv) and argv[0] in ("desktop", "tk") or "--tk" in argv or "--desktop" in argv
     if not argv or argv[0] not in cmds:
-        from .app import main as gui_main
-        return gui_main(argv)
+        argv = [a for a in argv if a not in ("--web", "--tk", "--desktop")]
+        if argv and argv[0] in ("desktop", "tk"):
+            argv = argv[1:]
+        if not want_tk:
+            from .web.server import main as web_main
+            return web_main(argv)
+        try:
+            import tkinter  # noqa: F401
+            from .app import main as gui_main
+        except ImportError as exc:
+            print("%s: the desktop window needs Python's tkinter, which is missing or broken here (%s). Opening "
+                  "the editor in your browser instead (it is the same editor)." % (APP_NAME, exc), file=sys.stderr)
+            from .web.server import main as web_main
+            return web_main(argv)
+        try:
+            return gui_main(argv)
+        except Exception as exc:          # noqa: BLE001 - e.g. tkinter present but no display / broken Tcl
+            if "tkinter" in type(exc).__module__ or type(exc).__name__ == "TclError":
+                print("%s: the tkinter window could not open (%s). Opening the editor in your browser instead."
+                      % (APP_NAME, exc), file=sys.stderr)
+                from .web.server import main as web_main
+                return web_main(argv)
+            raise
     ap = argparse.ArgumentParser(prog="solotrace", description="%s command line (work in progress)" % APP_NAME)
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("demo", help="write an example board")
@@ -33,10 +64,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("board")
     p.add_argument("out")
     p.add_argument("--seconds", type=float, default=20.0)
+    p.add_argument("--placer", choices=["anneal", "routability"], help="default: the board's setting")
     p = sub.add_parser("route", help="auto-route a board")
     p.add_argument("board")
     p.add_argument("out")
     p.add_argument("--no-jumpers", action="store_true")
+    p.add_argument("--algorithm", choices=["auto", "classic", "negotiated"], help="default: the board's setting")
     p = sub.add_parser("islands", help="turn the ground fill (RF / Manhattan boards) on or off")
     p.add_argument("board")
     p.add_argument("out")
@@ -74,14 +107,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     elif a.cmd == "place":
         from .placer import auto_place
         b = _load(a.board)
-        r = auto_place(b, time_limit=a.seconds)
+        if b.islands:
+            print("WARNING: this board has copper islands; auto-place moves parts but not islands, so pins will "
+                  "end up off their islands. Check (drc) the result.")
+        r = auto_place(b, time_limit=a.seconds, mode=a.placer or b.settings.placer)
         b.clear_auto_routes()
         b.save(a.out)
         print(r.summary())
     elif a.cmd == "route":
         from .router import AutoRouter, RouteOptions
         b = _load(a.board)
-        r = AutoRouter(b, RouteOptions(use_jumpers=not a.no_jumpers)).route_all()
+        r = AutoRouter(b, RouteOptions(use_jumpers=not a.no_jumpers, algorithm=a.algorithm or b.settings.router)).route_all()
         b.save(a.out)
         print(r.summary())
         return 0 if r.complete else 1

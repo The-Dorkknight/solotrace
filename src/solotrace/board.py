@@ -63,6 +63,23 @@ class Settings:
     island_gap: float = 0.6         # bare board between an island and the ground fill, mm
     island_grow: float = 1.0        # how much islands are fattened beyond their pads and traces, mm
     island_drop_floating: bool = True   # cut away pieces of fill that no ground pin sits on
+    relief: bool = True             # thermal reliefs: a ring of bare board round each ground pad, bridged by spokes
+    relief_spokes: int = 4          # spokes per pad
+    relief_width: float = 0.8       # spoke width, mm (4 x 0.8 mm carry about 8 A at a 10 C rise; see docs/research)
+    relief_amps: float = 0.0        # > 0: size the spokes so that together they carry this current (IPC-2221)
+    relief_gap: float = 0.5         # ring (bare board) width, mm (KiCad's defaults: 0.5 / 0.5)
+    relief_islands: bool = True     # also relieve copper islands that are on the ground net (scaled spokes)
+    relief_diag: bool = True        # round pads: spokes at 45 degrees (True) or 0/90; ovals and rectangles
+                                    # always get theirs on the axes (off the flat sides), like KiCad
+    backplane: bool = False         # double-clad board: the component side stays solid copper as a ground plane
+    backplane_clearance: float = 0.55  # bare ring round every non-ground hole in the plane, beyond the hole, mm
+                                       # (hole + 1.1 mm: 0.25 electrical + 0.3 registration, see docs/research)
+    backplane_relief: bool = True   # thermal reliefs on the plane round ground leads and vias
+    via_drill: float = 0.7          # vias: a hole with a 0.6 mm wire through it, soldered both sides
+    via_pad: float = 1.8            # via pad on the trace side (and on the plane), mm
+    stitch_spacing: float = 10.0    # "Add stitching vias" grid, mm
+    router: str = "auto"            # auto-route: "auto" (negotiated, then classic tries if needed), "classic", "negotiated"
+    placer: str = "anneal"          # auto-place: "anneal" (fixed schedule) or "routability" (congestion-aware, adaptive)
     classes: Dict[str, float] = field(default_factory=lambda: {"Signal": 0.8, "Power": 2.0, "High current": 5.0})
 
     def to_dict(self) -> dict:
@@ -95,6 +112,8 @@ class Placed:
     value: str = ""
     style: str = "tht"                       # tht | dead | mixed
     pad_styles: Dict[str, str] = field(default_factory=dict)
+    solid_ground: bool = False      # no thermal relief on this part's ground pads (high current, RF decoupling)
+    ground_contact: str = ""        # "" board default | "heavy" (spokes twice as wide) | "solid" (same as solid_ground)
     locked: bool = False
     pin_labels: Dict[str, str] = field(default_factory=dict)   # pad name -> function, e.g. "1": "E"
 
@@ -103,6 +122,10 @@ class Placed:
              "flip": self.flip, "value": self.value, "style": self.style, "locked": self.locked}
         if self.pad_styles:
             d["pad_styles"] = dict(self.pad_styles)
+        if self.solid_ground:
+            d["solid_ground"] = True
+        if self.ground_contact:
+            d["ground_contact"] = self.ground_contact
         if self.pin_labels:
             d["pin_labels"] = dict(self.pin_labels)
         return d
@@ -113,6 +136,8 @@ class Placed:
                       rot=int(d.get("rot", 0)), flip=bool(d.get("flip", False)),
                       value=d.get("value", ""), style=d.get("style", "tht"),
                       pad_styles=dict(d.get("pad_styles", {})), locked=bool(d.get("locked", False)),
+                      solid_ground=bool(d.get("solid_ground", False)),
+                      ground_contact=str(d.get("ground_contact", "")),
                       pin_labels={str(k): str(v) for k, v in d.get("pin_labels", {}).items()})
 
 
@@ -172,7 +197,7 @@ class Jumper:
 
 
 ISLAND_SHAPES = ("rect", "round")
-ISLAND_MIN, ISLAND_MAX = 1.0, 60.0
+ISLAND_MIN, ISLAND_MAX = 1.0, 400.0
 
 
 @dataclass
@@ -189,6 +214,23 @@ class Island:
     h: float = 5.08
     shape: str = "rect"
     corner: float = 0.5
+
+    def __post_init__(self) -> None:
+        # keep every island valid however it was made (file, editor, script)
+        self.w = clamp_island(self.w)
+        self.h = clamp_island(self.h)
+        if self.shape not in ISLAND_SHAPES:
+            self.shape = "rect"
+        self.corner = max(0.0, float(self.corner))
+
+    def __setattr__(self, k, v) -> None:
+        if k in ("w", "h"):
+            v = clamp_island(v)
+        elif k == "corner":
+            v = max(0.0, float(v))
+        elif k == "shape" and v not in ISLAND_SHAPES:
+            v = "rect"
+        object.__setattr__(self, k, v)
 
     def copper(self, net: Optional[str] = None, tag: Optional[tuple] = None):
         w = clamp_island(self.w)
@@ -217,6 +259,21 @@ class Island:
                       float(d.get("corner", 0.5)))
 
 
+@dataclass
+class Via:
+    """A via: a drilled hole with a wire soldered on both sides, joining the trace side to the
+    back-side ground plane. Always on the ground net."""
+    x: float
+    y: float
+
+    def to_dict(self) -> dict:
+        return {"x": round(self.x, 4), "y": round(self.y, 4)}
+
+    @staticmethod
+    def from_dict(d: dict) -> "Via":
+        return Via(float(d["x"]), float(d["y"]))
+
+
 def clamp_island(v: float) -> float:
     return max(ISLAND_MIN, min(ISLAND_MAX, float(v)))
 
@@ -232,6 +289,7 @@ class Board:
         self.traces: List[Trace] = []
         self.jumpers: List[Jumper] = []
         self.islands: List[Island] = []
+        self.vias: List[Via] = []
         self.defs: Dict[str, PartDef] = {}
         self.rev = 0
         self._cu_cache: Optional[tuple] = None
@@ -256,9 +314,12 @@ class Board:
             n += 1
         return "%s%d" % (prefix, n)
 
-    def add_part(self, part_id: str, x: float, y: float, rot: int = 0, flip: bool = False,
+    def add_part(self, part_id: str, x: float, y: float, rot: int = 0, flip: Optional[bool] = None,
                  ref: Optional[str] = None, value: str = "", style: str = "tht") -> Placed:
         d = self.get_def(part_id)
+        if flip is None:
+            # SMD parts sit on the copper side, so seen from the component side they are mirrored
+            flip = d.kind == "smd"
         ref = ref or self.next_ref(d.prefix)
         if ref in self.parts:
             raise ValueError("reference %s already used" % ref)
@@ -451,6 +512,8 @@ class Board:
         for j in self.jumpers:
             if j.net == old:
                 j.net = new
+        if self.settings.island_net == old:
+            self.settings.island_net = new          # the ground fill follows its net's new name
         self.touch()
 
     def set_net_class(self, name: str, cls: str) -> None:
@@ -552,6 +615,12 @@ class Board:
             shapes.append(Cap(j.a[0], j.a[1], j.a[0], j.a[1], r, j.net, ("jpad", ji, 0)))
             shapes.append(Cap(j.b[0], j.b[1], j.b[0], j.b[1], r, j.net, ("jpad", ji, 1)))
         shapes.extend(self._island_copper(shapes))
+        if self.vias:
+            from .islands import ground_net
+            gnd = ground_net(self) or "~via"
+            rv = self.settings.via_pad / 2.0
+            for vi, v in enumerate(self.vias):
+                shapes.append(Cap(v.x, v.y, v.x, v.y, rv, gnd, ("via", vi)))
         self._cu_cache = (self.rev, shapes)
         return shapes
 
@@ -606,11 +675,23 @@ class Board:
         for j in self.jumpers:
             out.append((j.a[0], j.a[1], self.settings.jumper_drill))
             out.append((j.b[0], j.b[1], self.settings.jumper_drill))
+        for v in self.vias:
+            out.append((v.x, v.y, self.settings.via_drill))
         return out
 
+    def pin_drilled(self, pin: str) -> bool:
+        """True when this pin's pad has a hole (so its lead passes through to the component side)."""
+        ref, name = self.split_pin(pin)
+        if ref not in self.parts:
+            return False
+        return self.pad_copper(ref, name)[1] is not None
+
     # ------------------------------------------------------------ connectivity
-    def components(self) -> Dict[str, List[List[str]]]:
-        """For every net, the groups of its pins that are already joined by copper."""
+    def components(self, with_vias: bool = False) -> Dict[str, List[List[str]]]:
+        """For every net, the groups of its pins that are already joined by copper.
+
+        With ``with_vias`` the groups also list vias as "via:N" entries (used to tell which
+        copper is joined to the back-side ground plane)."""
         shapes = self.copper()
         by_net: Dict[str, List[int]] = {}
         for i, s in enumerate(shapes):
@@ -660,6 +741,8 @@ class Board:
                     root = find(i)
                     if pin not in groups.setdefault(root, []):
                         groups[root].append(pin)
+                elif tg and tg[0] == "via" and with_vias:
+                    groups.setdefault(find(i), []).append("via:%d" % tg[1])
             out[net] = [g for g in groups.values() if g]
         return out
 
@@ -672,21 +755,21 @@ class Board:
         st = self.settings
         key = (self.rev, tuple((n, tuple(v.pins), tuple(tuple(lk) for lk in v.links)) for n, v in self.nets.items()),
                st.island_mode, st.island_net, st.island_gap, st.island_grow, st.island_drop_floating,
-               st.clearance, st.edge_clearance,
-               self.width, self.height)
+               st.clearance, st.edge_clearance, st.backplane, st.relief, st.relief_spokes, st.relief_width,
+               st.relief_gap, st.relief_islands, st.relief_diag,
+               self.width, self.height, id(getattr(self, "_island_cache", None)))   # new fill check -> new bands
         cache = getattr(self, "_air_cache", None)
         if cache and cache[0] == key:
             return list(cache[1])
-        comps = self.components()
-        gnd = None
-        if st.island_mode:
-            from .islands import ground_net
-            gnd = ground_net(self)
+        from .islands import ground_net
+        gnd = ground_net(self)
+        comps = self.components(with_vias=gnd is not None)
         wires = []
         for name, net in self.nets.items():
             groups = comps.get(name, [])
             if name == gnd:
-                # in island mode the ground fill joins every ground pin on the same piece of fill
+                # the ground fill joins every ground pin on the same piece of fill, and the back-side
+                # plane joins every drilled ground pin and every via
                 from .islands import ground_groups
                 groups = ground_groups(self, groups)
             joined = {p for g in groups for p in g}
@@ -735,6 +818,26 @@ class Board:
     def unrouted_count(self) -> int:
         return len(self.airwires())
 
+    def is_smd(self, ref: str) -> bool:
+        return self.get_def(self.parts[ref].part_id).kind == "smd"
+
+    def on_copper_side(self, ref: str) -> bool:
+        """The part's body sits on the copper side (under the board as you look at the components)."""
+        return bool(self.parts[ref].flip)
+
+    def is_mirrored(self, ref: str) -> bool:
+        """Mounted on the other side from usual, so its pins are mirrored: a through-hole part under
+        the board (a display or a module plugged in from the copper side), or an SMD part on the
+        component side. Both UIs draw these in a loud colour so they are not built the wrong way round."""
+        return self.on_copper_side(ref) != self.is_smd(ref)
+
+    def mirror_part(self, ref: str) -> bool:
+        """Mount the part on the other side (mirror it about its pin 1). Returns the new is_mirrored()."""
+        p = self.parts[ref]
+        p.flip = not p.flip
+        self.touch()
+        return self.is_mirrored(ref)
+
     def is_fully_routed(self) -> bool:
         return bool(self.nets) and self.unrouted_count() == 0
 
@@ -753,6 +856,7 @@ class Board:
             "traces": [t.to_dict() for t in self.traces],
             "jumpers": [j.to_dict() for j in self.jumpers],
             "islands": [i.to_dict() for i in self.islands],
+            "vias": [v.to_dict() for v in self.vias],
             "defs": {pid: self.get_def(pid).to_dict() for pid in sorted(used)},
         }
 
@@ -774,6 +878,7 @@ class Board:
         b.traces = [Trace.from_dict(t) for t in d.get("traces", [])]
         b.jumpers = [Jumper.from_dict(j) for j in d.get("jumpers", [])]
         b.islands = [Island.from_dict(i) for i in d.get("islands", [])]
+        b.vias = [Via.from_dict(v) for v in d.get("vias", [])]
         b._net_counter = max([int(m.group(1)) for n in b.nets for m in [re.match(r"^N(\d+)$", n)] if m] + [0])
         b.touch()
         return b
@@ -846,6 +951,17 @@ def _ref_key(ref: str):
 def trace_corner_ok(points: List[Point], limit: float = 46.0) -> bool:
     """True when no corner turns more than ``limit`` degrees (so no 90 degree corner)."""
     return max_turn(points) <= limit
+
+
+def width_for_current(amps: float, oz: float = 1.0, temp_rise: float = 10.0) -> float:
+    """Trace width (mm) that carries ``amps`` by the IPC-2221 outer-layer formula (inverse of
+    current_capacity), rounded up to 0.05 mm."""
+    if amps <= 0:
+        return 0.0
+    thick_mil = 1.378 * oz
+    area_mil2 = (amps / (0.048 * temp_rise ** 0.44)) ** (1.0 / 0.725)
+    w = area_mil2 / thick_mil * 0.0254
+    return math.ceil(w / 0.05) * 0.05
 
 
 def current_capacity(width_mm: float, oz: float = 1.0, temp_rise: float = 10.0) -> float:

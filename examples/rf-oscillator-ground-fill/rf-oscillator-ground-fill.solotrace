@@ -26,6 +26,21 @@
   "island_gap": 0.6,
   "island_grow": 1.5,
   "island_drop_floating": true,
+  "relief": true,
+  "relief_spokes": 4,
+  "relief_width": 0.8,
+  "relief_amps": 0.0,
+  "relief_gap": 0.5,
+  "relief_islands": true,
+  "relief_diag": true,
+  "backplane": false,
+  "backplane_clearance": 0.55,
+  "backplane_relief": true,
+  "via_drill": 0.7,
+  "via_pad": 1.8,
+  "stitch_spacing": 10.0,
+  "router": "auto",
+  "placer": "anneal",
   "classes": {
    "Signal": 0.8,
    "Power": 2.0,
@@ -244,102 +259,6 @@
  ],
  "traces": [
   {
-   "net": "VCC",
-   "points": [
-    [
-     5.08,
-     35.56
-    ],
-    [
-     10.52,
-     35.56
-    ],
-    [
-     12.7,
-     33.38
-    ],
-    [
-     12.7,
-     30.48
-    ]
-   ],
-   "widths": [
-    2.0,
-    2.0,
-    2.0
-   ],
-   "manual": false
-  },
-  {
-   "net": "VCC",
-   "points": [
-    [
-     22.86,
-     33.02
-    ],
-    [
-     22.5,
-     33.38
-    ],
-    [
-     14.445,
-     33.38
-    ],
-    [
-     12.7,
-     31.635
-    ],
-    [
-     12.7,
-     30.48
-    ]
-   ],
-   "widths": [
-    2.0,
-    2.0,
-    2.0,
-    2.0
-   ],
-   "manual": false
-  },
-  {
-   "net": "VCC",
-   "points": [
-    [
-     22.86,
-     33.02
-    ],
-    [
-     22.86,
-     31.865
-    ],
-    [
-     24.605,
-     30.12
-    ],
-    [
-     29.76,
-     30.12
-    ],
-    [
-     30.12,
-     30.48
-    ],
-    [
-     33.02,
-     30.48
-    ]
-   ],
-   "widths": [
-    2.0,
-    2.0,
-    2.0,
-    2.0,
-    2.0
-   ],
-   "manual": false
-  },
-  {
    "net": "OUT",
    "points": [
     [
@@ -514,6 +433,102 @@
    "manual": false
   },
   {
+   "net": "VCC",
+   "points": [
+    [
+     5.08,
+     35.56
+    ],
+    [
+     10.52,
+     35.56
+    ],
+    [
+     12.7,
+     33.38
+    ],
+    [
+     12.7,
+     30.48
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "VCC",
+   "points": [
+    [
+     22.86,
+     33.02
+    ],
+    [
+     22.5,
+     33.38
+    ],
+    [
+     14.445,
+     33.38
+    ],
+    [
+     12.7,
+     31.635
+    ],
+    [
+     12.7,
+     30.48
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
+   "net": "VCC",
+   "points": [
+    [
+     22.86,
+     33.02
+    ],
+    [
+     22.86,
+     31.865
+    ],
+    [
+     24.605,
+     30.12
+    ],
+    [
+     29.76,
+     30.12
+    ],
+    [
+     30.12,
+     30.48
+    ],
+    [
+     33.02,
+     30.48
+    ]
+   ],
+   "widths": [
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "manual": false
+  },
+  {
    "net": "BASE",
    "points": [
     [
@@ -602,6 +617,7 @@
  ],
  "jumpers": [],
  "islands": [],
+ "vias": [],
  "defs": {
   "C_DISC_2.54": {
    "id": "C_DISC_2.54",
