@@ -174,10 +174,78 @@ def run():
         webp("/tmp/web-ui-collision.png", "web-ui-collision.webp")
         pg.mouse.up()
         pg.wait_for_timeout(400)
+        # 7. the breakout board (XIAO ESP32-S3 / C3), then 8. the green lock circle while wiring on it
+        bo = os.path.join(ex, "breakout-xiao-esp32-s3-c3", "breakout-xiao-esp32-s3-c3.solotrace")
+        with session.lock:
+            session.load_board(Board.load(bo), "/home/matthew/Desktop/solotrace/examples/breakout-xiao-esp32-s3-c3/breakout-xiao-esp32-s3-c3.solotrace")
+            session.sel = {}
+            session.status("Breakout: XIAO ESP32-S3 / C3. Every pin has a strip with 4 holes; 3V3, GND and 5V rails; power in on the screw terminal or the header.")
+            bd = session.board
+        pg.evaluate("getState()")
+        pg.wait_for_timeout(500)
+        pg.keyboard.press("f")
+        pg.wait_for_timeout(600)
+        pg.mouse.move(5, 5)
+        pg.screenshot(path="/tmp/web-ui-breakout.png")
+        webp("/tmp/web-ui-breakout.png", "web-ui-breakout.webp")
+
+        def scr(x, y):
+            return pg.evaluate("(a) => { const r = canvas.getBoundingClientRect(); const p = w2s(a[0], a[1]);"
+                               " return [p[0] + r.left, p[1] + r.top]; }", [x, y])
+        # wire from a GPIO pad of the module towards the rail; the cursor is a little off the target hole
+        a1 = bd.pin_pos("U1.7")
+        tx, ty = bd.pin_pos("RL1.1")
+        pg.keyboard.press("w")
+        pg.wait_for_timeout(200)
+        p1 = scr(*a1)
+        pg.mouse.click(p1[0], p1[1])
+        pg.wait_for_timeout(300)
+        q = scr(tx, ty - 1.0)
+        pg.mouse.move(q[0] - 30, q[1] - 20)
+        pg.mouse.move(q[0], q[1], steps=6)
+        pg.wait_for_timeout(900)
+        pg.screenshot(path="/tmp/web-ui-wire-lock.png")
+        webp("/tmp/web-ui-wire-lock.png", "web-ui-wire-lock.webp")
+        pg.keyboard.press("Escape")
+        # 9. the 433 MHz meander antenna with its keep-out, 10. the coil generator dialog, 11. a generated coil
+        for folder, shot, msg in (("antenna-433mhz-meander", "web-ui-antenna", "433.92 MHz meander antenna: the orange hatched box is the keep-out, the ground fill stops at it. A starting point, never measured."),):
+            fp = os.path.join(ex, folder, folder + ".solotrace")
+            with session.lock:
+                session.load_board(Board.load(fp), "/home/matthew/Desktop/solotrace/examples/%s/%s.solotrace" % (folder, folder))
+                session.sel = {}
+                session.status(msg)
+            pg.evaluate("getState()")
+            pg.wait_for_timeout(1500)
+            pg.keyboard.press("f")
+            pg.wait_for_timeout(600)
+            pg.mouse.move(5, 5)
+            pg.screenshot(path="/tmp/%s.png" % shot)
+            webp("/tmp/%s.png" % shot, shot + ".webp")
+        fp = os.path.join(ex, "pcb-coil-1u5-13m56", "pcb-coil-1u5-13m56.solotrace")
+        with session.lock:
+            session.load_board(Board.load(fp), "/home/matthew/Desktop/solotrace/examples/pcb-coil-1u5-13m56/pcb-coil-1u5-13m56.solotrace")
+            session.sel = {}
+            session.status("A 30 x 20 mm coil from the generator (1.5 uH wanted). Pins 2 and 3 of the coil are joined by an insulated wire you solder over the turns.")
+        pg.evaluate("getState()")
+        pg.wait_for_timeout(1200)
+        pg.keyboard.press("f")
+        pg.wait_for_timeout(500)
+        pg.evaluate("runCmd('dialog', { name: 'coil' })")
+        pg.wait_for_timeout(700)
+        pg.get_by_role("button", name="Calculate").click()
+        pg.wait_for_timeout(700)
+        pg.mouse.move(5, 5)
+        pg.screenshot(path="/tmp/web-ui-coil-dialog.png")
+        webp("/tmp/web-ui-coil-dialog.png", "web-ui-coil-dialog.webp")
+        pg.get_by_role("button", name="Cancel").click()
+        pg.wait_for_timeout(400)
+        pg.mouse.move(5, 5)
+        pg.screenshot(path="/tmp/web-ui-coil.png")
+        webp("/tmp/web-ui-coil.png", "web-ui-coil.webp")
         b.close()
     srv.shutdown()
     srv.server_close()
-    print("wrote web-ui.webp, web-ui-menu.webp, web-ui-smd.webp, web-ui-modules.webp, web-ui-laser.webp, web-ui-collision.webp")
+    print("wrote web-ui.webp, web-ui-menu.webp, web-ui-smd.webp, web-ui-modules.webp, web-ui-laser.webp, web-ui-collision.webp, web-ui-breakout.webp, web-ui-wire-lock.webp, web-ui-antenna.webp, web-ui-coil-dialog.webp, web-ui-coil.webp")
 
 
 def run_browser_app():

@@ -1,4 +1,4 @@
-; SoloTrace 0.5.0-wip - laser job: 555 LED flasher
+; SoloTrace 0.9.0-wip - laser job: 555 LED flasher
 ; WORK IN PROGRESS: defaults are untested starting points. Run the test cards first.
 ; Board: 555 LED flasher  70.0 x 50.0 mm  mode=isolation  mirror=True
 ; Ground fill on net GND, 0.60 mm gap round every other net (isolation burns the same as negative here)

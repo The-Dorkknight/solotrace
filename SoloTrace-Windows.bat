@@ -1,7 +1,7 @@
 @echo off
 rem Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight)
 rem Licensed under the PolyForm Noncommercial License 1.0.0. No warranty.
-rem SoloTrace 0.8.0-wip - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN
+rem SoloTrace 0.10.1-wip - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN
 rem Double-click launcher for Windows. Needs Python 3.8 or newer and nothing else: SoloTrace opens
 rem in your web browser (a small server on 127.0.0.1 only). Old desktop window: py src\main.py desktop
 cd /d "%~dp0"

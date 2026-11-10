@@ -1,4 +1,4 @@
-; SoloTrace 0.6.0-wip - laser job: SMD regulator
+; SoloTrace 0.9.0-wip - laser job: SMD regulator
 ; WORK IN PROGRESS: defaults are untested starting points. Run the test cards first.
 ; Board: SMD regulator  45.0 x 30.0 mm  mode=negative  mirror=True
 ; comp=0.000 mm  gap=0.600 mm  interval=0.080 mm  feed=1500 mm/min  power=70% of S1000  passes=1

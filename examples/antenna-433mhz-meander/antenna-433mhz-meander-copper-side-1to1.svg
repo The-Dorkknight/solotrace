@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="50mm" height="50mm" viewBox="0 0 50 50">
+<title>433 MHz antenna test board - SoloTrace mirrored</title>
+<rect x="0" y="0" width="50" height="50" fill="#ffffff"/>
+<polygon points="49.5000,49.5000 0.5000,49.5000 0.5000,0.5000 49.5000,0.5000" fill="#000000"/>
+<line x1="40.0000" y1="44.0000" x2="40.0000" y2="41.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="40.0000" y1="41.0000" x2="16.0000" y2="41.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="16.0000" y1="41.0000" x2="16.0000" y2="38.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="16.0000" y1="38.0000" x2="40.0000" y2="38.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="40.0000" y1="38.0000" x2="40.0000" y2="35.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="40.0000" y1="35.0000" x2="16.0000" y2="35.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="16.0000" y1="35.0000" x2="16.0000" y2="32.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="16.0000" y1="32.0000" x2="40.0000" y2="32.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="40.0000" y1="32.0000" x2="40.0000" y2="29.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="40.0000" y1="29.0000" x2="35.3723" y2="29.0000" stroke="#ffffff" stroke-width="2.2000" stroke-linecap="round"/>
+<line x1="40.0000" y1="44.0000" x2="40.0000" y2="44.0000" stroke="#ffffff" stroke-width="5.2000" stroke-linecap="round"/>
+<polygon points="5.1500,42.5500 5.1500,41.4500 5.4500,41.1500 6.5500,41.1500 6.8500,41.4500 6.8500,42.5500 6.5500,42.8500 5.4500,42.8500" fill="#ffffff"/>
+<line x1="5.1500" y1="42.5500" x2="5.1500" y2="41.4500" stroke="#ffffff" stroke-width="1.6800" stroke-linecap="round"/>
+<line x1="5.1500" y1="41.4500" x2="5.4500" y2="41.1500" stroke="#ffffff" stroke-width="1.6800" stroke-linecap="round"/>
+<line x1="5.4500" y1="41.1500" x2="6.5500" y2="41.1500" stroke="#ffffff" stroke-width="1.6800" stroke-linecap="round"/>
+<line x1="6.5500" y1="41.1500" x2="6.8500" y2="41.4500" stroke="#ffffff" stroke-width="1.6800" stroke-linecap="round"/>
+<line x1="6.8500" y1="41.4500" x2="6.8500" y2="42.5500" stroke="#ffffff" stroke-width="1.6800" stroke-linecap="round"/>
+<line x1="6.8500" y1="42.5500" x2="6.5500" y2="42.8500" stroke="#ffffff" stroke-width="1.6800" stroke-linecap="round"/>
+<line x1="6.5500" y1="42.8500" x2="5.4500" y2="42.8500" stroke="#ffffff" stroke-width="1.6800" stroke-linecap="round"/>
+<line x1="5.4500" y1="42.8500" x2="5.1500" y2="42.5500" stroke="#ffffff" stroke-width="1.6800" stroke-linecap="round"/>
+<line x1="40.0000" y1="44.0000" x2="37.8100" y2="46.1900" stroke="#ffffff" stroke-width="4.0000" stroke-linecap="round"/>
+<line x1="37.8100" y1="46.1900" x2="10.1900" y2="46.1900" stroke="#ffffff" stroke-width="2.3800" stroke-linecap="round"/>
+<line x1="10.1900" y1="46.1900" x2="6.0000" y2="42.0000" stroke="#ffffff" stroke-width="3.3800" stroke-linecap="round"/>
+<polygon points="45.0000,42.0000 11.0000,42.0000 11.0000,24.0000 45.0000,24.0000" fill="#ffffff"/>
+<line x1="45.0800" y1="44.0000" x2="45.0800" y2="44.0000" stroke="#ffffff" stroke-width="3.0000" stroke-linecap="round"/>
+<line x1="34.9200" y1="44.0000" x2="34.9200" y2="44.0000" stroke="#ffffff" stroke-width="3.0000" stroke-linecap="round"/>
+<line x1="6.0000" y1="39.4600" x2="6.0000" y2="39.4600" stroke="#ffffff" stroke-width="2.7000" stroke-linecap="round"/>
+<line x1="40.0000" y1="44.0000" x2="40.0000" y2="44.0000" stroke="#000000" stroke-width="4.0000" stroke-linecap="round"/>
+<polygon points="5.1500,42.5500 5.1500,41.4500 5.4500,41.1500 6.5500,41.1500 6.8500,41.4500 6.8500,42.5500 6.5500,42.8500 5.4500,42.8500" fill="#000000"/>
+<line x1="5.1500" y1="42.5500" x2="5.1500" y2="41.4500" stroke="#000000" stroke-width="0.4800" stroke-linecap="round"/>
+<line x1="5.1500" y1="41.4500" x2="5.4500" y2="41.1500" stroke="#000000" stroke-width="0.4800" stroke-linecap="round"/>
+<line x1="5.4500" y1="41.1500" x2="6.5500" y2="41.1500" stroke="#000000" stroke-width="0.4800" stroke-linecap="round"/>
+<line x1="6.5500" y1="41.1500" x2="6.8500" y2="41.4500" stroke="#000000" stroke-width="0.4800" stroke-linecap="round"/>
+<line x1="6.8500" y1="41.4500" x2="6.8500" y2="42.5500" stroke="#000000" stroke-width="0.4800" stroke-linecap="round"/>
+<line x1="6.8500" y1="42.5500" x2="6.5500" y2="42.8500" stroke="#000000" stroke-width="0.4800" stroke-linecap="round"/>
+<line x1="6.5500" y1="42.8500" x2="5.4500" y2="42.8500" stroke="#000000" stroke-width="0.4800" stroke-linecap="round"/>
+<line x1="5.4500" y1="42.8500" x2="5.1500" y2="42.5500" stroke="#000000" stroke-width="0.4800" stroke-linecap="round"/>
+<line x1="40.0000" y1="44.0000" x2="37.8100" y2="46.1900" stroke="#000000" stroke-width="2.8000" stroke-linecap="round"/>
+<line x1="37.8100" y1="46.1900" x2="10.1900" y2="46.1900" stroke="#000000" stroke-width="1.1800" stroke-linecap="round"/>
+<line x1="10.1900" y1="46.1900" x2="6.0000" y2="42.0000" stroke="#000000" stroke-width="2.1800" stroke-linecap="round"/>
+<line x1="44.5850" y1="43.5050" x2="43.4890" y2="42.4090" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="45.5750" y1="43.5050" x2="46.6710" y2="42.4090" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="45.5750" y1="44.4950" x2="46.6710" y2="45.5910" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="44.5850" y1="44.4950" x2="43.4890" y2="45.5910" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="34.4250" y1="43.5050" x2="33.3290" y2="42.4090" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="35.4150" y1="43.5050" x2="36.5110" y2="42.4090" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="5.6111" y1="39.0711" x2="4.5151" y2="37.9751" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="6.3889" y1="39.0711" x2="7.4849" y2="37.9751" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="6.3889" y1="39.8489" x2="7.4849" y2="40.9449" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="5.6111" y1="39.8489" x2="4.5151" y2="40.9449" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="40.0000" y1="44.0000" x2="40.0000" y2="41.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="40.0000" y1="41.0000" x2="16.0000" y2="41.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="16.0000" y1="41.0000" x2="16.0000" y2="38.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="16.0000" y1="38.0000" x2="40.0000" y2="38.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="40.0000" y1="38.0000" x2="40.0000" y2="35.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="40.0000" y1="35.0000" x2="16.0000" y2="35.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="16.0000" y1="35.0000" x2="16.0000" y2="32.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="16.0000" y1="32.0000" x2="40.0000" y2="32.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="40.0000" y1="32.0000" x2="40.0000" y2="29.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="40.0000" y1="29.0000" x2="35.3723" y2="29.0000" stroke="#000000" stroke-width="1.0000" stroke-linecap="round"/>
+<line x1="40.0000" y1="44.0000" x2="40.0000" y2="44.0000" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="45.0800" y1="44.0000" x2="45.0800" y2="44.0000" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<line x1="34.9200" y1="44.0000" x2="34.9200" y2="44.0000" stroke="#000000" stroke-width="2.0000" stroke-linecap="round"/>
+<polygon points="5.1500,42.5500 5.1500,41.4500 5.4500,41.1500 6.5500,41.1500 6.8500,41.4500 6.8500,42.5500 6.5500,42.8500 5.4500,42.8500" fill="#000000"/>
+<line x1="6.0000" y1="39.4600" x2="6.0000" y2="39.4600" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="40.0000" y1="44.0000" x2="37.8100" y2="46.1900" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="37.8100" y1="46.1900" x2="10.1900" y2="46.1900" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="10.1900" y1="46.1900" x2="6.0000" y2="42.0000" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<circle cx="40.0000" cy="44.0000" r="0.2000" fill="#ffffff"/>
+<circle cx="45.0800" cy="44.0000" r="0.2000" fill="#ffffff"/>
+<circle cx="34.9200" cy="44.0000" r="0.2000" fill="#ffffff"/>
+<circle cx="6.0000" cy="42.0000" r="0.2000" fill="#ffffff"/>
+<circle cx="6.0000" cy="39.4600" r="0.2000" fill="#ffffff"/>
+<rect x="0.05" y="0.05" width="49.9" height="49.9" fill="none" stroke="#808080" stroke-width="0.1"/>
+</svg>

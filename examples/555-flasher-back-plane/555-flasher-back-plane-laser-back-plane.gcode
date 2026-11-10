@@ -1,4 +1,4 @@
-; SoloTrace 0.5.0-wip - laser job: 555 LED flasher (back-side ground plane)
+; SoloTrace 0.9.0-wip - laser job: 555 LED flasher (back-side ground plane)
 ; WORK IN PROGRESS: defaults are untested starting points. Run the test cards first.
 ; Board: 555 LED flasher  70.0 x 50.0 mm  mode=negative  mirror=False
 ; BACK-SIDE GROUND PLANE: burn this looking at the COMPONENT side. Not mirrored. Work zero = lower-left corner of the board as seen from the component side.

@@ -179,8 +179,8 @@ def plan(board, full: bool = False) -> Optional[IslandPlan]:
         if sh.net == gnd:
             continue
         bb = bbs[i]
-        if sh.tag and sh.tag[0] == "isl":
-            grow[i] = 0.0               # copper islands keep the size you gave them
+        if sh.tag and (sh.tag[0] == "isl" or (len(sh.tag) > 3 and sh.tag[3] == "ant")):
+            grow[i] = 0.0               # copper islands keep the size you gave them; so does antenna copper
             continue
         g = min(want, bb[0] - border, bb[1] - border, W - border - bb[2], H - border - bb[3])
         if g > 1e-6:
@@ -207,6 +207,8 @@ def plan(board, full: bool = False) -> Optional[IslandPlan]:
         if g > 1e-6:
             fat.extend(_grown(sh, g, sh.net, ("island", i)))
         cut.extend(_grown(sh, g + gap, sh.net, ("cut", i)))
+    for ko in board.keepout_polys():
+        cut.append(Poly(list(ko.pts), None, ("cut", "keepout")))     # no fill in an antenna's clear area
     rect = (border, border, W - border, H - border)
     p = IslandPlan(rect, cut, fat, gnd, gap, grow)
     # ground copper (pads, traces, islands of the ground net) is joined to the fill wherever it

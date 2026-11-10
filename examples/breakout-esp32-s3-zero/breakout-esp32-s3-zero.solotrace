@@ -1,0 +1,1172 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "Breakout: ESP32-S3-Zero",
+ "width": 52.0,
+ "height": 32.5,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "island_mode": false,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.0,
+  "island_drop_floating": true,
+  "relief": true,
+  "relief_spokes": 4,
+  "relief_width": 0.8,
+  "relief_amps": 0.0,
+  "relief_gap": 0.5,
+  "relief_islands": true,
+  "relief_diag": true,
+  "backplane": false,
+  "backplane_clearance": 0.55,
+  "backplane_relief": true,
+  "via_drill": 0.7,
+  "via_pad": 1.8,
+  "stitch_spacing": 10.0,
+  "router": "auto",
+  "placer": "anneal",
+  "classes": {
+   "Signal": 0.8,
+   "Power": 2.0,
+   "High current": 5.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "J1",
+   "part": "TERM_5.08_2",
+   "x": 36.1,
+   "y": 5.2,
+   "rot": 0,
+   "flip": false,
+   "value": "2-pin screw terminal (fit one)",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "5V",
+    "2": "GND"
+   }
+  },
+  {
+   "ref": "J2",
+   "part": "HDR_1x2",
+   "x": 25.64,
+   "y": 5.2,
+   "rot": 0,
+   "flip": false,
+   "value": "2-pin header (fit one)",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "5V",
+    "2": "GND"
+   }
+  },
+  {
+   "ref": "RL1",
+   "part": "BRK_STRIP6",
+   "x": 8.98,
+   "y": 19.08,
+   "rot": 90,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "3V3"
+   }
+  },
+  {
+   "ref": "RL2",
+   "part": "BRK_STRIP6",
+   "x": 6.44,
+   "y": 21.619999999999997,
+   "rot": 90,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "GND"
+   }
+  },
+  {
+   "ref": "RL3",
+   "part": "BRK_STRIP6",
+   "x": 3.9000000000000004,
+   "y": 24.159999999999997,
+   "rot": 90,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "5V"
+   }
+  },
+  {
+   "ref": "TP1",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 30.509999999999998,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "5V"
+   }
+  },
+  {
+   "ref": "TP2",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 27.97,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "GND"
+   }
+  },
+  {
+   "ref": "TP3",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 25.43,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "3V3"
+   }
+  },
+  {
+   "ref": "TP4",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 22.889999999999997,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO1"
+   }
+  },
+  {
+   "ref": "TP5",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 20.349999999999998,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO2"
+   }
+  },
+  {
+   "ref": "TP6",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 17.81,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO3"
+   }
+  },
+  {
+   "ref": "TP7",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 15.269999999999998,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO4"
+   }
+  },
+  {
+   "ref": "TP8",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 12.729999999999997,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO5"
+   }
+  },
+  {
+   "ref": "TP9",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 16.26,
+   "y": 10.189999999999998,
+   "rot": 180,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO6"
+   }
+  },
+  {
+   "ref": "TP10",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 10.189999999999998,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO7"
+   }
+  },
+  {
+   "ref": "TP11",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 12.729999999999997,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO8"
+   }
+  },
+  {
+   "ref": "TP12",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 15.269999999999998,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO9"
+   }
+  },
+  {
+   "ref": "TP13",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 17.81,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO10"
+   }
+  },
+  {
+   "ref": "TP14",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 20.349999999999998,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO11"
+   }
+  },
+  {
+   "ref": "TP15",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 22.889999999999997,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO12"
+   }
+  },
+  {
+   "ref": "TP16",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 25.43,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "IO13"
+   }
+  },
+  {
+   "ref": "TP17",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 27.97,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "RX"
+   }
+  },
+  {
+   "ref": "TP18",
+   "part": "BRK_STRIP4_LEAD",
+   "x": 42.86,
+   "y": 30.509999999999998,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "TX"
+   }
+  },
+  {
+   "ref": "U1",
+   "part": "MOD_ESP32S3_ZERO",
+   "x": 21.94,
+   "y": 30.509999999999998,
+   "rot": 0,
+   "flip": false,
+   "value": "ESP32-S3-Zero",
+   "style": "mixed",
+   "locked": false
+  }
+ ],
+ "nets": [
+  {
+   "name": "+3V3",
+   "class": "Signal",
+   "pins": [
+    "U1.3",
+    "TP3.1",
+    "RL1.1"
+   ]
+  },
+  {
+   "name": "+5V",
+   "class": "Signal",
+   "pins": [
+    "U1.1",
+    "TP1.1",
+    "RL3.1",
+    "J1.1",
+    "J2.1"
+   ],
+   "links": [
+    [
+     "RL3.1",
+     "J1.1"
+    ]
+   ]
+  },
+  {
+   "name": "GND",
+   "class": "Signal",
+   "pins": [
+    "U1.2",
+    "TP2.1",
+    "RL2.1",
+    "J1.2",
+    "J2.2"
+   ],
+   "links": [
+    [
+     "RL2.1",
+     "J1.2"
+    ]
+   ]
+  },
+  {
+   "name": "IO1",
+   "class": "Signal",
+   "pins": [
+    "U1.4",
+    "TP4.1"
+   ]
+  },
+  {
+   "name": "IO2",
+   "class": "Signal",
+   "pins": [
+    "U1.5",
+    "TP5.1"
+   ]
+  },
+  {
+   "name": "IO3",
+   "class": "Signal",
+   "pins": [
+    "U1.6",
+    "TP6.1"
+   ]
+  },
+  {
+   "name": "IO4",
+   "class": "Signal",
+   "pins": [
+    "U1.7",
+    "TP7.1"
+   ]
+  },
+  {
+   "name": "IO5",
+   "class": "Signal",
+   "pins": [
+    "U1.8",
+    "TP8.1"
+   ]
+  },
+  {
+   "name": "IO6",
+   "class": "Signal",
+   "pins": [
+    "U1.9",
+    "TP9.1"
+   ]
+  },
+  {
+   "name": "IO7",
+   "class": "Signal",
+   "pins": [
+    "U1.10",
+    "TP10.1"
+   ]
+  },
+  {
+   "name": "IO8",
+   "class": "Signal",
+   "pins": [
+    "U1.11",
+    "TP11.1"
+   ]
+  },
+  {
+   "name": "IO9",
+   "class": "Signal",
+   "pins": [
+    "U1.12",
+    "TP12.1"
+   ]
+  },
+  {
+   "name": "IO10",
+   "class": "Signal",
+   "pins": [
+    "U1.13",
+    "TP13.1"
+   ]
+  },
+  {
+   "name": "IO11",
+   "class": "Signal",
+   "pins": [
+    "U1.14",
+    "TP14.1"
+   ]
+  },
+  {
+   "name": "IO12",
+   "class": "Signal",
+   "pins": [
+    "U1.15",
+    "TP15.1"
+   ]
+  },
+  {
+   "name": "IO13",
+   "class": "Signal",
+   "pins": [
+    "U1.16",
+    "TP16.1"
+   ]
+  },
+  {
+   "name": "RX",
+   "class": "Signal",
+   "pins": [
+    "U1.17",
+    "TP17.1"
+   ]
+  },
+  {
+   "name": "TX",
+   "class": "Signal",
+   "pins": [
+    "U1.18",
+    "TP18.1"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "net": "+5V",
+   "points": [
+    [
+     4.445,
+     17.145
+    ],
+    [
+     4.445,
+     12.065
+    ],
+    [
+     13.335,
+     3.175
+    ],
+    [
+     34.075,
+     3.175
+    ],
+    [
+     36.1,
+     5.2
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false,
+   "rigid": true
+  },
+  {
+   "net": "+5V",
+   "points": [
+    [
+     25.64,
+     5.2
+    ],
+    [
+     25.64,
+     3.415
+    ],
+    [
+     25.4,
+     3.175
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "+5V",
+   "points": [
+    [
+     4.445,
+     29.845
+    ],
+    [
+     11.43,
+     29.845
+    ]
+   ],
+   "widths": [
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     6.35,
+     14.605
+    ],
+    [
+     6.35,
+     12.065
+    ],
+    [
+     7.62,
+     10.795
+    ],
+    [
+     8.255,
+     10.795
+    ],
+    [
+     10.795,
+     8.255
+    ],
+    [
+     38.125,
+     8.255
+    ],
+    [
+     41.18,
+     5.2
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false,
+   "rigid": true
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     6.985,
+     27.305
+    ],
+    [
+     11.43,
+     27.305
+    ]
+   ],
+   "widths": [
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "GND",
+   "points": [
+    [
+     28.18,
+     5.2
+    ],
+    [
+     28.18,
+     7.86
+    ],
+    [
+     28.575,
+     8.255
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "+3V3",
+   "points": [
+    [
+     9.525,
+     24.765
+    ],
+    [
+     11.43,
+     24.765
+    ]
+   ],
+   "widths": [
+    0.8
+   ],
+   "manual": false
+  }
+ ],
+ "jumpers": [],
+ "islands": [],
+ "vias": [],
+ "defs": {
+  "BRK_STRIP4_LEAD": {
+   "id": "BRK_STRIP4_LEAD",
+   "name": "Hole strip 1 x 4 with lead-in (joins a module pad)",
+   "category": "Board",
+   "prefix": "TP",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "oval",
+     "w": 10.76,
+     "h": 1.8,
+     "drill": 1.0,
+     "chamfer": 0.3,
+     "holes": [
+      [
+       -3.14,
+       0.0
+      ],
+      [
+       -0.6,
+       0.0
+      ],
+      [
+       1.94,
+       0.0
+      ],
+      [
+       4.48,
+       0.0
+      ]
+     ]
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -5.38,
+     -0.9,
+     5.38,
+     0.9
+    ]
+   ],
+   "court": [
+    -5.38,
+    -0.9,
+    5.38,
+    0.9
+   ],
+   "kind": "strip",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "One bar of copper with 4 holes, all one net: push a pin header or a lead through any hole, or solder a wire or an SMD part flat on the bar (through-hole and deadbug in one, whatever the 'Pads of this part' choice). Not in the parts list (BOM). The bar starts 0.3 mm past the pad of the module in front of it, so the module's pad and the bar are touching copper: no wire needed between them."
+  },
+  "BRK_STRIP6": {
+   "id": "BRK_STRIP6",
+   "name": "Hole strip 1 x 6 (one net)",
+   "category": "Board",
+   "prefix": "TP",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "oval",
+     "w": 14.5,
+     "h": 1.8,
+     "drill": 1.0,
+     "chamfer": 0.3,
+     "holes": [
+      [
+       -6.35,
+       0.0
+      ],
+      [
+       -3.81,
+       0.0
+      ],
+      [
+       -1.27,
+       0.0
+      ],
+      [
+       1.27,
+       0.0
+      ],
+      [
+       3.81,
+       0.0
+      ],
+      [
+       6.35,
+       0.0
+      ]
+     ]
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -7.25,
+     -0.9,
+     7.25,
+     0.9
+    ]
+   ],
+   "court": [
+    -7.25,
+    -0.9,
+    7.25,
+    0.9
+   ],
+   "kind": "strip",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "One bar of copper with 6 holes, all one net: push a pin header or a lead through any hole, or solder a wire or an SMD part flat on the bar (through-hole and deadbug in one, whatever the 'Pads of this part' choice). Not in the parts list (BOM)."
+  },
+  "HDR_1x2": {
+   "id": "HDR_1x2",
+   "name": "Pin header 1x2, 2.54 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.27,
+     -1.27,
+     3.81,
+     1.27
+    ]
+   ],
+   "court": [
+    -1.27,
+    -1.27,
+    3.81,
+    1.27
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "2-row headers number across the columns: 1 top, 2 below it, 3 next top..."
+  },
+  "MOD_ESP32S3_ZERO": {
+   "id": "MOD_ESP32S3_ZERO",
+   "name": "Waveshare ESP32-S3-Zero (23.5 x 18 mm)",
+   "category": "Modules",
+   "prefix": "U",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 0.0,
+     "y": -2.54,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 0.0,
+     "y": -5.08,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "4",
+     "x": 0.0,
+     "y": -7.62,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "5",
+     "x": 0.0,
+     "y": -10.16,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "6",
+     "x": 0.0,
+     "y": -12.7,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "7",
+     "x": 0.0,
+     "y": -15.24,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "8",
+     "x": 0.0,
+     "y": -17.78,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "9",
+     "x": 0.0,
+     "y": -20.32,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "10",
+     "x": 15.24,
+     "y": -20.32,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "11",
+     "x": 15.24,
+     "y": -17.78,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "12",
+     "x": 15.24,
+     "y": -15.24,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "13",
+     "x": 15.24,
+     "y": -12.7,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "14",
+     "x": 15.24,
+     "y": -10.16,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "15",
+     "x": 15.24,
+     "y": -7.62,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "16",
+     "x": 15.24,
+     "y": -5.08,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "17",
+     "x": 15.24,
+     "y": -2.54,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "18",
+     "x": 15.24,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.38,
+     -21.91,
+     16.62,
+     1.59
+    ],
+    [
+     "rect",
+     3.12,
+     1.59,
+     12.120000000000001,
+     3.09
+    ],
+    [
+     "circle",
+     0.0,
+     0.0,
+     1.35
+    ]
+   ],
+   "court": [
+    -1.38,
+    -21.91,
+    16.62,
+    1.59
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "2 x 9 castellated pins at 2.54 mm, rows 15.24 mm apart, USB-C at the top. TX = GPIO43, RX = GPIO44. Pin order from two community footprints (Waveshare only publishes it as a picture); the outline is from those footprints. Pads under the board are not included. Castellated: with deadbug pads (Pads of this part > Deadbug) you can solder it flat on the copper, or Shift+M to mirror it so it sits on the copper side. "
+  },
+  "TERM_5.08_2": {
+   "id": "TERM_5.08_2",
+   "name": "Screw terminal 2-way, 5.08 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 2.6,
+     "h": 2.6,
+     "drill": 1.3,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.6,
+     "h": 2.6,
+     "drill": 1.3,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -2.54,
+     -4.0,
+     7.62,
+     4.0
+    ]
+   ],
+   "court": [
+    -2.54,
+    -4.0,
+    7.62,
+    4.0
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  }
+ }
+}

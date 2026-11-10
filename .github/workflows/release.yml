@@ -2,7 +2,7 @@ name: release
 # Creates a GitHub PRE-release (this project is a work in progress):
 #  - on every push to main, for the version in src/solotrace/__init__.py (tag v<version>), if that
 #    release does not exist yet; the tag is created by this workflow, so nothing has to push a tag;
-#  - when a tag like v0.8.0-wip is pushed;
+#  - when a tag like v0.10.1-wip is pushed;
 #  - when you run it by hand from the Actions tab.
 on:
   push:
@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (for example v0.8.0-wip). It must already exist, or it will be created on the latest main commit."
+        description: "Tag to release (for example v0.10.1-wip). It must already exist, or it will be created on the latest main commit."
         required: true
-        default: "v0.8.0-wip"
+        default: "v0.10.1-wip"
 permissions:
   contents: write
 jobs:
@@ -35,10 +35,11 @@ jobs:
             T="v$V"
           fi
           echo "tag=$T" >> "$GITHUB_OUTPUT"
-      - name: Pack the source zip (keeps the double-click launchers executable)
+      - name: Pack the source zip (keeps the double-click launchers executable) and the PDF guide
         run: |
           git archive --format=zip --prefix=solotrace/ -o "solotrace-${{ steps.tag.outputs.tag }}.zip" HEAD
-          sha256sum "solotrace-${{ steps.tag.outputs.tag }}.zip" > SHA256SUMS.txt
+          cp docs/SoloTrace-guide.pdf "SoloTrace-guide-${{ steps.tag.outputs.tag }}.pdf"
+          sha256sum "solotrace-${{ steps.tag.outputs.tag }}.zip" "SoloTrace-guide-${{ steps.tag.outputs.tag }}.pdf" > SHA256SUMS.txt
       - name: Create the pre-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,7 +48,7 @@ jobs:
           if gh release view "$T" >/dev/null 2>&1; then
             echo "Release $T already exists; nothing to do."
           else
-            gh release create "$T" "solotrace-$T.zip" SHA256SUMS.txt --prerelease --title "SoloTrace $T (work in progress)" \
-              --notes "**WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN.** Early pre-release. Unzip, then double-click the launcher for your system (SoloTrace-Linux.sh, SoloTrace-Windows.bat or SoloTrace-Mac.command). Needs Python 3.8+ and nothing else: it opens in your web browser. No Python? Use it in your browser with nothing installed: https://the-dorkknight.github.io/solotrace/app/ . Not tested on a real Elegoo Phecda yet. See CHANGELOG.md for what changed and README.md for known limitations." \
+            gh release create "$T" "solotrace-$T.zip" "SoloTrace-guide-$T.pdf" SHA256SUMS.txt --prerelease --title "SoloTrace $T (work in progress)" \
+              --notes "**WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN.** Early pre-release. Unzip, then double-click the launcher for your system (SoloTrace-Linux.sh, SoloTrace-Windows.bat or SoloTrace-Mac.command). Needs Python 3.8+ and nothing else: it opens in your web browser. No Python? Use it in your browser with nothing installed: https://the-dorkknight.github.io/solotrace/app/ . Not tested on a real Elegoo Phecda yet. The PDF is a printable guide (README, how it works, the breakout notes, changelog and design notes). See CHANGELOG.md for what changed and README.md for known limitations." \
               --target "${GITHUB_SHA}"
           fi

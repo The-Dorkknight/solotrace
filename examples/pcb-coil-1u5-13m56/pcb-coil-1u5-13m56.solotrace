@@ -1,0 +1,605 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "PCB coil 13.56 MHz",
+ "width": 60.0,
+ "height": 50.0,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "island_mode": false,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.0,
+  "island_drop_floating": true,
+  "relief": true,
+  "relief_spokes": 4,
+  "relief_width": 0.8,
+  "relief_amps": 0.0,
+  "relief_gap": 0.5,
+  "relief_islands": true,
+  "relief_diag": true,
+  "backplane": false,
+  "backplane_clearance": 0.55,
+  "backplane_relief": true,
+  "via_drill": 0.7,
+  "via_pad": 1.8,
+  "stitch_spacing": 10.0,
+  "router": "auto",
+  "placer": "anneal",
+  "classes": {
+   "Signal": 0.8,
+   "Power": 2.0,
+   "High current": 5.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "C1",
+   "part": "C_DISC_2.54",
+   "x": 24.0,
+   "y": 5.0,
+   "rot": 0,
+   "flip": false,
+   "value": "93 pF",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "J1",
+   "part": "HDR_1x2",
+   "x": 38.0,
+   "y": 5.0,
+   "rot": 0,
+   "flip": false,
+   "value": "leads",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "A",
+    "2": "B"
+   }
+  },
+  {
+   "ref": "L1",
+   "part": "COIL_30x20_8T_0.5mm",
+   "x": 10.0,
+   "y": 15.0,
+   "rot": 0,
+   "flip": false,
+   "value": "1.49 uH",
+   "style": "tht",
+   "locked": false
+  }
+ ],
+ "nets": [
+  {
+   "name": "A",
+   "class": "Signal",
+   "pins": [
+    "L1.1",
+    "C1.1",
+    "J1.1"
+   ]
+  },
+  {
+   "name": "B",
+   "class": "Signal",
+   "pins": [
+    "L1.2",
+    "L1.3",
+    "C1.2",
+    "J1.2"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "net": "A",
+   "points": [
+    [
+     24.0,
+     5.0
+    ],
+    [
+     24.0,
+     5.585
+    ],
+    [
+     26.035,
+     7.62
+    ],
+    [
+     27.94,
+     7.62
+    ],
+    [
+     30.56,
+     5.0
+    ],
+    [
+     38.0,
+     5.0
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "A",
+   "points": [
+    [
+     24.0,
+     5.0
+    ],
+    [
+     24.0,
+     5.21
+    ],
+    [
+     14.21,
+     15.0
+    ],
+    [
+     10.0,
+     15.0
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "B",
+   "points": [
+    [
+     26.54,
+     5.0
+    ],
+    [
+     28.365,
+     3.175
+    ],
+    [
+     39.37,
+     3.175
+    ],
+    [
+     40.54,
+     4.345
+    ],
+    [
+     40.54,
+     5.0
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  },
+  {
+   "net": "B",
+   "points": [
+    [
+     26.54,
+     5.0
+    ],
+    [
+     26.54,
+     3.94
+    ],
+    [
+     26.605,
+     3.875
+    ],
+    [
+     26.605,
+     3.745
+    ],
+    [
+     24.765,
+     1.905
+    ],
+    [
+     19.94,
+     1.905
+    ],
+    [
+     19.685,
+     2.16
+    ],
+    [
+     19.685,
+     2.415
+    ],
+    [
+     7.1,
+     15.0
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  }
+ ],
+ "jumpers": [],
+ "islands": [],
+ "vias": [],
+ "defs": {
+  "COIL_30x20_8T_0.5mm": {
+   "id": "COIL_30x20_8T_0.5mm",
+   "name": "PCB coil 1.49 uH (8T, 30 x 20 mm)",
+   "category": "Board",
+   "prefix": "L",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 14.75,
+     "y": 13.6,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": -2.9,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.9,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -2.25,
+     1.6,
+     31.75,
+     25.6
+    ],
+    [
+     "line",
+     14.75,
+     13.6,
+     -2.9,
+     0.0
+    ]
+   ],
+   "court": [
+    -4.3,
+    -1.4,
+    31.75,
+    25.6
+   ],
+   "kind": "antenna",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "Generated coil, 8 turns, track 0.50 mm, gap 0.46 mm, estimated 1.485 uH (single layer in air; measure it). Pin 1 = outer end, pin 2 = inner end, pin 3 = landing for the wire that carries the inner end out over the turns; pins 2 and 3 are tied into one net and count as joined: solder an INSULATED wire (enamelled or sleeved) between them over the turns. No copper or fill inside the keep-out box.",
+   "strokes": [
+    {
+     "pad": "*",
+     "w": 0.5,
+     "pts": [
+      [
+       0.0,
+       3.85
+      ],
+      [
+       29.5,
+       3.85
+      ],
+      [
+       29.5,
+       23.35
+      ],
+      [
+       0.0,
+       23.35
+      ],
+      [
+       0.0,
+       4.80578125
+      ],
+      [
+       28.54421875,
+       4.80578125
+      ],
+      [
+       28.54421875,
+       22.39421875
+      ],
+      [
+       0.95578125,
+       22.39421875
+      ],
+      [
+       0.95578125,
+       5.7615625
+      ],
+      [
+       27.588437499999998,
+       5.7615625
+      ],
+      [
+       27.588437499999998,
+       21.4384375
+      ],
+      [
+       1.9115625,
+       21.4384375
+      ],
+      [
+       1.9115625,
+       6.7173437499999995
+      ],
+      [
+       26.632656249999997,
+       6.7173437499999995
+      ],
+      [
+       26.632656249999997,
+       20.482656249999998
+      ],
+      [
+       2.86734375,
+       20.482656249999998
+      ],
+      [
+       2.86734375,
+       7.673125000000001
+      ],
+      [
+       25.676874999999995,
+       7.673125000000001
+      ],
+      [
+       25.676874999999995,
+       19.526874999999997
+      ],
+      [
+       3.823125,
+       19.526874999999997
+      ],
+      [
+       3.823125,
+       8.62890625
+      ],
+      [
+       24.721093749999994,
+       8.62890625
+      ],
+      [
+       24.721093749999994,
+       18.57109375
+      ],
+      [
+       4.77890625,
+       18.57109375
+      ],
+      [
+       4.77890625,
+       9.584687500000001
+      ],
+      [
+       23.765312499999993,
+       9.584687500000001
+      ],
+      [
+       23.765312499999993,
+       17.615312499999998
+      ],
+      [
+       5.734687500000001,
+       17.615312499999998
+      ],
+      [
+       5.734687500000001,
+       10.54046875
+      ],
+      [
+       22.809531249999992,
+       10.54046875
+      ],
+      [
+       22.809531249999992,
+       16.65953125
+      ],
+      [
+       6.690468750000001,
+       16.65953125
+      ],
+      [
+       6.690468750000001,
+       11.496250000000002
+      ],
+      [
+       14.75,
+       11.496250000000002
+      ],
+      [
+       14.75,
+       13.6
+      ]
+     ]
+    },
+    {
+     "pad": "1",
+     "w": 0.5,
+     "pts": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       3.85
+      ]
+     ]
+    }
+   ],
+   "keepouts": [
+    [
+     -2.25,
+     1.6,
+     31.75,
+     25.6
+    ]
+   ],
+   "ties": [
+    [
+     "2",
+     "3"
+    ]
+   ]
+  },
+  "C_DISC_2.54": {
+   "id": "C_DISC_2.54",
+   "name": "Ceramic disc cap, 2.54 mm",
+   "category": "Capacitors",
+   "prefix": "C",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.8,
+     "h": 1.8,
+     "drill": 0.8,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.0,
+     -1.75,
+     3.54,
+     1.75
+    ]
+   ],
+   "court": [
+    -1.0,
+    -1.75,
+    3.54,
+    1.75
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": ""
+  },
+  "HDR_1x2": {
+   "id": "HDR_1x2",
+   "name": "Pin header 1x2, 2.54 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.27,
+     -1.27,
+     3.81,
+     1.27
+    ]
+   ],
+   "court": [
+    -1.27,
+    -1.27,
+    3.81,
+    1.27
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "2-row headers number across the columns: 1 top, 2 below it, 3 next top..."
+  }
+ }
+}

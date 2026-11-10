@@ -61,7 +61,7 @@ footer{border-top:1px solid var(--line);margin-top:1.5rem;padding:1.4rem 0 2.2re
 </style>
 </head>
 <body>
-<div class="banner">WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN &middot; v0.8.0-wip</div>
+<div class="banner">WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN &middot; v0.10.1-wip</div>
 
 <div class="wrap">
 <header class="hero">
@@ -90,6 +90,10 @@ footer{border-top:1px solid var(--line);margin-top:1.5rem;padding:1.4rem 0 2.2re
     <div class="card"><h3>Thermal reliefs</h3><p>Ground pads in the fill or plane get a ring and spokes so they can be soldered. Size the spokes by hand or for a current (IPC-2221); heavy or solid per part.</p></div>
     <div class="card"><h3>Back-side ground plane</h3><p>Double-clad board: the component side stays solid ground. Vias (hole + wire), clearance rings, stitching grid with a frequency guide, countersink list for a no-registration build.</p></div>
     <div class="card"><h3>ESP32, RP2040, Arduino modules</h3><p>XIAO ESP32-C3/S3, C3 SuperMini, S3-Zero, Pico, DevKits, NodeMCU, D1 mini, Nano, Pro Mini/Micro, 0.91" and 0.96" OLEDs and SD modules, pins labelled, through-hole or deadbug, from makers' own files.</p></div>
+    <div class="card"><h3>Green lock when wiring</h3><p>With the Wire tool a solid green circle jumps onto the pin your click would connect to, so you never have to guess whether a wire will land. New in 0.9.0.</p></div>
+    <div class="card"><h3>ESP32 breakout boards</h3><p>XIAO ESP32-S3/C3, C3 SuperMini and S3-Zero: a hole strip on every pin (four extra holes, through-hole and deadbug in one), 3V3 / GND / 5V rails and a screw terminal or header for power in. Built by the app, no jumpers, DRC clean. New in 0.9.0.</p></div>
+    <div class="card"><h3>PCB antennas with keep-outs</h3><p>Meander monopoles for 315, 433.92, 868, 915 and 2450 MHz, wire whips, and bare keep-out boxes. Copper, ground fill and the back-side plane stay out of the hatched box, and the router goes round it. Lengths are quarter-wave formulas plus 10&nbsp;% to trim: <strong>never etched or measured</strong>.</p></div>
+    <div class="card"><h3>PCB coil generator</h3><p>Type the outer size and either the inductance you want (it finds the turns) or the turns (it works out the inductance). Saved as a part, with a wire between its inner end and a landing pad. An estimate for a coil in air, within 3&nbsp;% of a published formula on three test coils, <strong>never measured</strong>.</p></div>
     <div class="card"><h3>Mirror under the board</h3><p>Shift+M mounts a display or module on the copper side. Mirrored parts get a loud pink frame and tag so nobody solders them the wrong way round.</p></div>
     <div class="card"><h3>A web app: nothing to install</h3><p>Open it in your browser from this site: the editor's Python runs inside the page (Pyodide), your board is never uploaded. The download opens in your browser too, through a tiny local server; tkinter is no longer needed (<code>main.py desktop</code> for the old window).</p></div>
     <div class="card"><h3>Collisions after a move</h3><p>Traces do not follow a part. Drag a part onto another net's trace and the clash is marked in red at once, and reported when you let go; a module mounted under the board is checked for traces under its body.</p></div>
@@ -109,6 +113,10 @@ footer{border-top:1px solid var(--line);margin-top:1.5rem;padding:1.4rem 0 2.2re
 <section>
   <h2>Screens</h2>
   <div class="two">
+    <a class="shot" href="images/web-ui-breakout.webp"><img src="images/web-ui-breakout.webp" alt="The XIAO ESP32-S3 / C3 breakout board: a four-hole strip on every pin, three power rails, screw terminal and header" loading="lazy" width="1280" height="840"></a>
+    <a class="shot" href="images/web-ui-wire-lock.webp"><img src="images/web-ui-wire-lock.webp" alt="The Wire tool with a green lock circle on the pin the click would connect to" loading="lazy" width="1280" height="840"></a>
+    <a class="shot" href="images/web-ui-antenna.webp"><img src="images/web-ui-antenna.webp" alt="A 433.92 MHz meander antenna with its hatched keep-out box, ground fill stopping at the box" loading="lazy" width="1280" height="840"></a>
+    <a class="shot" href="images/web-ui-coil-dialog.webp"><img src="images/web-ui-coil-dialog.webp" alt="The PCB coil generator: area and inductance in, turns and track out" loading="lazy" width="1280" height="840"></a>
     <a class="shot" href="images/gui-modules-mirrored.webp"><img src="images/gui-modules-mirrored.webp" alt="A XIAO ESP32-C3 logger with the OLED mirrored under the board, shown in pink" loading="lazy" width="1280" height="840"></a>
     <a class="shot" href="images/web-ui.webp"><img src="images/web-ui.webp" alt="The web UI in a browser: the routed 555 flasher with a trace selected" loading="lazy" width="1280" height="840"></a>
     <a class="shot" href="images/web-ui-smd.webp"><img src="images/web-ui-smd.webp" alt="The web UI in SMD mode, copper-side view" loading="lazy" width="1280" height="840"></a>
@@ -135,6 +143,8 @@ footer{border-top:1px solid var(--line);margin-top:1.5rem;padding:1.4rem 0 2.2re
     <tr><td>Windows and macOS launchers, GitHub workflows</td><td>Written, not run.</td></tr>
     <tr><td>Module footprints on a real board</td><td>New in 0.7.0: from makers' files and checked by tests, not yet etched with a real module plugged in. A few are single-source (see the part notes).</td></tr>
     <tr><td>The web UI on a real design</td><td>New in 0.6.0: driven by tests and screenshots in headless Chromium only; no person has designed a board in it yet, and only Chromium has shown it.</td></tr>
+    <tr><td>The breakout boards and hole strips on a real board</td><td>New in 0.9.0: tests, DRC, an independent Gerber reader and the autorouter only; <strong>never etched, soldered or used with a real module</strong>. Powering a module through its 5V pin while USB is plugged in was not looked up.</td></tr>
+    <tr><td>Antennas and the coil on a real board</td><td>New in 0.10.0: formulas, tests and examples only; <strong>never etched or measured</strong>. No matching networks, no inverted-F, patch or loop antennas.</td></tr>
     <tr><td>Floating slider pop-up</td><td>Not built: the slider is in the right-hand panel (preset widths are also on the right-click menu).</td></tr>
     <tr><td>Push-and-shove when dragging traces</td><td>Not built: a dragged trace can end up too close to others; the clash is marked in red.</td></tr>
     <tr><td>Topological (rubber-band) router, C++ speed-up</td><td>Not built. The router is pure Python and can be slow on big boards; the negotiated-congestion router is new in 0.5.0.</td></tr>

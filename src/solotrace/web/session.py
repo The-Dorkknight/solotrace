@@ -25,7 +25,7 @@ import zipfile
 from typing import Dict, List, Optional, Tuple
 
 from .. import APP_NAME, __build_date__, __version__, title as app_title
-from .. import demos, gerber, library, render
+from .. import coil, demos, gerber, library, render
 from ..library import _natural, short_name
 
 
@@ -47,7 +47,7 @@ from ..geom import Cap, dist, seg_point_dist, shape_dist
 from ..islands import (ground_net, guess_ground, make_pads_deadbug, plan as island_plan, ready as island_ready,
                        spoke_width)
 from ..laser import LaserOptions, frame_gcode, generate as laser_generate, speed_power_card, trace_ladder_card, validate
-from ..parts import PadDef, PartDef
+from ..parts import FIXED_STYLE_KINDS, PadDef, PartDef
 from ..placer import Placer
 from ..router import AutoRouter, RouteOptions
 from ..tidy import (apply_drag, attached_ends, cut_between, follow_trunk, piece_bounds, project_on_trace,
@@ -470,14 +470,24 @@ class Session:
                     return (i, kx, ky)
         return None
 
-    def pin_near(self, wx: float, wy: float, radius: float = 1.6) -> Optional[str]:
-        b = self.board
-        best = None
-        for pin in b.all_pins():
-            d = dist(b.pin_pos(pin), (wx, wy))
-            if d <= radius and (best is None or d < best[0]):
-                best = (d, pin)
-        return best[1] if best else None
+    def lock_radius(self) -> float:
+        """How far from a pad's copper a wire click still locks onto it: about 14 screen pixels, so
+        it is easy to hit when zoomed out and does not grab the wrong pin when zoomed in."""
+        return max(1.4, min(3.0, 14.0 / max(self.scale, 1.0)))
+
+    def pin_near(self, wx: float, wy: float, radius: Optional[float] = None) -> Optional[str]:
+        lk = self.board.pin_lock(wx, wy, radius if radius is not None else self.lock_radius())
+        return lk[0] if lk else None
+
+    def wire_lock(self, wx: float, wy: float) -> Optional[dict]:
+        """What the wire tool would lock onto at this point (drawn as a solid green circle)."""
+        lk = self.board.pin_lock(wx, wy, self.lock_radius())
+        if lk is None:
+            return None
+        pin, (sx, sy), r = lk
+        n = self.board.net_of(pin)
+        return {"pin": pin, "x": round(sx, 4), "y": round(sy, 4), "r": round(r, 3), "ok": pin != self.pending_pin,
+                "net": n.name if n else None}
 
     def hover_net(self, wx: float, wy: float) -> Optional[str]:
         h = self.hit_test(wx, wy)
@@ -645,7 +655,7 @@ class Session:
         if self.armed not in b.defs:
             b.defs[self.armed] = d
         style = self.default_style
-        if d.kind in ("hole",):
+        if d.kind in FIXED_STYLE_KINDS:
             style = "tht"
         pl = b.add_part(self.armed, x, y, self.arm_rot, (d.kind == "smd") != self.arm_mirror, style=style)
         self._note_recent(self.armed)
@@ -1944,6 +1954,8 @@ class Session:
             "grid": b.settings.place_grid,
             "plane": None, "fill": None, "fill_ready": fill_ready,
             "copper": [shape_json(s) for s in b.copper()],
+            "keepouts": [{"ref": r, "pts": [[round(x, 4), round(y, 4)] for x, y in k.pts],
+                          "hatch": [[round(v, 3) for v in h] for h in render.keepout_hatch(k.pts)]} for r, k in b.keepouts()],
             "rigid": [[list(p) for p in t.points] for t in b.traces if t.rigid],
             "drills": [[round(x, 4), round(y, 4), d] for x, y, d in b.drills()],
             "vias": [[v.x, v.y] for v in b.vias], "via_pad": b.settings.via_pad,
@@ -2149,10 +2161,18 @@ class Session:
                     else "Mirrored (mounted UNDER the board)"})
         if b.is_mirrored(ref):
             out.append({"t": "label", "mirror": True, "text": mirror_message(b, ref)})
-        if d.kind == "smd":
+        if d.kind == "antenna":
+            out.append({"t": "label", "muted": True, "text": "Antenna or coil: its copper is part of the part and its hatched "
+                        "keep-out box must stay free of copper, fill and plane. Antenna parts are formula starting points: "
+                        "measure and trim."})
+        elif d.kind == "smd":
             out.append({"t": "label", "muted": True, "text": "SMD part: it sits on the COPPER side, so it is mirrored in "
                         "the component-side view (press M to see it as you will solder it). Its pads are plain copper "
                         "lands with no holes."})
+        elif d.kind == "strip":
+            out.append({"t": "label", "muted": True, "text": "Hole strip: one bar of copper, one pin, every hole on the same "
+                        "net. Through-hole and deadbug at once: push a pin or lead through any hole, or solder a wire or SMD "
+                        "part flat on the bar. Rotate it (R) to run it the other way."})
         else:
             out.append({"t": "radio", "label": "Pads of this part", "value": pl.style, "cmd": "set_style", "args": {"ref": ref},
                         "options": [["tht", "Through-hole"], ["dead", "Deadbug (surface solder, no hole)"], ["mixed", "Both"]]})
@@ -2506,6 +2526,25 @@ class Session:
                                 {"label": "Import a KiCad .kicad_mod...", "cmd": "pick_file", "args": {"what": "kicad"}}],
                     "info": "The outline is drawn round the pads. Through-hole only. Saved as a small .json file in %s."
                             % library.user_part_dir()}
+        if name == "coil":
+            return {"title": "PCB coil generator", "submit": "save_coil", "ok": "Save coil and place",
+                    "fields": [{"k": "mode", "label": "I know", "type": "select", "value": "uh",
+                                "options": [["uh", "The area and the inductance wanted (find the turns)"],
+                                            ["turns", "The area and the number of turns (work out the inductance)"]]},
+                               {"k": "width", "label": "Outer width (mm)", "type": "number", "value": 30},
+                               {"k": "height", "label": "Outer height (mm)", "type": "number", "value": 20},
+                               {"k": "uh", "label": "Inductance wanted (uH), used in the first mode", "type": "number", "value": 1.5},
+                               {"k": "turns", "label": "Turns wanted, used in the second mode", "type": "number", "value": 8},
+                               {"k": "track", "label": "Track width (mm)", "type": "number", "value": 0.5},
+                               {"k": "gap", "label": "Smallest gap between turns (mm)", "type": "number", "value": 0.4},
+                               {"k": "thick", "label": "Copper thickness (um; 35 = 1 oz)", "type": "number", "value": 35},
+                               {"k": "freq", "label": "Frequency (MHz, optional: gives the tuning capacitor)", "type": "number", "value": ""},
+                               {"k": "name", "label": "Part name (optional)", "type": "text", "value": ""}],
+                    "buttons": [{"label": "Calculate", "cmd": "coil_calc"}],
+                    "info": "A flat rectangular spiral on one copper layer, saved under My parts. The inductance is an "
+                            "ESTIMATE for a coil in air (measure the real one). On a single-sided board the inner end "
+                            "needs an insulated wire over the turns: pins 2 and 3 of the part are that wire. The part "
+                            "carries a 2 mm copper-free keep-out round the coil."}
         if name == "laser":
             o = self.laser_options()
             fields = []
@@ -2570,6 +2609,31 @@ class Session:
         self.set_backplane(bool(v.get("on")), net if net in self.board.nets else "", vals, bool(v.get("relief", True)))
         return None
 
+    def coil_calc(self, vals: dict) -> dict:
+        try:
+            res = coil.design_from_values(vals)
+        except ValueError as exc:
+            return {"ok": False, "report": str(exc)}
+        return {"ok": res.ok, "report": res.summary()}
+
+    def save_coil(self, vals: dict) -> Optional[str]:
+        """The coil generator: design it, save it under My parts and arm it so one click places it."""
+        try:
+            res = coil.design_from_values(vals)
+        except ValueError as exc:
+            return str(exc)
+        if not res.ok:
+            return res.summary()
+        part = coil.coil_part(res, name=str(vals.get("name", "")).strip())
+        try:
+            fn = library.save_user_part(part)
+        except OSError as exc:
+            return "Could not save the coil: %s" % exc
+        self.lib[part.id] = part
+        self.armed = part.id
+        self.status("Saved %s to %s. It is under My parts and armed: click the board to place it." % (part.name, fn))
+        return None
+
     def footprint_preset(self, kind: str, **kw) -> str:
         try:
             if kind == "dip":
@@ -2612,6 +2676,8 @@ class Session:
             self.scale = max(1.0, f("scale", self.scale))
             out["net"] = self.hover_net(f("x"), f("y"))
             out["hit"] = self.hit_test(f("x"), f("y"))
+            if self.tool == "wire":
+                out["lock"] = self.wire_lock(f("x"), f("y"))
             return out
         elif name == "tool":
             self.set_tool(str(a.get("name", "select")))
@@ -2756,6 +2822,10 @@ class Session:
             out["error"] = self.apply_backplane(a.get("values", {}))
         elif name == "save_part":
             out["error"] = self.save_part(a.get("values", {}))
+        elif name == "save_coil":
+            out["error"] = self.save_coil(a.get("values", {}))
+        elif name == "coil_calc":
+            out.update(self.coil_calc(a.get("values", {})))
         elif name == "footprint_preset":
             out["pads"] = self.footprint_preset(str(a.get("kind", "dip")), **{k: v for k, v in a.items() if k != "kind"})
         elif name == "new_board":

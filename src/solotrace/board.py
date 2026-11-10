@@ -18,7 +18,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from . import library
 from .geom import (Cap, Poly, bbox_gap, chamfer_polyline, dist, max_turn, octagon_rect, place_point,
                    seg_point_dist, shape_dist, simplify_polyline)
-from .parts import PartDef, STYLES, pad_copper
+from .parts import PartDef, STYLES, body_copper, pad_copper, pad_extra_drills
 
 FORMAT = "solotrace"
 FORMAT_VERSION = 1
@@ -326,6 +326,8 @@ class Board:
         p = Placed(ref, part_id, float(x), float(y), rot % 360, flip, value, style)
         self.parts[ref] = p
         self.touch()
+        for a, c in d.ties:
+            self.connect("%s.%s" % (ref, a), "%s.%s" % (ref, c))
         return p
 
     def remove_part(self, ref: str) -> None:
@@ -606,6 +608,8 @@ class Board:
                     for s in sh:
                         s.net = "~%s.%s" % (ref, pad.name)
                 shapes.extend(sh)
+            if any(k[0] == "*" for k in d.strokes):
+                shapes.extend(self.body_copper(ref))
         for ti, t in enumerate(self.traces):
             for si in range(len(t.points) - 1):
                 a, b = t.points[si], t.points[si + 1]
@@ -623,6 +627,30 @@ class Board:
                 shapes.append(Cap(v.x, v.y, v.x, v.y, rv, gnd, ("via", vi)))
         self._cu_cache = (self.rev, shapes)
         return shapes
+
+    def body_copper(self, ref: str) -> List:
+        """The copper of a part that belongs to no pad (a coil's spiral), with a net of its own."""
+        pl = self.parts[ref]
+        d = self.get_def(pl.part_id)
+        return body_copper(d, "~%s.*" % ref, ("pad", ref, "*", "ant"), pl.x, pl.y, pl.rot, pl.flip)
+
+    def keepouts(self) -> List[Tuple[str, Poly]]:
+        """The keep-out areas of the placed parts (an antenna's clear area) as ``(ref, polygon)`` in board
+        coordinates. Nothing of another part, no trace, via, jumper or island and no ground fill or
+        back-side plane may be inside one."""
+        if getattr(self, "_ko_cache", None) and self._ko_cache[0] == self.rev:
+            return self._ko_cache[1]
+        out: List[Tuple[str, Poly]] = []
+        for ref, pl in self.parts.items():
+            d = self.get_def(pl.part_id)
+            for x0, y0, x1, y1 in d.keepouts:
+                pts = [place_point(q, pl.x, pl.y, pl.rot, pl.flip) for q in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))]
+                out.append((ref, Poly(pts, None, ("keepout", ref))))
+        self._ko_cache = (self.rev, out)
+        return out
+
+    def keepout_polys(self) -> List[Poly]:
+        return [p for _r, p in self.keepouts()]
 
     def _island_copper(self, others: List) -> List:
         """Copper of the islands, each with the net of what touches it (islands that touch share one)."""
@@ -672,12 +700,72 @@ class Board:
                 _sh, dr, _c = self.pad_copper(ref, pad.name)
                 if dr:
                     out.append(dr)
+                if pad.holes:
+                    style = pl.pad_styles.get(pad.name, pl.style)
+                    out.extend(pad_extra_drills(d, pad, style if style in STYLES else "tht", pl.x, pl.y, pl.rot, pl.flip))
         for j in self.jumpers:
             out.append((j.a[0], j.a[1], self.settings.jumper_drill))
             out.append((j.b[0], j.b[1], self.settings.jumper_drill))
         for v in self.vias:
             out.append((v.x, v.y, self.settings.via_drill))
         return out
+
+    def pad_holes(self, pin: str) -> List[Tuple[float, float]]:
+        """Board positions of the holes of a pin's pad (empty when it has none)."""
+        ref, name = self.split_pin(pin)
+        if ref not in self.parts:
+            return []
+        pl = self.parts[ref]
+        d = self.get_def(pl.part_id)
+        pad = d.pad(name)
+        if pad is None:
+            return []
+        style = pl.pad_styles.get(name, pl.style)
+        _sh, dr, _c = self.pad_copper(ref, name)
+        out = [(dr[0], dr[1])] if dr else []
+        out += [(x, y) for x, y, _d in pad_extra_drills(d, pad, style if style in STYLES else "tht",
+                                                         pl.x, pl.y, pl.rot, pl.flip)]
+        return out
+
+    def pin_lock(self, x: float, y: float, radius: float = 1.6):
+        """The pin a wire click at (x, y) picks, as ``(pin, (sx, sy), r)`` or None.
+
+        A pad is picked when the point is on its copper or within ``radius`` mm of its edge (the whole
+        copper counts, so a long hole strip is picked from any hole); the nearest copper wins, then the
+        nearest pin centre. ``(sx, sy)`` is where to draw the lock: the pin centre, or the nearest hole of
+        a multi-hole pad. ``r`` is the pad's radius, for the circle.
+        """
+        probe = Cap(x, y, x, y, 0.0, None, None)
+        best = None
+        seen = {}
+        for s in self.copper():
+            tg = s.tag
+            if not tg or tg[0] != "pad" or tg[2] == "*":
+                continue
+            bb = s.bbox()
+            if x < bb[0] - radius or x > bb[2] + radius or y < bb[1] - radius or y > bb[3] + radius:
+                continue
+            dd = shape_dist(probe, s)
+            if dd > radius:
+                continue
+            pin = "%s.%s" % (tg[1], tg[2])
+            if pin not in seen or dd < seen[pin]:
+                seen[pin] = dd
+        for pin, dd in seen.items():
+            c = self.pin_pos(pin)
+            key = (round(max(dd, 0.0), 3), dist(c, (x, y)))
+            if best is None or key < best[0]:
+                best = (key, pin)
+        if best is None:
+            return None
+        pin = best[1]
+        ref, name = self.split_pin(pin)
+        pad = self.get_def(self.parts[ref].part_id).pad(name)
+        snap = self.pin_pos(pin)
+        holes = self.pad_holes(pin)
+        if len(holes) > 1:
+            snap = min(holes, key=lambda h: dist(h, (x, y)))
+        return pin, (snap[0], snap[1]), min(pad.w, pad.h) / 2.0
 
     def pin_drilled(self, pin: str) -> bool:
         """True when this pin's pad has a hole (so its lead passes through to the component side)."""
@@ -733,6 +821,17 @@ class Board:
             for ends in jp.values():
                 if 0 in ends and 1 in ends:
                     union(ends[0], ends[1])
+            # pads a part ties together (a coil's inner end and its landing, joined by a wire) are one piece
+            padidx: Dict[Tuple[str, str], int] = {}
+            for i in idxs:
+                tg = shapes[i].tag
+                if tg and tg[0] == "pad":
+                    padidx.setdefault((tg[1], tg[2]), i)
+            for ref, pl in self.parts.items():
+                for ta, tc in self.get_def(pl.part_id).ties:
+                    ia, ic = padidx.get((ref, ta)), padidx.get((ref, tc))
+                    if ia is not None and ic is not None:
+                        union(ia, ic)
             groups: Dict[int, List[str]] = {}
             for i in idxs:
                 tg = shapes[i].tag

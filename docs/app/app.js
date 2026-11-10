@@ -13,7 +13,7 @@ const COL = {
   rigid: "#ff6b3d", air_shadow: "#0b1a0f", pinlabel: "#ffe08a", jump: "#6fb7ff", drc: "#ff4040",
   ghost: "#9fe0ff", text: "#ffffff", hover: "#6f8f5a", fill: "#a8783a", fill_dim: "#5c4a2d",
   plane: "#2a4a3a", plane_cu: "#6d7a55", plane_cu_dim: "#4e5a44", via: "#e0c070", trace_prev: "#fff3b0",
-  mirrored: "#ff4fd8",
+  mirrored: "#ff4fd8", keepout: "#e8744f",
 };
 const ISLAND_GRID = 0.635;
 
@@ -28,6 +28,7 @@ let PANEL = [];               // the side panel as widgets
 const V = { scale: 8, ox: 40, oy: 40, mirror: false, showGrid: true };
 let cursor = { x: 0, y: 0, sx: 0, sy: 0 };
 let hoverNet = null, hoverHit = {};
+let wireLock = null, wireLockKey = "";     // the pin the wire tool would lock onto (solid green circle)
 let DR = null;                // {desc, start, moved} while the left button drags something
 let pressPending = false, upWhilePending = null;
 let pan = null;
@@ -99,6 +100,7 @@ async function api(name, args) {
   }
   if (j.state) applyState(j.state);
   handleOut(j.out || {}, name);
+  if (S && S.tool === "wire" && cursor && !hoverInFlight) { wireLockKey = "~"; requestHover(cursor.x, cursor.y); }   // the lock changes after a click
   return j.out || {};
 }
 async function getState() {
@@ -127,7 +129,7 @@ function applyState(st) {
   if (!S.fill_ready && !st.job) { clearTimeout(fillTimer); fillTimer = setTimeout(getState, 700); }
 }
 let fillTimer = null;
-const INLINE_ERRORS = new Set(["apply_settings", "apply_islands", "apply_backplane", "save_part", "new_board"]);
+const INLINE_ERRORS = new Set(["apply_settings", "apply_islands", "apply_backplane", "save_part", "save_coil", "new_board"]);
 function handleOut(out, name) {
   if (out.error && !INLINE_ERRORS.has(name)) showText("SoloTrace", out.error, true);
   if (out.dialog) openDialog(out.dialog);
@@ -254,6 +256,19 @@ function drawBack() {
   for (const s of S.copper) if (selHit(s.tag) || (selnet && s.net === selnet)) shape(c, s, COL.sel, 0.5);
   if (hoverNet && !DR) for (const s of S.copper) if (s.net === hoverNet) shape(c, s, COL.hover, 0.35);
   if (sc >= 5) for (const p of S.parts) if (p.pinlabels.length) drawPinLabels(c, p);
+  for (const ko of (S.keepouts || [])) {
+    // antenna keep-out: a hatched box, "no copper here"
+    for (const h of ko.hatch) line(c, w2s(h[0], h[1]), w2s(h[2], h[3]), COL.keepout, 1);
+    const xs = ko.pts.map(q => q[0]), ys = ko.pts.map(q => q[1]);
+    const a = w2s(Math.min(...xs), Math.min(...ys)), e = w2s(Math.max(...xs), Math.max(...ys));
+    c.strokeStyle = COL.keepout; c.lineWidth = 2; c.setLineDash([6, 3]);
+    c.strokeRect(Math.min(a[0], e[0]), Math.min(a[1], e[1]), Math.abs(e[0] - a[0]), Math.abs(e[1] - a[1])); c.setLineDash([]);
+    if (sc >= 3) {
+      c.fillStyle = COL.keepout; c.font = "bold " + Math.max(8, Math.min(12, Math.floor(sc * 0.9))) + "px system-ui, sans-serif";
+      c.textAlign = "center"; c.textBaseline = "top";
+      c.fillText(ko.ref + " keep-out: no copper", (a[0] + e[0]) / 2, Math.min(a[1], e[1]) + 3);
+    }
+  }
   const cu = dim ? COL.copper_dim : COL.copper;
   for (const s of S.copper) shape(c, s, cu);
   for (const pts of S.rigid) for (let i = 0; i + 1 < pts.length; i++) line(c, w2s(...pts[i]), w2s(...pts[i + 1]), COL.rigid, 2, [6, 3]);
@@ -389,11 +404,23 @@ function drawOverlay(c) {
     for (const [ox, oy, dd] of S.ghost.drills) { const q = w2s(ox + x, oy + y); c.beginPath(); c.arc(q[0], q[1], Math.max(1, dd / 2 * sc), 0, Math.PI * 2); c.fill(); }
     for (const sg of S.ghost.segs) line(c, w2s(sg[0] + x, sg[1] + y), w2s(sg[2] + x, sg[3] + y), gcol, 1);
     if (S.arm_mirror) { const q = w2s(x, y); c.fillStyle = COL.mirrored; c.font = "bold 12px system-ui, sans-serif"; c.textAlign = "left"; c.textBaseline = "bottom"; c.fillText("MIRRORED (Shift+M)", q[0] + 12, q[1] - 12); }
-  } else if (t === "wire" && S.pending_pin) {
-    const a = w2s(...S.pending_pin), e = w2s(wx, wy), rig = shiftDown || S.rigid_next;
-    line(c, a, e, COL.air_shadow, 6); line(c, a, e, rig ? COL.rigid : COL.air, 3, [8, 4]);
-    c.fillStyle = rig ? COL.rigid : COL.air; c.font = "bold 12px system-ui, sans-serif"; c.textAlign = "left"; c.textBaseline = "middle";
-    c.fillText(rig ? "rigid" : "Shift = rigid", e[0] + 12, e[1] - 12);
+  } else if (t === "wire") {
+    const lk = wireLock, tgt = lk ? w2s(lk.x, lk.y) : null;
+    if (S.pending_pin) {
+      const a = w2s(...S.pending_pin), e = (lk && lk.ok) ? tgt : w2s(wx, wy), rig = shiftDown || S.rigid_next;
+      line(c, a, e, COL.air_shadow, 6); line(c, a, e, rig ? COL.rigid : COL.air, 3, [8, 4]);
+      c.fillStyle = rig ? COL.rigid : COL.air; c.font = "bold 12px system-ui, sans-serif"; c.textAlign = "left"; c.textBaseline = "middle";
+      c.fillText(rig ? "rigid" : "Shift = rigid", e[0] + 12, e[1] - 12);
+    }
+    if (lk) {
+      // locked on a pin: a solid green circle says "click here and the wire is placed"
+      const rr = Math.max(8, (lk.r + 0.3) * sc);
+      c.beginPath(); c.arc(tgt[0], tgt[1], rr, 0, Math.PI * 2);
+      if (lk.ok) { c.fillStyle = "rgba(40,200,90,0.92)"; c.fill(); c.lineWidth = 2; c.strokeStyle = "#ffffff"; c.stroke(); }
+      else { c.lineWidth = 2; c.strokeStyle = "#9aa7b5"; c.setLineDash([4, 3]); c.stroke(); c.setLineDash([]); }
+      c.fillStyle = lk.ok ? "#bff5cf" : "#9aa7b5"; c.font = "bold 12px system-ui, sans-serif"; c.textAlign = "left"; c.textBaseline = "bottom";
+      c.fillText(lk.pin + (lk.net ? "  " + lk.net : "") + (lk.ok ? "" : "  (start)"), tgt[0] + rr + 4, tgt[1] - rr + 2);
+    }
   } else if (t === "trace" && S.trace_pts.length) {
     const seq = S.trace_pts.concat([snapDir(S.trace_pts[S.trace_pts.length - 1], [wx, wy])]);
     for (let i = 0; i + 1 < seq.length; i++) line(c, w2s(...seq[i]), w2s(...seq[i + 1]), COL.trace_prev, Math.max(2, S.trace_w * sc));
@@ -496,6 +523,8 @@ async function requestHover(x, y) {
   try {
     const j = await post("/api/cmd", { name: "hover", args: { x, y, scale: V.scale } });
     const net = j.out.net || null; hoverHit = j.out.hit || {};
+    const lk = S.tool === "wire" ? (j.out.lock || null) : null, lkKey = lk ? lk.pin + "@" + lk.x + "," + lk.y + (lk.ok ? "" : "!") : "";
+    if (lkKey !== wireLockKey) { wireLock = lk; wireLockKey = lkKey; draw(); }
     if (net !== hoverNet) { hoverNet = net; backKey = ""; draw(); $("hovernet").textContent = net ? "net " + net : ""; }
     if (S.tool === "select") canvas.style.cursor = (hoverHit.trace != null || (hoverHit.part && hoverHit.pin == null)) ? "move" : "default";
     else if (S.tool === "trim" || S.tool === "cut") canvas.style.cursor = hoverHit.trace != null ? "crosshair" : "not-allowed";
@@ -640,7 +669,9 @@ async function pickPart(pid) {
   $("fav-btn").dataset.on = j.favourite ? "1" : "";
 }
 $("fav-btn").onclick = async () => { if (!previewPid) return; await api("fav", { pid: previewPid, on: !$("fav-btn").dataset.on }); pickPart(previewPid); loadLibrary(); };
+let lastPreview = {};
 function drawPreview(j) {
+  lastPreview = j;
   const pc = $("preview"), c = pc.getContext("2d"), dpr = window.devicePixelRatio || 1;
   const W = pc.clientWidth, H = pc.clientHeight; pc.width = W * dpr; pc.height = H * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0);
   c.fillStyle = COL.bg; c.fillRect(0, 0, W, H);
@@ -802,6 +833,7 @@ function menuItems(which) {
     { label: "SMD parts", checked: S.parts_mode === "smd", action: async () => { await api("parts_mode", { mode: "smd" }); loadLibrary(); } },
     { sep: true },
     { label: "New footprint (My parts)...", cmd: "dialog", args: { name: "footprint" } },
+    { label: "PCB coil generator...", cmd: "dialog", args: { name: "coil" } },
     { label: "Import a KiCad footprint (.kicad_mod)...", action: () => $("file-kicad").click() },
     { label: "Reload the parts list", action: loadLibrary },
   ];
@@ -933,6 +965,7 @@ function openDialog(d) {
     const bt = document.createElement("button"); bt.textContent = x.label;
     bt.onclick = async () => {
       if (x.cmd === "footprint_preset") { const out = await api(x.cmd, x.args); if (out.pads) m.querySelector('[data-k="pads"]').value = out.pads; return; }
+      if (x.cmd === "coil_calc") { const out = await api("coil_calc", { values: readFields(m, d.fields) }); const e = m.querySelector(".error"); e.hidden = false; e.classList.toggle("okmsg", !!out.ok); e.textContent = out.report || ""; return; }
       if (x.cmd === "pick_file") { readFile($("file-kicad"), async (text) => { const out = await api("import_kicad", { text }); if (out.preset) for (const k in out.preset) { const el = m.querySelector('[data-k="' + k + '"]'); if (el) el.value = out.preset[k]; } }); $("file-kicad").click(); return; }
       runCmd(x.cmd, x.args);
     };
@@ -974,6 +1007,35 @@ function disclaimer(title) {
 
 // ------------------------------------------------------------------ start
 window.addEventListener("resize", resize);
+// resizable panels: drag the grey handles; sizes are remembered in this browser when it lets us
+(function splitters() {
+  const get = (k) => { try { return parseFloat(localStorage.getItem("solotrace." + k)) || 0; } catch (e) { return 0; } };
+  const put = (k, v) => { try { localStorage.setItem("solotrace." + k, String(Math.round(v))); } catch (e) { /* no storage: fine */ } };
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const setW = (el, w) => { el.style.width = clamp(w, 120, Math.max(160, window.innerWidth * 0.6)) + "px"; };
+  const setH = (h) => { $("prev-wrap").style.setProperty("--prevh", clamp(h, 40, Math.max(120, $("left").clientHeight - 300)) + "px"); };
+  const drag = (handle, onMove, onEnd) => {
+    handle.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); handle.setPointerCapture(e.pointerId); handle.classList.add("drag");
+      const mv = (ev) => { onMove(ev); resize(); };
+      const up = () => { handle.classList.remove("drag"); handle.removeEventListener("pointermove", mv); handle.removeEventListener("pointerup", up); handle.removeEventListener("pointercancel", up); onEnd(); resize(); };
+      handle.addEventListener("pointermove", mv); handle.addEventListener("pointerup", up); handle.addEventListener("pointercancel", up);
+    });
+  };
+  const L = $("left"), R = $("right");
+  if (get("leftw")) setW(L, get("leftw"));
+  if (get("rightw")) setW(R, get("rightw"));
+  if (get("prevh")) setH(get("prevh"));
+  drag($("split-left"), (e) => setW(L, e.clientX - L.getBoundingClientRect().left), () => put("leftw", L.getBoundingClientRect().width));
+  drag($("split-right"), (e) => setW(R, R.getBoundingClientRect().right - e.clientX), () => put("rightw", R.getBoundingClientRect().width));
+  drag($("split-prev"), (e) => setH($("prev-wrap").getBoundingClientRect().bottom - e.clientY - 0), () => put("prevh", $("prev-wrap").getBoundingClientRect().height));
+  $("split-left").ondblclick = () => { L.style.width = ""; put("leftw", 0); resize(); };
+  $("split-right").ondblclick = () => { R.style.width = ""; put("rightw", 0); resize(); };
+  $("split-prev").ondblclick = () => { $("prev-wrap").style.removeProperty("--prevh"); put("prevh", 0); resize(); };
+  if (window.ResizeObserver) new ResizeObserver(() => drawPreview(lastPreview)).observe($("preview"));
+})();
+$("btn-newfp").onclick = () => runCmd("dialog", { name: "footprint" });
+$("btn-coil").onclick = () => runCmd("dialog", { name: "coil" });
 async function start() {
   resize();
   if (BROWSER) {

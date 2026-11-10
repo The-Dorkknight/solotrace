@@ -23,6 +23,7 @@ from .board import (Board, Island, ISLAND_MAX, ISLAND_MIN, MAX_WIDTH, MIN_WIDTH,
 from . import plane as planemod
 from .drc import after_part_edit, part_collisions, run_drc, summarize
 from .geom import Cap, dist, seg_point_dist, shape_dist
+from .parts import FIXED_STYLE_KINDS
 from .placer import Placer
 from .router import AutoRouter, RouteOptions
 from . import theme
@@ -38,7 +39,7 @@ COL = {
     "rigid": "#ff6b3d", "rigid_dim": "#b0563a", "air_shadow": "#0b1a0f", "pinlabel": "#ffe08a",
     "jump": "#6fb7ff", "drc": "#ff4040", "ghost": "#9fe0ff", "text": "#ffffff", "hover": "#6f8f5a",
     "fill": "#a8783a", "fill_dim": "#5c4a2d", "plane": "#2a4a3a", "plane_cu": "#6d7a55", "plane_cu_dim": "#4e5a44",
-    "via": "#e0c070", "mirrored": "#ff4fd8",
+    "via": "#e0c070", "mirrored": "#ff4fd8", "keepout": "#e8744f",
 }
 WIDTH_PRESETS = (0.4, 0.8, 1.5, 2.5, 5.0, 10.0)
 ISLAND_SIZES = (2.54, 3.81, 5.08, 6.35, 7.62, 10.16, 12.7, 15.24)
@@ -285,6 +286,7 @@ class App:
         left = ttk.Frame(main, width=285, padding=(8, 6, 4, 6))
         left.pack(side="left", fill="y")
         left.pack_propagate(False)
+        self._sash(main, left, "left", "leftw", 285)
         ttk.Label(left, text="Parts", style="Head.TLabel").pack(anchor="w")
         self.quick_var = tk.StringVar(value="Favourites & recent...")
         self.quick_cb = ttk.Combobox(left, textvariable=self.quick_var, state="readonly")
@@ -332,6 +334,7 @@ class App:
         self.fav_btn = ttk.Button(left, text="Add to favourites", command=self._toggle_fav_preview)
         self.fav_btn.pack(fill="x", pady=(0, 3))
         ttk.Button(left, text="New footprint...", command=self.footprint_wizard).pack(fill="x")
+        ttk.Button(left, text="PCB coil generator...", command=self.coil_dialog).pack(fill="x", pady=(3, 0))
         self.preview_id: Optional[str] = None
         self.fill_library()
         self._fill_quick()
@@ -340,6 +343,7 @@ class App:
         right = ttk.Frame(main, width=300, padding=(6, 6, 8, 6))
         right.pack(side="right", fill="y")
         right.pack_propagate(False)
+        self._sash(main, right, "right", "rightw", 300)
         self.prop = ttk.Frame(right)
         self.prop.pack(fill="both", expand=True)
         # centre: canvas with rounded corners
@@ -448,6 +452,7 @@ class App:
         m.add_cascade(label="Export", menu=x)
         p = tk.Menu(m, tearoff=0)
         p.add_command(label="New footprint...", command=self.footprint_wizard)
+        p.add_command(label="PCB coil generator...", command=self.coil_dialog)
         p.add_command(label="Import KiCad .kicad_mod...", command=self.import_kicad)
         p.add_command(label="Open my parts folder", command=self.show_parts_folder)
         m.add_cascade(label="Parts", menu=p)
@@ -806,7 +811,7 @@ class App:
         d = self.lib[pid]
         gb = Board(10, 10, "preview")
         gb.defs = {pid: d}
-        style = self.default_style.get() if d.kind != "hole" else "tht"
+        style = self.default_style.get() if d.kind not in FIXED_STYLE_KINDS else "tht"
         gb.parts = {"P": Placed("P", pid, 0.0, 0.0, 0, False, "", style)}
         gb.touch()
         shapes = gb.copper()
@@ -972,14 +977,21 @@ class App:
                     return (i, kx, ky)
         return None
 
-    def pin_near(self, wx: float, wy: float, radius: float = 1.6) -> Optional[str]:
-        b = self.board
-        best = None
-        for pin in b.all_pins():
-            d = dist(b.pin_pos(pin), (wx, wy))
-            if d <= radius and (best is None or d < best[0]):
-                best = (d, pin)
-        return best[1] if best else None
+    def lock_radius(self) -> float:
+        """How far from a pad's copper a wire click still locks onto it: about 14 screen pixels, so
+        it is easy to hit when zoomed out and does not grab the wrong pin when zoomed in."""
+        return max(1.4, min(3.0, 14.0 / max(self.scale, 1.0)))
+
+    def pin_near(self, wx: float, wy: float, radius: Optional[float] = None) -> Optional[str]:
+        lk = self.board.pin_lock(wx, wy, radius if radius is not None else self.lock_radius())
+        return lk[0] if lk else None
+
+    def wire_lock(self, wx: float, wy: float) -> Optional[dict]:
+        lk = self.board.pin_lock(wx, wy, self.lock_radius())
+        if lk is None:
+            return None
+        pin, (sx, sy), r = lk
+        return {"pin": pin, "x": sx, "y": sy, "r": r, "ok": pin != self.pending_pin}
 
     # ------------------------------------------------------------- mouse handlers
     def on_motion(self, e) -> None:
@@ -1296,7 +1308,7 @@ class App:
         if self.armed not in b.defs:
             b.defs[self.armed] = d
         style = self.default_style.get()
-        if d.kind in ("hole",):
+        if d.kind in FIXED_STYLE_KINDS:
             style = "tht"
         flip = (d.kind == "smd") != self.arm_mirror
         pl = b.add_part(self.armed, x, y, self.arm_rot, flip, style=style)
@@ -2366,11 +2378,19 @@ class App:
         if self.board.is_mirrored(ref):
             tk.Label(p, text=mirror_message(self.board, ref), bg=COL["mirrored"], fg="white", wraplength=270,
                      justify="left", font=("TkDefaultFont", 9, "bold"), padx=6, pady=4).pack(anchor="w", fill="x", pady=(2, 0))
-        if d.kind == "smd":
+        if d.kind == "strip":
+            ttk.Label(p, text="Hole strip: one bar of copper, one pin, every hole on the same net. Through-hole and "
+                              "deadbug at once: push a pin or lead through any hole, or solder a wire or SMD part flat "
+                              "on the bar.", style="Muted.TLabel", wraplength=270).pack(anchor="w", pady=(6, 0))
+        if d.kind == "antenna":
+            ttk.Label(p, text="Antenna or coil: its copper is part of the part and its hatched keep-out box must stay "
+                              "free of copper, fill and plane. Antenna parts are formula starting points: measure and "
+                              "trim.", style="Muted.TLabel", wraplength=270).pack(anchor="w", pady=(6, 0))
+        elif d.kind == "smd":
             ttk.Label(p, text="SMD part: it sits on the COPPER side, so it is mirrored in the component-side view "
                               "(press M to see it as you will solder it). Its pads are plain copper lands with no "
                               "holes.", style="Muted.TLabel", wraplength=270).pack(anchor="w", pady=(6, 0))
-        else:
+        elif d.kind != "strip":
             ttk.Label(p, text="Pads of this part").pack(anchor="w", pady=(6, 0))
             st = tk.StringVar(value=pl.style)
             for v, t in (("tht", "Through-hole"), ("dead", "Deadbug (surface solder, no hole)"), ("mixed", "Both")):
@@ -2819,6 +2839,20 @@ class App:
                 self.draw_shape(s, COL["board"])
             for s in ip.fat:
                 self.draw_shape(s, COL["copper_dim"] if dimf else COL["copper"])
+        # antenna keep-outs: a hatched box, "no copper here"
+        for kref, kp in b.keepouts():
+            kxs = [p[0] for p in kp.pts]
+            kys = [p[1] for p in kp.pts]
+            for hx1, hy1, hx2, hy2 in render.keepout_hatch(kp.pts, max(1.0, 8.0 / max(sc, 0.1))):
+                a, e = self.w2s(hx1, hy1), self.w2s(hx2, hy2)
+                c.create_line(a[0], a[1], e[0], e[1], fill=COL["keepout"], width=1)
+            a, e = self.w2s(min(kxs), min(kys)), self.w2s(max(kxs), max(kys))
+            c.create_rectangle(min(a[0], e[0]), min(a[1], e[1]), max(a[0], e[0]), max(a[1], e[1]),
+                               outline=COL["keepout"], width=2, dash=(6, 3))
+            if sc >= 3:
+                c.create_text((a[0] + e[0]) / 2, min(a[1], e[1]) + 3, text="%s keep-out: no copper" % kref,
+                              fill=COL["keepout"], font=("TkDefaultFont", max(7, min(11, int(sc * 0.9))), "bold"),
+                              anchor="n")
         sel = self.sel
         # selection halo under the copper
         selnet = sel.get("net")
@@ -3109,15 +3143,27 @@ class App:
             for x1_, y1_, x2_, y2_ in render.part_segments(gb, "G"):
                 a, e = self.w2s(x1_, y1_), self.w2s(x2_, y2_)
                 c.create_line(a[0], a[1], e[0], e[1], fill=COL["ghost"])
-        elif self.tool == "wire" and self.pending_pin:
-            a = self.w2s(*b.pin_pos(self.pending_pin))
-            e = self.w2s(wx, wy)
-            rig = getattr(self, "_shift", False) or self.rigid_next
-            c.create_line(a[0], a[1], e[0], e[1], fill=COL["air_shadow"], width=6, capstyle="round")
-            c.create_line(a[0], a[1], e[0], e[1], fill=COL["rigid"] if rig else COL["air"], width=3,
-                          dash=(8, 4), capstyle="round")
-            c.create_text(e[0] + 12, e[1] - 12, anchor="w", fill=COL["rigid"] if rig else COL["air"],
-                          font=("TkDefaultFont", 9, "bold"), text="rigid" if rig else "Shift = rigid")
+        elif self.tool == "wire":
+            lk = self.wire_lock(wx, wy)
+            if self.pending_pin:
+                a = self.w2s(*b.pin_pos(self.pending_pin))
+                e = self.w2s(lk["x"], lk["y"]) if lk and lk["ok"] else self.w2s(wx, wy)
+                rig = getattr(self, "_shift", False) or self.rigid_next
+                c.create_line(a[0], a[1], e[0], e[1], fill=COL["air_shadow"], width=6, capstyle="round")
+                c.create_line(a[0], a[1], e[0], e[1], fill=COL["rigid"] if rig else COL["air"], width=3,
+                              dash=(8, 4), capstyle="round")
+                c.create_text(e[0] + 12, e[1] - 12, anchor="w", fill=COL["rigid"] if rig else COL["air"],
+                              font=("TkDefaultFont", 9, "bold"), text="rigid" if rig else "Shift = rigid")
+            if lk:
+                # locked on a pin: a solid green circle says "click here and the wire is placed"
+                t_ = self.w2s(lk["x"], lk["y"])
+                rr = max(8.0, (lk["r"] + 0.3) * self.scale)
+                if lk["ok"]:
+                    c.create_oval(t_[0] - rr, t_[1] - rr, t_[0] + rr, t_[1] + rr, fill="#28c85a", outline="#ffffff", width=2)
+                else:
+                    c.create_oval(t_[0] - rr, t_[1] - rr, t_[0] + rr, t_[1] + rr, outline="#9aa7b5", width=2, dash=(4, 3))
+                c.create_text(t_[0] + rr + 4, t_[1] - rr, anchor="sw", fill="#bff5cf" if lk["ok"] else "#9aa7b5",
+                              font=("TkDefaultFont", 9, "bold"), text=lk["pin"] + ("" if lk["ok"] else "  (start)"))
         elif self.tool == "trace" and self.trace_pts:
             pts = list(self.trace_pts)
             nxt = self.snap_dir(pts[-1], (wx, wy))
@@ -3577,6 +3623,41 @@ class App:
     def footprint_wizard(self, preset=None) -> None:
         from .dialogs import FootprintWizard
         FootprintWizard(self, preset)
+
+    def _sash(self, parent, panel, side: str, key: str, default: int) -> None:
+        """A thin drag handle beside a side panel: drag it to make the panel wider or narrower (remembered)."""
+        saved = load_config().get(key)
+        if isinstance(saved, int) and 150 <= saved <= 900:
+            panel.configure(width=saved)
+        sash = tk.Frame(parent, width=6, cursor="sb_h_double_arrow", bg=UI["line"] if "line" in UI else "#d4dbe2")
+        sash.pack(side=side, fill="y")
+
+        def move(e) -> None:
+            x = e.x_root - parent.winfo_rootx()
+            w = x if side == "left" else parent.winfo_width() - x
+            w = int(max(150, min(w, parent.winfo_width() * 0.6)))
+            panel.configure(width=w)
+            if side == "left" and hasattr(self, "lib_info"):
+                self.lib_info.configure(wraplength=max(100, w - 36))
+
+        def done(_e=None) -> None:
+            cfg = load_config()
+            cfg[key] = int(panel.winfo_width())
+            save_config(cfg)
+
+        def reset(_e=None) -> None:
+            panel.configure(width=default)
+            done()
+
+        sash.bind("<B1-Motion>", move)
+        sash.bind("<ButtonRelease-1>", done)
+        sash.bind("<Double-Button-1>", reset)
+        sash.bind("<Enter>", lambda e: sash.configure(bg=UI["copper"] if "copper" in UI else "#c8742f"))
+        sash.bind("<Leave>", lambda e: sash.configure(bg=UI["line"] if "line" in UI else "#d4dbe2"))
+
+    def coil_dialog(self) -> None:
+        from .dialogs import CoilDialog
+        self.coil_dlg = CoilDialog(self)
 
     def laser_dialog(self) -> None:
         from .dialogs import LaserDialog

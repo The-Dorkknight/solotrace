@@ -94,6 +94,8 @@ def plan(board) -> Optional[PlanePlan]:
     border = s.edge_clearance
     rect = (border, border, board.width - border, board.height - border)
     p = PlanePlan(rect, [], [], gnd)
+    for ko in board.keepout_polys():
+        p.cut.append(Poly(list(ko.pts), None, ("cut", "keepout")))   # no plane under an antenna
     hs = holes(board)
     clr = s.clearance
     n_sp = max(1, min(8, int(s.relief_spokes)))

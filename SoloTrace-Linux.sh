@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Required Notice: Copyright Matthew Armstrong (https://github.com/The-Dorkknight)
 # Licensed under the PolyForm Noncommercial License 1.0.0. No warranty.
-# SoloTrace 0.8.0-wip - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN
+# SoloTrace 0.10.1-wip - WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN
 # Double-click launcher for Linux. If your file manager asks, choose "Run" (not "Display").
 # Needs Python 3.8 or newer and nothing else: SoloTrace opens in your web browser (a small server
 # on 127.0.0.1 only). The old tkinter desktop window: python3 src/main.py desktop

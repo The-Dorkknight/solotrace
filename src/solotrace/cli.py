@@ -27,7 +27,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if "--version" in argv or "-V" in argv:
         print("%s  [WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN]" % title())
         return 0
-    cmds = {"route", "place", "export", "demo", "drc", "islands", "selftest"}
+    cmds = {"route", "place", "export", "demo", "drc", "islands", "coil", "selftest"}
     if argv and argv[0] == "web":
         argv = argv[1:]
     want_tk = bool(argv) and argv[0] in ("desktop", "tk") or "--tk" in argv or "--desktop" in argv
@@ -95,6 +95,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--interval", type=float, default=0.08)
     p.add_argument("--feed", type=float, default=1500.0)
     p.add_argument("--power", type=float, default=70.0)
+    p = sub.add_parser("coil", help="design a PCB coil: give the size and EITHER --uh OR --turns")
+    p.add_argument("--width", type=float, required=True, help="outer width, mm")
+    p.add_argument("--height", type=float, required=True, help="outer height, mm")
+    p.add_argument("--uh", type=float, help="inductance wanted, uH (finds the turns)")
+    p.add_argument("--turns", type=int, help="number of turns (works out the inductance)")
+    p.add_argument("--track", type=float, default=0.5, help="track width, mm")
+    p.add_argument("--gap", type=float, default=0.4, help="smallest gap between turns, mm")
+    p.add_argument("--thick", type=float, default=35.0, help="copper thickness, um")
+    p.add_argument("--freq", type=float, default=0.0, help="MHz: also print the parallel capacitor that tunes it")
+    p.add_argument("--save", action="store_true", help="save it as a part under My parts")
     sub.add_parser("selftest")
     a = ap.parse_args(argv)
     if a.cmd == "demo":
@@ -104,6 +114,22 @@ def main(argv: Optional[List[str]] = None) -> int:
             return 2
         DEMOS[a.name]().save(a.out)
         print("wrote", a.out)
+    elif a.cmd == "coil":
+        from . import coil, library
+        if (a.uh is None) == (a.turns is None):
+            print("Give EITHER --uh OR --turns.")
+            return 2
+        v = {"mode": "uh" if a.uh is not None else "turns", "width": a.width, "height": a.height,
+             "uh": a.uh, "turns": a.turns, "track": a.track, "gap": a.gap, "thick": a.thick, "freq": a.freq}
+        try:
+            res = coil.design_from_values(v)
+        except ValueError as exc:
+            print(exc)
+            return 2
+        print(res.summary())
+        if res.ok and a.save:
+            print("saved", library.save_user_part(coil.coil_part(res)))
+        return 0 if res.ok else 1
     elif a.cmd == "place":
         from .placer import auto_place
         b = _load(a.board)

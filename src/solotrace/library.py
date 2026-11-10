@@ -191,6 +191,46 @@ def single_pad(pid: str, name: str, prefix: str, w: float, h: float, drill: floa
     return PartDef(pid, name, "Board", prefix, pads, [], (-w / 2.0, -h / 2.0, w / 2.0, h / 2.0), kind=kind)
 
 
+STRIP_PITCH = 2.54
+STRIP_WIDTH = 1.8
+STRIP_DRILL = 1.0
+STRIP_TAIL = 5.68     # distance from a module pad to the middle of a "lead-in" strip (see hole_strip)
+
+
+def hole_strip(n: int, lead_in: bool = False) -> PartDef:
+    """A bar of copper with ``n`` holes at 2.54 mm: ONE pin, so every hole is on the same net.
+
+    It is both through-hole (push a pin header or a lead through any hole) and deadbug (the bar is
+    flat copper: solder a wire or an SMD part to it anywhere). With ``lead_in`` the bar is 0.3 mm
+    short of reaching back over the pad of a module in front of it and the first hole is 2.54 mm
+    from that pad: place it so the module's pad touches the bar and the two are one connection.
+    Local frame: the bar runs along +X, the pin (pad centre) is the middle of the bar.
+    """
+    if lead_in:
+        u0, u1 = 0.3, (n * STRIP_PITCH) + STRIP_WIDTH / 2.0
+        centre = (u0 + u1) / 2.0
+        holes = tuple((round((k + 1) * STRIP_PITCH - centre, 4), 0.0) for k in range(n))
+        pid = "BRK_STRIP%d_LEAD" % n
+        name = "Hole strip 1 x %d with lead-in (joins a module pad)" % n
+    else:
+        u0, u1 = -(n - 1) * STRIP_PITCH / 2.0 - STRIP_WIDTH / 2.0, (n - 1) * STRIP_PITCH / 2.0 + STRIP_WIDTH / 2.0
+        centre = 0.0
+        holes = tuple((round((k - (n - 1) / 2.0) * STRIP_PITCH, 4), 0.0) for k in range(n))
+        pid = "BRK_STRIP%d" % n
+        name = "Hole strip 1 x %d (one net)" % n
+    length = u1 - u0
+    pad = PadDef("1", 0.0, 0.0, "oval", round(length, 4), STRIP_WIDTH, STRIP_DRILL, holes=holes)
+    half = length / 2.0
+    court = (-half, -STRIP_WIDTH / 2.0, half, STRIP_WIDTH / 2.0)
+    note = ("One bar of copper with %d holes, all one net: push a pin header or a lead through any hole, or solder a wire "
+            "or an SMD part flat on the bar (through-hole and deadbug in one, whatever the 'Pads of this part' choice). "
+            "Not in the parts list (BOM)." % n)
+    if lead_in:
+        note += (" The bar starts 0.3 mm past the pad of the module in front of it, so the module's pad and the bar are "
+                 "touching copper: no wire needed between them.")
+    return PartDef(pid, name, "Board", "TP", [pad], [_rect_outline(*court)], court, kind="strip", note=note)
+
+
 def mount_hole(dia: float, ring: float) -> PartDef:
     pads = [PadDef("1", 0.0, 0.0, "round", ring, ring, dia)]
     return PartDef("HOLE_M%g" % (dia - 0.2), "Mounting hole M%g (%.1f mm drill)" % (dia - 0.2, dia), "Board",
@@ -661,6 +701,12 @@ def _build() -> Dict[str, PartDef]:
         add(wire_link(pitch))
     add(mount_hole(3.2, 6.0))
     add(mount_hole(4.2, 8.0))
+    for n_ in (2, 3, 4, 5, 6, 8, 10, 12, 14, 16):
+        add(hole_strip(n_))
+    add(hole_strip(4, lead_in=True))
+    from .antennas import all_parts as _antennas
+    for _p in _antennas().values():
+        add(_p)
     add(single_pad("PAD_2.5", "Solder pad 2.5 mm with hole", "TP", 2.5, 2.5, 1.0, "round"))
     add(single_pad("SURF_3", "Surface pad 3 mm (no hole)", "TP", 3.0, 3.0, 0.0, "round"))
     add(single_pad("SURF_6x3", "Surface pad 6 x 3 mm (no hole)", "TP", 6.0, 3.0, 0.0, "oval"))
@@ -700,7 +746,7 @@ _FF_TABLE = [("DIP", "_W", "Chips (DIP)", "Wide (15.24 mm rows)"), ("DIP", "", "
              ("SW", "", "Pots, switches & crystals", "Switches"), ("XTAL", "", "Pots, switches & crystals", "Crystals"),
              ("HDR", "", "Connectors", "Pin headers"), ("TERM", "", "Connectors", "Screw terminals"),
              ("JSTXH", "", "Connectors", "JST-XH"), ("LINK", "", "Board bits", "Wire links"),
-             ("HOLE", "", "Board bits", "Mounting holes"), ("PAD", "", "Board bits", "Pads"),
+             ("HOLE", "", "Board bits", "Mounting holes"), ("ANT_", "", "Board bits", "Antennas and keep-outs"), ("BRK_STRIP", "", "Board bits", "Hole strips (breakout)"), ("PAD", "", "Board bits", "Pads"),
              ("SURF", "", "Board bits", "Pads"),
              ("SMD_CHIP", "", SMD_GROUP, "Chips (R, C, L)"), ("SMD_D", "", SMD_GROUP, "Diodes"),
              ("SMD_SOT", "", SMD_GROUP, "Transistors (SOT)"), ("SMD_TO", "", SMD_GROUP, "Power (DPAK, D2PAK)"),

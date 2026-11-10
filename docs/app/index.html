@@ -53,18 +53,27 @@
       <span id="mode-text">SMD parts</span>
     </button>
     <div id="tree"></div>
-    <canvas id="preview" width="250" height="150"></canvas>
-    <div id="preview-row">
-      <button id="fav-btn" class="small" title="Add to favourites">&#9734; Favourite</button>
-      <span id="lib-info" class="muted">Pick a part to see it here.</span>
+    <div id="split-prev" class="hsplit" title="Drag up or down to give the list or the preview more room (double-click to reset)"></div>
+    <div id="prev-wrap">
+      <canvas id="preview" width="250" height="150"></canvas>
+      <div id="preview-row">
+        <button id="fav-btn" class="small" title="Add to favourites">&#9734; Favourite</button>
+        <span id="lib-info" class="muted">Pick a part to see it here.</span>
+      </div>
+    </div>
+    <div id="left-btns">
+      <button id="btn-newfp" class="small" title="Make your own footprint (saved under My parts)">New footprint...</button>
+      <button id="btn-coil" class="small" title="Design a PCB coil from its size and inductance or turns">PCB coil generator...</button>
     </div>
   </div>
+  <div id="split-left" class="vsplit" title="Drag to make the parts panel wider or narrower (double-click to reset)"></div>
 
   <div id="centre">
     <canvas id="board"></canvas>
     <div id="hovernet"></div>
   </div>
 
+  <div id="split-right" class="vsplit" title="Drag to make the selection panel wider or narrower (double-click to reset)"></div>
   <div id="right">
     <div class="side-head">Selection</div>
     <div id="panel"></div>

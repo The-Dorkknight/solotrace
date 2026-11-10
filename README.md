@@ -1,6 +1,6 @@
 # SoloTrace
 
-**WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN** · version `0.8.0-wip` · source-available, non-commercial
+**WORK IN PROGRESS: MANY FEATURES MAY BE BROKEN** · version `0.10.1-wip` · source-available, non-commercial
 
 An easy PCB designer for **single-sided, through-hole, quick-prototype boards**. A small library of real full-size parts, traces up to 10 mm wide set with a slider, **every corner chamfered** (no pure 90° traces), an autorouter that avoids the "tangled string" look, and output for printing (toner transfer), Gerber fabs and a **gantry diode laser (Elegoo Phecda) with a negative option and adjustable trace gap**.
 
@@ -28,7 +28,7 @@ An easy PCB designer for **single-sided, through-hole, quick-prototype boards**.
 | Board > Keep traces out from under parts | Works on the test boards; can add jumpers on cramped boards |
 | Pin labels (B C E, G D S, K A, IN GND OUT, optocoupler and DIP layouts) and part values on the board | Works; layouts are the common ones for each shape, **check your datasheet** |
 | Dragging a trace section sideways (neighbours follow, 45° rules kept) | Works in tests; lightly tested by hand |
-| 90 through-hole parts in a form-factor tree with a live preview, footprint wizard, KiCad `.kicad_mod` import | Works; some parts excluded on purpose (see below) |
+| 90 through-hole parts (plus 11 hole strips for breakouts and 15 antenna and keep-out parts) in a form-factor tree with a live preview, footprint wizard, KiCad `.kicad_mod` import | Works; some parts excluded on purpose (see below) |
 | Trace width slider 0.4–10 mm (segment, trace or net) + current readout + "fits up to" hint | Works |
 | Wide traces leave pads straight and end on the pad centre (auto-tidy) | Works on the test boards; may leave a trace as it was when the tidy shape does not fit |
 | Deadbug (surface-solder, no-drill) pads, per part or per pad | Works |
@@ -38,6 +38,10 @@ An easy PCB designer for **single-sided, through-hole, quick-prototype boards**.
 | Back-side ground plane for a double-clad board: vias (Via tool), clearance holes, stitching grid, top-copper Gerber, back prints and laser job, countersink list | Works in tests and the examples; new in 0.5.0, **never built yet** |
 | SMD parts (the big **SMD parts / Through-hole parts** button swaps the list): 41 common SMD footprints on the copper side (0603 to 2512, SOT-23/223, DPAK, D2PAK, SOIC, SMA/SMB/SMC, tantalum, electrolytic) | Pad sizes from makers' drawings, checked for 0.3 mm gaps; not yet soldered on a real board |
 | **Modules & displays** (new in 0.7.0): 23 microcontroller boards, OLEDs and SD card modules on 2.54 mm headers, pins already labelled, through-hole or deadbug | Pin orders, row spacings and sizes from makers' KiCad/Eagle files and datasheets; a few are single-source (each part's note says which); none plugged into a real etched board yet |
+| **Green lock circle when wiring** (new in 0.9.0): with the Wire tool, a solid green circle jumps onto the pin the click would land on, so you can see before you click that the wire will connect; a grey dashed ring means it is the pin you started from | Both UIs; tested (the pin lock, the hover reply, the radius at different zooms); **not yet used by a person** |
+| **PCB antennas with keep-outs** (new in 0.10.0): meander monopoles for 315 / 433.92 / 868 / 915 / 2450 MHz, wire whips and bare keep-out boxes; copper, fill and plane stay out of the box | Formula starting points (quarter wave on FR4, +10 % to trim); tests and examples only, **never etched or measured** |
+| **PCB coil generator** (new in 0.10.0): outer size plus inductance wanted (finds the turns) or plus turns wanted (works out the inductance) | Estimate by a straight-bar method, within 3 % of the Mohan et al. formula on three test coils; **never measured** |
+| **Breakout boards** (new in 0.9.0): three ready-made boards (XIAO ESP32-S3/C3, ESP32-C3 SuperMini, ESP32-S3-Zero) with a hole strip on every pin (4 extra holes, through-hole and deadbug in one), three power rails (3V3, GND, 5V) and a 2-pin screw terminal or header for power in | Routed with no jumpers, DRC clean, Gerber and laser files in `examples/`; **never etched or built** |
 | **Mirror** a part (Shift+M) to mount it under the board, shown with a pink dashed frame and a MIRRORED tag | New in 0.7.0; tested in both UIs |
 | **Web UI**: the same editor in your browser, the default since 0.8.0 (`python3 src/main.py`; `desktop` for the tkinter window) | New in 0.6.0; every tool, panel, menu, dialog and export; tested in headless Chromium and by the unit tests; **not yet used by a person on a real design** |
 | **In-browser version, nothing to install** ([open it](https://the-dorkknight.github.io/solotrace/app/)): the same code run by Pyodide in the page | New in 0.8.0; tested in headless Chromium with a local copy of Pyodide 0.29.5; **loading Pyodide from the jsDelivr CDN has not been tried** (the build machine cannot reach it) |
@@ -100,7 +104,7 @@ The first time it starts it shows a safety and work-in-progress notice; tick the
 
 1. **File > Open example > 555 LED flasher** (or **File > New board** and set a size).
 2. **Place parts:** pick from *Favourites & recent* at the top of the parts panel, or open a group in the parts panel on the left (the little arrows show the sub-types, such as *Resistors standing*), pick a part, check the drawing under the list, then click on the board. Or type in the search box (`dip 8`, `to-220`, `standing`). `R` or Shift + click turns the part, `Esc` stops placing. Star parts you use a lot with the button under the preview.
-3. **Wire:** press `W`, click one pin, then another (or drag from pin to pin). A yellow rubber-band line shows the connection. Hold **Shift** for a **rigid wire** (see below). Click a rubber-band line to name its net or give it a class (Signal 0.8 mm, Power 2 mm, High current 5 mm; change them in Board > Board size and rules).
+3. **Wire:** press `W`, click one pin, then another (or drag from pin to pin). A **green circle** snaps onto the pin the click would hit (the lock reaches about 14 screen pixels beyond the pad edge, never less than 1.4 mm or more than 3 mm on the board), so you do not have to line the cursor up exactly. A yellow rubber-band line shows the connection. Hold **Shift** for a **rigid wire** (see below). Click a rubber-band line to name its net or give it a class (Signal 0.8 mm, Power 2 mm, High current 5 mm; change them in Board > Board size and rules).
 4. **Auto-place, then Auto-route** (toolbar). A progress bar with **Cancel** shows while it works. Routes use 0°, 45° and 90° moves, and a 90° turn is always built as two 45° turns (a chamfer). If a trace can't get through, a **wire-link jumper** (blue dashed) is added on the component side.
 5. **Label:** select a part and type its *Value / type* (NE555, BC547, 10k...), and pick its *Pin labels* (B C E, G D S, IN GND OUT...).
 6. **Tweak:** drag a trace section sideways to move it, use **Trim** (`X`) to cut a section out, and **right-click** anything for its menu.
@@ -110,9 +114,53 @@ The first time it starts it shows a safety and work-in-progress notice; tick the
 
 [![Ratsnest before routing](docs/images/gui-ratsnest.webp)](docs/images/gui-ratsnest.webp)
 
+## Resizing the panels (new in 0.10.1)
+
+The parts panel and the selection panel can be dragged wider or narrower with the grey handle beside them, and the web UI also has a handle between the parts list and its preview (drag it down to give the list more room, up to read a long description). Double-click a handle to put it back.
+
+## Antennas and the coil generator (new in 0.10.0)
+
+**Antennas.** In the parts list, *Board bits > Antennas and keep-outs* holds a meander antenna for each of 315, 433.92, 868, 915 and 2450 MHz, a matching **wire whip** (cut a wire of the length in its name) and five bare **keep-out boxes**. Place the antenna at the edge of the board, wire pin 1 to the radio's RF pin (through any matching parts) and pins 2 and 3 to ground, and keep the orange hatched box free: copper, ground fill and the back-side plane are all kept out of it, the autorouter goes round it and Check reports anything inside it. Open *File > Open example > 433 MHz meander antenna* to see one.
+
+[![A 433.92 MHz meander antenna with its keep-out box in the web UI](docs/images/web-ui-antenna.webp)](docs/images/web-ui-antenna.webp)
+
+These are **starting points, not tested designs**. The copper length is the quarter wave on FR4 by a rule of thumb plus 10 % to trim: measure with a NanoVNA and scratch copper away from the tip (silk ticks every 2 mm; the longer tick is the formula length). A real antenna usually also needs a small matching network, which SoloTrace does not provide. Notes, sources and what was left out: [docs/research/pcb-antennas.md](docs/research/pcb-antennas.md).
+
+**Coil generator.** The *PCB coil generator...* button under the parts list (also in the *Parts* menu). Type the outer width and height, then pick one mode:
+
+1. **Area + inductance**: say how many uH you want and it finds the number of turns and the track spacing that come closest.
+2. **Area + turns**: say how many turns and it works out the inductance, spreading the turns over the area.
+
+*Calculate* shows the turns, gap, track length, estimated inductance, DC resistance and (if you gave a frequency) the parallel capacitor that would tune it. *Save coil and place* stores it under *My parts* and arms it for placing. On a one-sided board the inner end of the coil cannot come out without crossing the turns, so solder an **insulated wire from pin 2 to pin 3** of the part; SoloTrace treats those two pins as already joined. Wire your circuit to pins 1 and 3. Open *File > Open example > PCB coil from the generator* to see one.
+
+[![The coil generator in the web UI](docs/images/web-ui-coil-dialog.webp)](docs/images/web-ui-coil-dialog.webp)
+
+[![A generated coil on a board, in the desktop window](docs/images/gui-coil.webp)](docs/images/gui-coil.webp)
+ The inductance is an **estimate for a coil in air**; a ground fill or plane, ferrite or metal nearby changes it, so measure the real coil. Method and cross-check: [docs/research/pcb-antennas.md](docs/research/pcb-antennas.md). From a terminal: `python3 src/main.py coil --width 30 --height 20 --uh 1.5 --freq 13.56` (or `--turns 8`; add `--save` to put the part under My parts).
+
+## Breakout boards (new in 0.9.0)
+
+*File > Open example* now has three breakouts for the "postage stamp" ESP32 boards: **XIAO ESP32-S3 / C3** (one board serves both, same footprint), **ESP32-C3 SuperMini** and **ESP32-S3-Zero**. Each is generated by the app from the module's own pad table, routed by the autorouter (no jumpers) and checked (no DRC problems).
+
+- **Every module pin has a hole strip**: one bar of copper with four holes, touching the module's pad. Pick any hole for a pin header, a jumper wire or a component lead, or solder a wire or an SMD part flat on the bar (deadbug). With the module's own pad that is **four extra connections per GPIO**, all the same net.
+- **Three power rails** of six holes each: 3V3, GND and 5V.
+- **Power in** on a 2-pin **screw terminal** and on a 2-pin **header**, both on 5V (pin 1) and GND (pin 2). Fit one.
+- **No copper under the module**, because many of these modules have pads on the back.
+- Sizes: 52 x 30 mm (XIAO), 52 x 31.5 mm (SuperMini), 52 x 32.5 mm (S3-Zero).
+
+[![The XIAO ESP32-S3 / C3 breakout in the web UI](docs/images/web-ui-breakout.webp)](docs/images/web-ui-breakout.webp)
+
+The green circle while wiring (here from a module pin towards the 3V3 rail; the cursor was a little off the hole):
+
+[![The green lock circle on the pin a wire would land on](docs/images/web-ui-wire-lock.webp)](docs/images/web-ui-wire-lock.webp)
+
+Build your own: *Board bits > Hole strips (breakout)* has strips of 2 to 16 holes. A strip is always through-hole and flat copper (the *Pads of this part* choice does not apply), is one net, and is not in the BOM. The "with lead-in" strip (`BRK_STRIP4_LEAD`) starts 0.3 mm past a module pad so that the two touch and need no wire. Details and the open points: [docs/research/breakout-boards.md](docs/research/breakout-boards.md).
+
+**Check before you power one:** nothing here has been built. The 5V pad of the XIAO is called VBUS in Seeed's symbol; whether it is safe to feed it from the screw terminal while USB is plugged in was **not** looked up. Read your module's documentation first.
+
 ### Feature by feature
 
-**Library and parts.** 90 through-hole parts plus 23 modules and 41 SMD parts, sorted by shape (form factor) rather than by maker code. Each group has an arrow that opens its sub-types:
+**Library and parts.** 90 through-hole parts plus 11 hole strips, 23 modules and 41 SMD parts, sorted by shape (form factor) rather than by maker code. Each group has an arrow that opens its sub-types:
 
 | Group | Sub-types |
 | --- | --- |
@@ -123,7 +171,7 @@ The first time it starts it shows a safety and work-in-progress notice; tick the
 | LEDs | 3 mm and 5 mm |
 | Pots, switches & crystals | Inline pots (2.54 and 5.08 mm), triangle trimmer, 6 mm tactile switch, HC-49 crystal |
 | Connectors | Pin headers 1-row and 2-row, screw terminals, JST-XH |
-| Board bits | Wire links, mounting holes, solder and surface pads |
+| Board bits | Wire links, mounting holes, solder and surface pads, **hole strips** (1 x 2 to 1 x 16 holes in one bar of copper, for breakouts) |
 | My parts | Parts you made or imported |
 
 Click a part and a drawing of it (copper, holes, outline, pin numbers, pitch and drill) appears under the list, in the sidebar, with no pop-up. Names say what the part is ("Electrolytic cap, 5 mm pitch"), not an obscure model number. Left out on purpose because their sizes vary too much between makers: relay, USB-B, barrel jack, buzzer, fuse holder, panel pots with lugs, TO-126, bridge rectifiers. Make those with the wizard. Body outlines, the inductor, pot and trimmer layouts, and the standing-part pitches are generic: check them against your real part.
@@ -282,7 +330,7 @@ Traces you drew by hand are kept by all three. *Board > Remove automatic routes*
 [![Laser dialog, negative mode](docs/images/laser-negative.webp)](docs/images/laser-negative.webp)
 [![Laser dialog, isolation mode](docs/images/laser-isolation.webp)](docs/images/laser-isolation.webp)
 
-Examples to look at without installing anything: [examples/](examples/) has nine boards (the 555 flasher, 5 V regulator, 555 power oscillator, logic mix, RF oscillator with ground fill, Manhattan RF amplifier, SMD regulator, a XIAO ESP32-C3 logger with its OLED mirrored under the board, and the 555 flasher with ground fill *and* back-side plane), each with its `.solotrace` file, Gerber zip, 1:1 copper-side SVG and PDF, BOM and laser G-code in both modes; the back-plane one also has the back-plane PDF/SVG, its laser job and the countersink list. Plus [test cards](examples/test-cards).
+Examples to look at without installing anything: [examples/](examples/) has eleven boards (the 555 flasher, 5 V regulator, 555 power oscillator, logic mix, RF oscillator with ground fill, Manhattan RF amplifier, SMD regulator, a XIAO ESP32-C3 logger with its OLED mirrored under the board, the 555 flasher with ground fill *and* back-side plane, a 433.92 MHz meander antenna board, and a 1.5 uH coil from the generator), each with its `.solotrace` file, Gerber zip, 1:1 copper-side SVG and PDF, BOM and laser G-code in both modes; the back-plane one also has the back-plane PDF/SVG, its laser job and the countersink list. Plus [test cards](examples/test-cards).
 
 ## Troubleshooting
 
@@ -317,6 +365,9 @@ Examples to look at without installing anything: [examples/](examples/) has nine
 
 ## Known limitations
 
+- **0.10.0:** the antennas and the coil have never been etched or measured; their lengths and inductance come from formulas (rules of thumb for the antennas). There are no matching-network parts, no inverted-F, patch, chip or loop antennas, and no module-specific keep-outs (use a keep-out box sized from the datasheet). The custom-footprint text editor drops the strokes, keep-outs and ties of a part it re-saves. The coil's wire between pins 2 and 3 must be insulated and is not drawn on the board.
+- **0.9.0:** the three breakout boards and the hole strips have never been etched, soldered or used with a real module. The green wire-lock circle has been tested by unit tests and scripted browser events, not used by a person. A pad's extra holes (`holes`) are kept in files and built-in parts but are dropped if you edit that footprint in the custom-footprint text editor.
+
 - **Work in progress.** Expect bugs. Back up your boards (`.solotrace` files are plain JSON).
 - Laser output is untested on hardware; speeds, powers and spot sizes are assumptions. See [DESIGN_NOTES.md](DESIGN_NOTES.md).
 - The router is pure Python. The logic demo needs 5 jumpers (negotiated) to 7 (classic) depending on the placement; a 30-part random board about 14 to 16. Auto-route can take 15 to 30 seconds on a cramped 20 to 30 part board on the development machine, more on a slow laptop (**not measured on a 7th-gen Core i3**); press Cancel to keep the best result so far. The negotiated router has no history cost between separate runs and no topological (rubber-band) stage; see DESIGN_NOTES.md.
@@ -342,6 +393,7 @@ Examples to look at without installing anything: [examples/](examples/) has nine
 ## More
 
 - [HOW_IT_WORKS.md](HOW_IT_WORKS.md): what it reads and writes, the coordinates, the router and the laser engine in plain English
+- [docs/research/breakout-boards.md](docs/research/breakout-boards.md): the breakout boards and hole strips
 - [DESIGN_NOTES.md](DESIGN_NOTES.md): decisions, rejected ideas, measurements, what is untested
 - [docs/research/](docs/research): the original research and plan, the Phecda notes, and the 0.5.0 notes on [autorouters](docs/research/autorouter-options.md), [thermal reliefs](docs/research/thermal-reliefs.md), the [back-side ground plane](docs/research/back-side-ground-plane.md) and [SMD land patterns](docs/research/smd-land-patterns.md)
 - [CHANGELOG.md](CHANGELOG.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)

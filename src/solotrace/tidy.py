@@ -44,7 +44,7 @@ def violation_set(board: Board, net: str, pts: Sequence[Point], width: float, st
         e = st.edge_clearance + r - 1e-4
         if x < e or y < e or x > board.width - e or y > board.height - e:
             hit.add(("edge",))
-    shapes = [s for s in board.copper() if s.net != net]
+    shapes = [s for s in board.copper() if s.net != net] + board.keepout_polys()    # antenna keep-outs too
     for i in range(len(pts) - 1):
         cap = Cap(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], r)
         bx0, by0, bx1, by1 = cap.bbox()

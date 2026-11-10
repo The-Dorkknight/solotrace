@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="52mm" height="30mm" viewBox="0 0 52 30">
+<title>Breakout: XIAO ESP32-S3 / C3 - SoloTrace mirrored</title>
+<rect x="0" y="0" width="52" height="30" fill="#ffffff"/>
+<polygon points="38.4900,4.1300 37.3900,4.1300 37.0900,3.8300 37.0900,2.7300 37.3900,2.4300 38.4900,2.4300 38.7900,2.7300 38.7900,3.8300" fill="#000000"/>
+<line x1="40.0900" y1="3.2800" x2="37.9900" y2="3.2800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="37.9400" y1="5.8200" x2="37.9400" y2="5.8200" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="40.0900" y1="5.8200" x2="37.9900" y2="5.8200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="37.9400" y1="8.3600" x2="37.9400" y2="8.3600" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="40.0900" y1="8.3600" x2="37.9900" y2="8.3600" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="37.9400" y1="10.9000" x2="37.9400" y2="10.9000" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="40.0900" y1="10.9000" x2="37.9900" y2="10.9000" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="37.9400" y1="13.4400" x2="37.9400" y2="13.4400" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="40.0900" y1="13.4400" x2="37.9900" y2="13.4400" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="37.9400" y1="15.9800" x2="37.9400" y2="15.9800" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="40.0900" y1="15.9800" x2="37.9900" y2="15.9800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="37.9400" y1="18.5200" x2="37.9400" y2="18.5200" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="40.0900" y1="18.5200" x2="37.9900" y2="18.5200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="22.7000" y1="18.5200" x2="22.7000" y2="18.5200" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="22.6500" y1="18.5200" x2="20.5500" y2="18.5200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="22.7000" y1="15.9800" x2="22.7000" y2="15.9800" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="22.6500" y1="15.9800" x2="20.5500" y2="15.9800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="22.7000" y1="13.4400" x2="22.7000" y2="13.4400" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="22.6500" y1="13.4400" x2="20.5500" y2="13.4400" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="22.7000" y1="10.9000" x2="22.7000" y2="10.9000" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="22.6500" y1="10.9000" x2="20.5500" y2="10.9000" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="22.7000" y1="8.3600" x2="22.7000" y2="8.3600" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="22.6500" y1="8.3600" x2="20.5500" y2="8.3600" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="22.7000" y1="5.8200" x2="22.7000" y2="5.8200" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="22.6500" y1="5.8200" x2="20.5500" y2="5.8200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="22.7000" y1="3.2800" x2="22.7000" y2="3.2800" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="22.6500" y1="3.2800" x2="20.5500" y2="3.2800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="39.1400" y1="3.2800" x2="48.1000" y2="3.2800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="39.1400" y1="5.8200" x2="48.1000" y2="5.8200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="39.1400" y1="8.3600" x2="48.1000" y2="8.3600" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="39.1400" y1="10.9000" x2="48.1000" y2="10.9000" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="39.1400" y1="13.4400" x2="48.1000" y2="13.4400" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="39.1400" y1="15.9800" x2="48.1000" y2="15.9800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="39.1400" y1="18.5200" x2="48.1000" y2="18.5200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="21.5000" y1="18.5200" x2="12.5400" y2="18.5200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="21.5000" y1="15.9800" x2="12.5400" y2="15.9800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="21.5000" y1="13.4400" x2="12.5400" y2="13.4400" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="21.5000" y1="10.9000" x2="12.5400" y2="10.9000" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="21.5000" y1="8.3600" x2="12.5400" y2="8.3600" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="21.5000" y1="5.8200" x2="12.5400" y2="5.8200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="21.5000" y1="3.2800" x2="12.5400" y2="3.2800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="9.7400" y1="21.0600" x2="9.7400" y2="8.3600" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="7.2000" y1="18.5200" x2="7.2000" y2="5.8200" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<line x1="4.6600" y1="15.9800" x2="4.6600" y2="3.2800" stroke="#000000" stroke-width="1.8000" stroke-linecap="round"/>
+<polygon points="42.9400,26.1000 40.9400,26.1000 40.6400,25.8000 40.6400,23.8000 40.9400,23.5000 42.9400,23.5000 43.2400,23.8000 43.2400,25.8000" fill="#000000"/>
+<line x1="36.8600" y1="24.8000" x2="36.8600" y2="24.8000" stroke="#000000" stroke-width="2.6000" stroke-linecap="round"/>
+<polygon points="29.4900,25.6500 28.3900,25.6500 28.0900,25.3500 28.0900,24.2500 28.3900,23.9500 29.4900,23.9500 29.7900,24.2500 29.7900,25.3500" fill="#000000"/>
+<line x1="26.4000" y1="24.8000" x2="26.4000" y2="24.8000" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
+<line x1="6.9150" y1="19.2050" x2="6.9150" y2="21.7450" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="6.9150" y1="21.7450" x2="8.8200" y2="23.6500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="8.8200" y1="23.6500" x2="24.6950" y2="23.6500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="24.6950" y1="23.6500" x2="25.9650" y2="22.3800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="25.9650" y1="22.3800" x2="34.8550" y2="22.3800" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="34.8550" y1="22.3800" x2="36.8600" y2="24.3850" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="36.8600" y1="24.3850" x2="36.8600" y2="24.8000" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="26.4000" y1="24.8000" x2="25.8450" y2="24.8000" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="25.8450" y1="24.8000" x2="24.6950" y2="23.6500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="7.5500" y1="6.5050" x2="11.9950" y2="6.5050" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="5.0100" y1="16.6650" x2="5.0100" y2="21.7450" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="5.0100" y1="21.7450" x2="11.3600" y2="28.0950" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="11.3600" y1="28.0950" x2="38.6650" y2="28.0950" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="38.6650" y1="28.0950" x2="41.9400" y2="24.8200" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="41.9400" y1="24.8200" x2="41.9400" y2="24.8000" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="28.9400" y1="24.8000" x2="28.9400" y2="27.6600" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="28.9400" y1="27.6600" x2="28.5050" y2="28.0950" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="5.0100" y1="3.9650" x2="11.9950" y2="3.9650" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="10.0900" y1="10.3150" x2="11.9950" y2="8.4100" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<circle cx="37.9400" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="37.9400" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="37.9400" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="37.9400" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="37.9400" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="37.9400" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="37.9400" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="22.7000" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="22.7000" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="22.7000" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="22.7000" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="22.7000" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="22.7000" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="22.7000" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="40.4800" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="43.0200" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="45.5600" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="48.1000" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="40.4800" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="43.0200" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="45.5600" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="48.1000" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="40.4800" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="43.0200" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="45.5600" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="48.1000" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="40.4800" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="43.0200" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="45.5600" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="48.1000" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="40.4800" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="43.0200" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="45.5600" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="48.1000" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="40.4800" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="43.0200" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="45.5600" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="48.1000" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="40.4800" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="43.0200" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="45.5600" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="48.1000" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="20.1600" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="17.6200" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="15.0800" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="12.5400" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="20.1600" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="17.6200" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="15.0800" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="12.5400" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="20.1600" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="17.6200" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="15.0800" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="12.5400" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="20.1600" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="17.6200" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="15.0800" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="12.5400" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="20.1600" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="17.6200" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="15.0800" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="12.5400" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="20.1600" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="17.6200" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="15.0800" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="12.5400" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="20.1600" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="17.6200" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="15.0800" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="12.5400" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="9.7400" cy="21.0600" r="0.2000" fill="#ffffff"/>
+<circle cx="9.7400" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="9.7400" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="9.7400" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="9.7400" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="9.7400" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="7.2000" cy="18.5200" r="0.2000" fill="#ffffff"/>
+<circle cx="7.2000" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="7.2000" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="7.2000" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="7.2000" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="7.2000" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="4.6600" cy="15.9800" r="0.2000" fill="#ffffff"/>
+<circle cx="4.6600" cy="13.4400" r="0.2000" fill="#ffffff"/>
+<circle cx="4.6600" cy="10.9000" r="0.2000" fill="#ffffff"/>
+<circle cx="4.6600" cy="8.3600" r="0.2000" fill="#ffffff"/>
+<circle cx="4.6600" cy="5.8200" r="0.2000" fill="#ffffff"/>
+<circle cx="4.6600" cy="3.2800" r="0.2000" fill="#ffffff"/>
+<circle cx="41.9400" cy="24.8000" r="0.2000" fill="#ffffff"/>
+<circle cx="36.8600" cy="24.8000" r="0.2000" fill="#ffffff"/>
+<circle cx="28.9400" cy="24.8000" r="0.2000" fill="#ffffff"/>
+<circle cx="26.4000" cy="24.8000" r="0.2000" fill="#ffffff"/>
+<rect x="0.05" y="0.05" width="51.9" height="29.9" fill="none" stroke="#808080" stroke-width="0.1"/>
+</svg>

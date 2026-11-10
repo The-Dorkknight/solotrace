@@ -94,3 +94,8 @@ if __name__ == "__main__":
     with open(os.path.join(folder, "trace-gap-test.gcode"), "w", encoding="utf-8", newline="\n") as fh:
         fh.write(laser.trace_ladder_card().gcode)
     print("test cards written")
+    build("breakout-xiao-esp32-s3-c3", demos.breakout_xiao, place=False)
+    build("breakout-esp32-c3-supermini", demos.breakout_supermini, place=False)
+    build("breakout-esp32-s3-zero", demos.breakout_s3zero, place=False)
+    build("antenna-433mhz-meander", demos.antenna_433, place=False)
+    build("pcb-coil-1u5-13m56", demos.coil_demo, place=False)

@@ -1,0 +1,348 @@
+{
+ "format": "solotrace",
+ "version": 1,
+ "name": "433 MHz antenna test board",
+ "width": 50.0,
+ "height": 50.0,
+ "settings": {
+  "clearance": 0.3,
+  "min_trace": 0.4,
+  "edge_clearance": 0.5,
+  "grid": 0.635,
+  "place_grid": 1.27,
+  "chamfer_factor": 1.5,
+  "chamfer_min": 0.9,
+  "jumper_pad": 2.0,
+  "jumper_drill": 1.0,
+  "jumper_min": 5.08,
+  "jumper_max": 15.24,
+  "jumper_step": 2.54,
+  "copper_oz": 1.0,
+  "temp_rise": 10.0,
+  "allow_jumpers": true,
+  "keep_out_under_parts": false,
+  "island_mode": true,
+  "island_net": "",
+  "island_gap": 0.6,
+  "island_grow": 1.0,
+  "island_drop_floating": true,
+  "relief": true,
+  "relief_spokes": 4,
+  "relief_width": 0.8,
+  "relief_amps": 0.0,
+  "relief_gap": 0.5,
+  "relief_islands": true,
+  "relief_diag": true,
+  "backplane": false,
+  "backplane_clearance": 0.55,
+  "backplane_relief": true,
+  "via_drill": 0.7,
+  "via_pad": 1.8,
+  "stitch_spacing": 10.0,
+  "router": "auto",
+  "placer": "anneal",
+  "classes": {
+   "Signal": 0.8,
+   "Power": 2.0,
+   "High current": 5.0
+  }
+ },
+ "parts": [
+  {
+   "ref": "ANT1",
+   "part": "ANT_MEANDER_433",
+   "x": 10.0,
+   "y": 6.0,
+   "rot": 0,
+   "flip": false,
+   "value": "",
+   "style": "tht",
+   "locked": false
+  },
+  {
+   "ref": "J1",
+   "part": "HDR_1x2",
+   "x": 44.0,
+   "y": 8.0,
+   "rot": 90,
+   "flip": false,
+   "value": "RF in",
+   "style": "tht",
+   "locked": false,
+   "pin_labels": {
+    "1": "RF",
+    "2": "GND"
+   }
+  }
+ ],
+ "nets": [
+  {
+   "name": "RF",
+   "class": "Signal",
+   "pins": [
+    "J1.1",
+    "ANT1.1"
+   ]
+  },
+  {
+   "name": "GND",
+   "class": "Power",
+   "pins": [
+    "J1.2",
+    "ANT1.2",
+    "ANT1.3"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "net": "RF",
+   "points": [
+    [
+     10.0,
+     6.0
+    ],
+    [
+     12.19,
+     3.81
+    ],
+    [
+     39.81,
+     3.81
+    ],
+    [
+     44.0,
+     8.0
+    ]
+   ],
+   "widths": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "manual": false
+  }
+ ],
+ "jumpers": [],
+ "islands": [],
+ "vias": [],
+ "defs": {
+  "ANT_MEANDER_433": {
+   "id": "ANT_MEANDER_433",
+   "name": "Meander monopole antenna 433.92 MHz (24 x 15 mm, keep-out 34 x 18)",
+   "category": "Board",
+   "prefix": "ANT",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": -5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "3",
+     "x": 5.08,
+     "y": 0.0,
+     "shape": "round",
+     "w": 2.0,
+     "h": 2.0,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -5.0,
+     2.0,
+     29.0,
+     20.0
+    ],
+    [
+     "line",
+     4.627689306638757,
+     16.6,
+     4.627689306638757,
+     13.4
+    ],
+    [
+     "line",
+     2.6276893066387577,
+     16.6,
+     2.6276893066387577,
+     13.4
+    ],
+    [
+     "line",
+     0.6276893066387572,
+     16.6,
+     0.6276893066387572,
+     13.4
+    ],
+    [
+     "line",
+     -1.6,
+     13.627689306638757,
+     1.6,
+     13.627689306638757
+    ],
+    [
+     "line",
+     0.3723106933612428,
+     10.4,
+     0.3723106933612428,
+     13.6
+    ],
+    [
+     "line",
+     2.372310693361243,
+     10.4,
+     2.372310693361243,
+     13.6
+    ],
+    [
+     "line",
+     2.8839188121465895,
+     9.76,
+     2.8839188121465895,
+     14.24
+    ]
+   ],
+   "court": [
+    -6.2,
+    -1.2,
+    29.0,
+    20.0
+   ],
+   "kind": "antenna",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "PCB trace antenna for 433.92 MHz ASK / FSK modules, key fobs, remote sockets (EU ISM). A STARTING POINT: 116 mm of 1 mm copper (quarter wave 105 mm from the FR4 rule of thumb, effective permittivity 2.7, plus 10 % to trim). Pin 1 = feed (the radio's RF pin, through any matching parts), pins 2 and 3 = ground: put ground copper or the ground fill beside them, never above the feed. Silk ticks every 2 mm from the tip; the longer tick is the formula length. Measure with a NanoVNA and scratch the copper back from the tip until it is best at your frequency; if it resonates too high add copper instead. The box is a keep-out: no copper, fill or back-side plane inside it. Untested on a real board.",
+   "strokes": [
+    {
+     "pad": "1",
+     "w": 1.0,
+     "pts": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       3.0
+      ],
+      [
+       24.0,
+       3.0
+      ],
+      [
+       24.0,
+       6.0
+      ],
+      [
+       0.0,
+       6.0
+      ],
+      [
+       0.0,
+       9.0
+      ],
+      [
+       24.0,
+       9.0
+      ],
+      [
+       24.0,
+       12.0
+      ],
+      [
+       0.0,
+       12.0
+      ],
+      [
+       0.0,
+       15.0
+      ],
+      [
+       4.627689306638757,
+       15.0
+      ]
+     ]
+    }
+   ],
+   "keepouts": [
+    [
+     -5.0,
+     2.0,
+     29.0,
+     20.0
+    ]
+   ]
+  },
+  "HDR_1x2": {
+   "id": "HDR_1x2",
+   "name": "Pin header 1x2, 2.54 mm",
+   "category": "Connectors",
+   "prefix": "J",
+   "pads": [
+    {
+     "n": "1",
+     "x": 0.0,
+     "y": 0.0,
+     "shape": "rect",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    },
+    {
+     "n": "2",
+     "x": 2.54,
+     "y": 0.0,
+     "shape": "round",
+     "w": 1.7,
+     "h": 1.7,
+     "drill": 1.0,
+     "chamfer": 0.3
+    }
+   ],
+   "outline": [
+    [
+     "rect",
+     -1.27,
+     -1.27,
+     3.81,
+     1.27
+    ]
+   ],
+   "court": [
+    -1.27,
+    -1.27,
+    3.81,
+    1.27
+   ],
+   "kind": "part",
+   "dead_dir": [
+    0.0,
+    -1.0
+   ],
+   "note": "2-row headers number across the columns: 1 top, 2 below it, 3 next top..."
+  }
+ }
+}

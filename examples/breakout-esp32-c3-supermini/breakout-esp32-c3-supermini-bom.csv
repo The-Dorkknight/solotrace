@@ -1,0 +1,4 @@
+References,Qty,Value,Part,Part id,Mounted on
+J1,1,2-pin screw terminal (fit one),"Screw terminal 2-way, 5.08 mm",TERM_5.08_2,component side
+J2,1,2-pin header (fit one),"Pin header 1x2, 2.54 mm",HDR_1x2,component side
+U1,1,ESP32-C3 SuperMini,ESP32-C3 SuperMini (22.5 x 18 mm),MOD_ESP32C3_SUPERMINI,component side

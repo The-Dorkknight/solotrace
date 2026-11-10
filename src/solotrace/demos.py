@@ -267,6 +267,148 @@ def xiao_logger() -> Board:
     return b
 
 
+def breakout(module_id: str, title: str, value: str) -> Board:
+    """A breakout board for a "postage stamp" ESP32 module with castellated pins in two columns.
+
+    Built with the app's own parts and nets, the way a person would:
+    - the module (U1) sits in the middle; no copper under its body (many of these modules have pads
+      or a battery connector on the back, so the bare space is on purpose);
+    - every module pin gets a hole strip (BRK_STRIP4_LEAD): one bar of copper with 4 holes, touching
+      the module's pad. Each strip is through-hole AND flat copper, so a GPIO has four places to
+      connect (pin header, wire, an SMD part), besides the module itself;
+    - three vertical rails of 6 holes on the right: 3V3, GND, 5V (stepped, so each power row reaches its rail);
+    - power in through a 2-pin screw terminal OR a 2-pin header, both on 5V and GND (fit one).
+    """
+    from .library import BUILTIN, default_pin_labels, STRIP_TAIL
+    mod = BUILTIN[module_id]
+    labs = default_pin_labels(mod)
+    xs = sorted({round(p.x, 3) for p in mod.pads})
+    xl, xr = xs[0], xs[-1]
+    ys = [p.y for p in mod.pads]
+    top_off, span = max(ys), max(ys) - min(ys)           # pin rows hang below the first pin
+    rail_n = 6
+    rail_len = (rail_n - 1) * 2.54 + 1.8
+    reach = 4 * 2.54 + 0.9                               # from a module pad to the far end of its strip
+    margin = 3.0
+    pin_by_label = {}
+    for p in mod.pads:
+        pin_by_label[labs[p.name]] = p.name
+    # the rails go on the side of the module where its power pins are
+    power_x = [mod.pad(pin_by_label[l]).x for l in ("5V", "GND", "3V3")]
+    on_right = sum(abs(x - xr) < 1e-3 for x in power_x) >= 2
+    if on_right:
+        left_x = margin + reach                          # module pad column (left) on the board
+        right_x = left_x + (xr - xl)
+        rails = [right_x + reach + 1.9 + 2.54 * k for k in range(3)]       # nearest first
+        width = round(rails[-1] + 0.9 + margin + 0.5)
+    else:
+        left_x = margin + 0.9 + 2 * 2.54 + 1.9 + reach
+        right_x = left_x + (xr - xl)
+        rails = [left_x - reach - 1.9 - 2.54 * k for k in range(3)]
+        width = round(right_x + reach + margin + 0.5)
+    jy = 5.2                                             # the power connectors, below the module
+    top_y = jy - mod.court[1] + 3.4                      # the first pin row: the module body ends 3.4 mm above the connectors
+    height = round(top_y + mod.court[3] + 0.4, 1)
+    b = Board(width, height, title)
+    b.add_part(module_id, left_x, top_y + (0 if top_off == 0 else -top_off), ref="U1", value=value, style="mixed")
+    u1 = b.parts["U1"]
+    # one hole strip on every module pin, running outwards from its column
+    strips = {}
+    for k, p in enumerate(sorted(mod.pads, key=lambda q: int(q.name))):
+        col_left = abs(p.x - xl) < 1e-3
+        px, py = u1.x + p.x, u1.y + p.y
+        ref = "TP%d" % (k + 1)
+        if col_left:
+            b.add_part("BRK_STRIP4_LEAD", px - STRIP_TAIL, py, 180, ref=ref)
+        else:
+            b.add_part("BRK_STRIP4_LEAD", px + STRIP_TAIL, py, 0, ref=ref)
+        b.parts[ref].pin_labels = {"1": labs[p.name]}
+        strips[p.name] = ref
+    # rails: three vertical bars of 8 holes beside the strips, stepped so that each power row reaches its
+    # rail with a short straight trace and no rail is in the way of another: the rail for the lowest
+    # power row (3V3) is the nearest, the one for the top row (5V) the farthest
+    rows = {lab: u1.y + mod.pad(pin_by_label[lab]).y for lab in ("5V", "GND", "3V3")}
+    order = sorted(rows, key=lambda lab: -rows[lab])                 # top row first: 5V, GND, 3V3
+    rail_of = {}
+    rail_refs = []
+    for k, lab in enumerate(reversed(order)):                        # nearest column = lowest row
+        ref = "RL%d" % (k + 1)
+        y_top_end = rows[lab] + 0.9
+        b.add_part("BRK_STRIP6", rails[k], y_top_end - rail_len / 2.0, 90, ref=ref)
+        b.parts[ref].pin_labels = {"1": lab}
+        rail_of[lab] = ref
+        rail_refs.append(ref)
+    # power in: the same two nets on a screw terminal and on a header; fit one
+    j1x, j2x = (left_x - 4.0, left_x + 9.0) if on_right else (right_x - 1.08, right_x - 11.54)   # on the rails' side
+    b.add_part("TERM_5.08_2", j1x, jy, 0, ref="J1", value="2-pin screw terminal (fit one)")
+    b.add_part("HDR_1x2", j2x, jy, 0, ref="J2", value="2-pin header (fit one)")
+    b.parts["J1"].pin_labels = {"1": "5V", "2": "GND"}
+    b.parts["J2"].pin_labels = {"1": "5V", "2": "GND"}
+    plus = {"+3V3": "3V3", "+5V": "5V", "GND": "GND"}
+    for name, lab in plus.items():
+        mpin = "U1.%s" % pin_by_label[lab]
+        spin = "%s.1" % strips[pin_by_label[lab]]
+        rpin = "%s.1" % rail_of[lab]
+        b.connect(mpin, spin, name)                       # the module pad and its strip touch: one piece of copper
+        b.connect(mpin, rpin, name)                       # the strip reaches its rail with a short trace
+        if name != "+3V3":
+            j = ("J1.1", "J2.1") if name == "+5V" else ("J1.2", "J2.2")
+            b.connect(rpin, j[0], name, rigid=True)       # power in goes straight to the rail
+            b.connect(j[0], j[1], name)
+    for lab, pn in pin_by_label.items():
+        if lab not in plus:
+            b.connect("U1.%s" % pn, "%s.1" % strips[pn], lab)
+    b.touch()
+    return b
+
+
+def breakout_xiao() -> Board:
+    return breakout("MOD_XIAO_S3", "Breakout: XIAO ESP32-S3 / C3", "XIAO ESP32-S3 or C3")
+
+
+def breakout_supermini() -> Board:
+    return breakout("MOD_ESP32C3_SUPERMINI", "Breakout: ESP32-C3 SuperMini", "ESP32-C3 SuperMini")
+
+
+def breakout_s3zero() -> Board:
+    return breakout("MOD_ESP32S3_ZERO", "Breakout: ESP32-S3-Zero", "ESP32-S3-Zero")
+
+
+def antenna_433() -> Board:
+    """A 433.92 MHz meander antenna on a bare test board: a two-pin header brings the radio's RF pin and its
+    ground to the antenna's feed and ground pins; the ground fill stops at the antenna's keep-out box."""
+    b = Board(50, 50, "433 MHz antenna test board")
+    b.settings.island_mode = True
+    b.add_part("ANT_MEANDER_433", 10.0, 6.0, ref="ANT1")
+    b.add_part("HDR_1x2", 44.0, 8.0, rot=90, ref="J1", value="RF in")
+    b.parts["J1"].pin_labels = {"1": "RF", "2": "GND"}
+    _net(b, "RF", "J1.1", "ANT1.1")
+    _net(b, "GND", "J1.2", "ANT1.2", "ANT1.3", cls="Power")
+    b.touch()
+    return b
+
+
+def coil_demo() -> Board:
+    """A 30 x 20 mm PCB coil from the coil generator (1.5 uH wanted) with a header for the leads and a disc
+    capacitor footprint that tunes it to 13.56 MHz. The coil's inner end is carried out by a wire between its
+    pins 2 and 3 (the part counts them as joined)."""
+    from . import coil
+    res = coil.design(30.0, 20.0, want_uH=1.5, freq_MHz=13.56)
+    part = coil.coil_part(res)
+    b = Board(60, 50, "PCB coil 13.56 MHz")
+    b.defs[part.id] = part
+    b.add_part(part.id, 10.0, 15.0, ref="L1", value="%.2f uH" % res.inductance_uH)
+    b.add_part("C_DISC_2.54", 24.0, 5.0, ref="C1", value="%.0f pF" % res.cap_pF)
+    b.add_part("HDR_1x2", 38.0, 5.0, ref="J1", value="leads")
+    b.parts["J1"].pin_labels = {"1": "A", "2": "B"}
+    _net(b, "A", "L1.1", "C1.1", "J1.1")
+    b.connect("L1.3", "C1.2")
+    b.connect("L1.3", "J1.2")
+    b.rename_net(b.net_of("L1.3").name, "B")
+    b.touch()
+    return b
+
+
 DEMOS: Dict[str, Callable[[], Board]] = {
     "555 LED flasher": flasher_555,
     "5 V regulator": regulator_7805,
@@ -276,4 +418,9 @@ DEMOS: Dict[str, Callable[[], Board]] = {
     "Manhattan RF amplifier (copper islands)": manhattan_amp,
     "SMD regulator (SMD parts)": smd_regulator,
     "XIAO ESP32-C3 logger (OLED mirrored under the board)": xiao_logger,
+    "Breakout: XIAO ESP32-S3 / C3 (hole strips, rails, power in)": breakout_xiao,
+    "Breakout: ESP32-C3 SuperMini": breakout_supermini,
+    "Breakout: ESP32-S3-Zero": breakout_s3zero,
+    "433 MHz meander antenna (keep-out, ground fill)": antenna_433,
+    "PCB coil from the generator (1.5 uH, 13.56 MHz tuning)": coil_demo,
 }

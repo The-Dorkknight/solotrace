@@ -56,6 +56,30 @@ def part_segments(board: Board, ref: str) -> List[Tuple[float, float, float, flo
     return segs
 
 
+def keepout_hatch(pts, step: float = 1.5) -> List[Tuple[float, float, float, float]]:
+    """Diagonal hatch lines (board mm) filling an axis-aligned keep-out box, for drawing 'no copper here'."""
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    out: List[Tuple[float, float, float, float]] = []
+    w, h = x1 - x0, y1 - y0
+    k = -h
+    while k < w:
+        # line y = (x - x0 - k) clipped to the box: it runs from (x0 + k, y0) up and to the right
+        ax, ay = x0 + k, y0
+        bx, by = x0 + k + h, y1
+        if ax < x0:
+            ay += x0 - ax
+            ax = x0
+        if bx > x1:
+            by -= bx - x1
+            bx = x1
+        if bx > ax and by > ay:
+            out.append((ax, ay, bx, by))
+        k += step
+    return out
+
+
 def silk_segments(board: Board, side: str = "both") -> List[Tuple[float, float, float, float]]:
     """Component outlines as board-coordinate line segments.
 
@@ -186,7 +210,7 @@ def bom_rows(board: Board) -> List[List[str]]:
     groups: dict = {}
     for ref, pl in board.parts.items():
         d = board.get_def(pl.part_id)
-        if d.kind in ("hole", "pad"):
+        if d.kind in ("hole", "pad", "strip", "antenna"):
             continue
         side = "copper side" if board.on_copper_side(ref) else "component side"
         if board.is_mirrored(ref):

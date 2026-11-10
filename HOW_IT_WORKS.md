@@ -122,6 +122,20 @@ Traces you drew yourself are kept. This is **not** a full PathFinder router: it 
 
 Traces do not follow a part: they are separate copper that happens to end on its pads. So moving, turning, nudging or mirroring a part after routing can put one of its pads on another net's trace, which is a short. While you drag, the editor tries the part at the mouse position (`probe_part` in the web UI, the move itself in the window) and draws a red ring on every pad or trace closer than the clearance; when you let go, the status bar says how many collisions there are and what to do (`after_part_edit` in `drc.py`). Check finds the same things, plus one more: a part mounted under the board (mirrored) and soldered flat is pressed against the copper, so its body over a trace of another net is a warning; on header pins it is only a note.
 
+## The wire lock
+
+With the Wire tool the editor works out, at every mouse move, which pin a click would connect to (`Board.pin_lock`): the pad whose copper edge is nearest the cursor, within about 14 screen pixels (clamped to 1.4 to 3 mm on the board). It draws a solid green circle there and snaps the rubber band to it. If that pin is the one you started from, the mark is a grey dashed ring and a click does nothing. The web UI gets the answer from the server (the `hover` reply carries a `lock`), because the board lives in Python.
+
+## Hole strips
+
+A hole strip is a single oval pad that lists several holes (`holes` in the part file). To the rest of the program it is one pin: one net, one place to wire to. Every hole is drilled (the Gerber and laser exports use `Board.drills()`), and the whole bar is flat copper you can solder to. The breakout boards use a strip on each module pin, overlapping the module's pad so the two are one piece of copper.
+
+## Antennas, keep-outs and coils
+
+An antenna or coil part carries its own copper (`strokes` in the part file: a polyline and a width) and one or more keep-out boxes (`keepouts`). The copper is ordinary copper: it is in the Gerber, the laser job and the checks, and a stroke named after a pin is on that pin's net. The keep-out is a box where no other copper may be: Check reports any (kind `keepout`), the ground fill and the back-side plane skip it, and the autorouter will not run through it. Some parts also list `ties`: pins joined by a wire you solder by hand (the coil's inner end and its landing pad); those pins count as one connection and nothing is routed between them.
+
+The antenna lengths come from the quarter-wave formula and the coil inductance from a sum of straight-bar inductances; both are estimates, explained in [docs/research/pcb-antennas.md](docs/research/pcb-antennas.md).
+
 ## DRC
 
 The checker measures the real copper shapes: clearance between different nets, edge clearance, width, corner angle, ring size, jumper length and crossings, and unrouted pins.

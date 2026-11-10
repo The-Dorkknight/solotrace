@@ -20,27 +20,6 @@
 <polygon points="13.7800,24.4500 14.5800,24.4500 14.8300,24.2000 14.8300,23.1000 14.5800,22.8500 13.7800,22.8500 13.5300,23.1000 13.5300,24.2000" fill="#000000"/>
 <polygon points="3.5100,10.2300 3.5100,9.1300 3.8100,8.8300 4.9100,8.8300 5.2100,9.1300 5.2100,10.2300 4.9100,10.5300 3.8100,10.5300" fill="#000000"/>
 <line x1="4.3600" y1="7.1400" x2="4.3600" y2="7.1400" stroke="#000000" stroke-width="1.7000" stroke-linecap="round"/>
-<line x1="29.7600" y1="9.6800" x2="27.2200" y2="12.2200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="27.2200" y1="12.2200" x2="22.9300" y2="12.2200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="29.7600" y1="9.6800" x2="34.8400" y2="14.7600" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="34.8400" y1="14.7600" x2="34.8400" y2="22.3800" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="14.1800" y1="23.6500" x2="16.0850" y2="25.5550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
-<line x1="16.0850" y1="25.5550" x2="20.8700" y2="25.5550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
-<line x1="20.8700" y1="25.5550" x2="21.8000" y2="24.6250" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
-<line x1="21.8000" y1="24.6250" x2="21.8000" y2="23.6500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
-<line x1="38.8400" y1="22.3800" x2="38.8400" y2="20.3300" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="38.8400" y1="20.3300" x2="41.9700" y2="17.2000" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="41.9700" y1="17.2000" x2="41.9700" y2="8.3265" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="41.9700" y1="8.3265" x2="40.7835" y2="7.1400" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="40.7835" y1="7.1400" x2="39.9200" y2="7.1400" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="20.6300" y1="12.2200" x2="20.6300" y2="5.8200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="10.7100" y1="9.6800" x2="8.1700" y2="7.1400" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="8.1700" y1="7.1400" x2="4.3600" y2="7.1400" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="10.7100" y1="9.6800" x2="14.5700" y2="5.8200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="14.5700" y1="5.8200" x2="20.6300" y2="5.8200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="20.6300" y1="12.2200" x2="20.6300" y2="20.7700" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="20.6300" y1="20.7700" x2="19.6000" y2="21.8000" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
-<line x1="19.6000" y1="21.8000" x2="19.6000" y2="23.6500" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
 <line x1="10.7100" y1="6.0800" x2="10.7100" y2="5.0778" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
 <line x1="10.7100" y1="5.0778" x2="9.4372" y2="3.8050" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
 <line x1="9.4372" y1="3.8050" x2="4.5200" y2="3.8050" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
@@ -58,6 +37,27 @@
 <line x1="11.9828" y1="3.8050" x2="10.7100" y2="5.0778" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
 <line x1="10.7100" y1="5.0778" x2="10.7100" y2="6.0800" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
 <line x1="11.9800" y1="12.2200" x2="11.9800" y2="23.6500" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="14.1800" y1="23.6500" x2="16.0850" y2="25.5550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="16.0850" y1="25.5550" x2="20.8700" y2="25.5550" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="20.8700" y1="25.5550" x2="21.8000" y2="24.6250" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="21.8000" y1="24.6250" x2="21.8000" y2="23.6500" stroke="#000000" stroke-width="0.8000" stroke-linecap="round"/>
+<line x1="38.8400" y1="22.3800" x2="38.8400" y2="20.3300" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="38.8400" y1="20.3300" x2="41.9700" y2="17.2000" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="41.9700" y1="17.2000" x2="41.9700" y2="8.3265" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="41.9700" y1="8.3265" x2="40.7835" y2="7.1400" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="40.7835" y1="7.1400" x2="39.9200" y2="7.1400" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="20.6300" y1="12.2200" x2="20.6300" y2="5.8200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="10.7100" y1="9.6800" x2="8.1700" y2="7.1400" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="8.1700" y1="7.1400" x2="4.3600" y2="7.1400" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="10.7100" y1="9.6800" x2="14.5700" y2="5.8200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="14.5700" y1="5.8200" x2="20.6300" y2="5.8200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="20.6300" y1="12.2200" x2="20.6300" y2="20.7700" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="20.6300" y1="20.7700" x2="19.6000" y2="21.8000" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="19.6000" y1="21.8000" x2="19.6000" y2="23.6500" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="29.7600" y1="9.6800" x2="27.2200" y2="12.2200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="27.2200" y1="12.2200" x2="22.9300" y2="12.2200" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="29.7600" y1="9.6800" x2="34.8400" y2="14.7600" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
+<line x1="34.8400" y1="14.7600" x2="34.8400" y2="22.3800" stroke="#000000" stroke-width="1.2000" stroke-linecap="round"/>
 <circle cx="39.9200" cy="9.6800" r="0.2000" fill="#ffffff"/>
 <circle cx="39.9200" cy="7.1400" r="0.2000" fill="#ffffff"/>
 <circle cx="4.3600" cy="9.6800" r="0.2000" fill="#ffffff"/>

@@ -86,7 +86,7 @@ class Placer:
         self.cancel = cancel
         self.refs = list(board.parts)
         self.movable = [r for r in self.refs if not board.parts[r].locked and
-                        board.get_def(board.parts[r].part_id).kind != "hole"]
+                        board.get_def(board.parts[r].part_id).kind not in ("hole", "strip", "antenna")]
         self.net_pins: Dict[str, List[Tuple[str, str]]] = {}
         for n in board.nets.values():
             lst = [board.split_pin(p) for p in n.pins if board.has_pin(p)]

@@ -1,4 +1,4 @@
-; SoloTrace 0.5.0-wip - laser job: Manhattan RF amplifier
+; SoloTrace 0.9.0-wip - laser job: Manhattan RF amplifier
 ; WORK IN PROGRESS: defaults are untested starting points. Run the test cards first.
 ; Board: Manhattan RF amplifier  60.0 x 36.0 mm  mode=negative  mirror=True
 ; Ground fill on net GND, 0.60 mm gap round every other net

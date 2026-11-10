@@ -20,6 +20,7 @@ from typing import Dict, List, Optional, Tuple
 from .geom import Cap, Poly, octagon_rect, place_point, place_vec
 
 STYLES = ("tht", "dead", "mixed")
+FIXED_STYLE_KINDS = ("hole", "strip", "antenna")      # parts that ignore the through-hole / deadbug choice
 PAD_SHAPES = ("round", "oval", "rect")
 
 
@@ -33,17 +34,24 @@ class PadDef:
     h: float = 1.8
     drill: float = 0.9
     chamfer: float = 0.3        # corner cut for 'rect' pads (no square corners anywhere)
+    holes: tuple = ()           # when set, these ((x, y), ...) in part coordinates are ALL the holes of the pad
+                                # (the one at the pad centre is not drilled). A long pad with several holes is
+                                # ONE pin: a strip of connection points.
 
     def to_dict(self) -> dict:
-        return {"n": self.name, "x": self.x, "y": self.y, "shape": self.shape,
-                "w": self.w, "h": self.h, "drill": self.drill, "chamfer": self.chamfer}
+        d = {"n": self.name, "x": self.x, "y": self.y, "shape": self.shape,
+             "w": self.w, "h": self.h, "drill": self.drill, "chamfer": self.chamfer}
+        if self.holes:
+            d["holes"] = [[float(x), float(y)] for x, y in self.holes]
+        return d
 
     @staticmethod
     def from_dict(d: dict) -> "PadDef":
         return PadDef(name=str(d["n"]), x=float(d["x"]), y=float(d["y"]),
                       shape=d.get("shape", "round"), w=float(d.get("w", 1.8)),
                       h=float(d.get("h", d.get("w", 1.8))), drill=float(d.get("drill", 0.9)),
-                      chamfer=float(d.get("chamfer", 0.3)))
+                      chamfer=float(d.get("chamfer", 0.3)),
+                      holes=tuple((float(h[0]), float(h[1])) for h in d.get("holes", ())))
 
 
 @dataclass
@@ -59,9 +67,19 @@ class PartDef:
     outline: List[tuple] = field(default_factory=list)
     court: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)   # body rectangle x0,y0,x1,y1
     kind: str = "part"          # part | link (wire link) | hole (mounting hole) | pad (solder pad) | smd
+                                # | strip (a bar of copper with several holes, one pin: always through-hole + flat solder)
+                                # | antenna (a PCB antenna: pad strokes + a keep-out area; always through-hole + flat solder)
                                 # smd: surface-mount, lives on the COPPER side; pads are copper only, no hole
     dead_dir: Tuple[float, float] = (0.0, -1.0)   # deadbug direction for pads at the centroid
     note: str = ""
+    # copper lines that belong to a pad: ``(pad_name, ((x, y), ...), width)`` in part coordinates. They are
+    # the same copper as the pad (same net, same owner), drawn as round-ended lines: a PCB antenna's trace.
+    strokes: List[tuple] = field(default_factory=list)
+    # keep-out rectangles ``(x0, y0, x1, y1)`` in part coordinates: no copper of any other part, trace, via,
+    # jumper or island, and no ground fill or back-side plane, inside them (an antenna's clear area).
+    keepouts: List[tuple] = field(default_factory=list)
+    # pad pairs that are one net from the moment the part is placed, e.g. a coil's inner end and its wire landing
+    ties: List[tuple] = field(default_factory=list)
 
     def centroid(self) -> Tuple[float, float]:
         if not self.pads:
@@ -80,7 +98,11 @@ class PartDef:
                 "pads": [p.to_dict() for p in self.pads],
                 "outline": [list(o) for o in self.outline],
                 "court": list(self.court), "kind": self.kind,
-                "dead_dir": list(self.dead_dir), "note": self.note}
+                "dead_dir": list(self.dead_dir), "note": self.note,
+                **({"strokes": [{"pad": n, "w": w, "pts": [[x, y] for x, y in pts]} for n, pts, w in self.strokes]}
+                   if self.strokes else {}),
+                **({"keepouts": [list(k) for k in self.keepouts]} if self.keepouts else {}),
+                **({"ties": [list(t) for t in self.ties]} if self.ties else {})}
 
     @staticmethod
     def from_dict(d: dict) -> "PartDef":
@@ -92,7 +114,23 @@ class PartDef:
             court=tuple(d.get("court", (0, 0, 0, 0))),      # type: ignore[arg-type]
             kind=d.get("kind", "part"),
             dead_dir=tuple(d.get("dead_dir", (0.0, -1.0))),  # type: ignore[arg-type]
-            note=d.get("note", ""))
+            note=d.get("note", ""),
+            strokes=[(str(k["pad"]), tuple((float(x), float(y)) for x, y in k["pts"]), float(k["w"]))
+                     for k in d.get("strokes", [])],
+            keepouts=[tuple(float(v) for v in k) for k in d.get("keepouts", [])],
+            ties=[(str(t[0]), str(t[1])) for t in d.get("ties", [])])
+
+
+def body_copper(part: PartDef, net, tag: tuple, ox: float, oy: float, rot: int = 0, flip: bool = False) -> list:
+    """Copper lines of a part that belong to no pad (strokes named "*"): a coil's spiral. They carry their own
+    net, so the pads they touch keep the nets you gave them."""
+    out = []
+    for sname, spts, sw in part.strokes:
+        if sname == "*":
+            pp = [place_point(q, ox, oy, rot, flip) for q in spts]
+            for a, c in zip(pp, pp[1:]):
+                out.append(Cap(a[0], a[1], c[0], c[1], sw / 2.0, net, tag))
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -170,6 +208,20 @@ def _shape_from_wh(cx: float, cy: float, w: float, h: float, shape: str, chamfer
     return Cap(a[0], a[1], b[0], b[1], w / 2.0, net, tag)
 
 
+def pad_extra_drills(part: PartDef, pad: PadDef, style: str, ox: float, oy: float,
+                     rot: int = 0, flip: bool = False) -> list:
+    """The holes after the first of a multi-hole pad as ``(x, y, diameter)`` in board coordinates."""
+    if not pad.holes or pad.drill <= 0 or part.kind == "smd":
+        return []
+    if style == "dead" and part.kind not in FIXED_STYLE_KINDS:
+        return []
+    out = []
+    for hx, hy in pad.holes[1:]:
+        p = place_point((hx, hy), ox, oy, rot, flip)
+        out.append((p[0], p[1], pad.drill))
+    return out
+
+
 def pad_copper(part: PartDef, pad: PadDef, style: str, ox: float, oy: float,
                rot: int = 0, flip: bool = False, net: Optional[str] = None,
                tag: Optional[tuple] = None, clearance: float = 0.3):
@@ -181,17 +233,28 @@ def pad_copper(part: PartDef, pad: PadDef, style: str, ox: float, oy: float,
     centre = place_point((pad.x, pad.y), ox, oy, rot, flip)
     shapes = []
     drill = None
+    for sname, spts, sw in part.strokes:
+        if sname == pad.name:
+            # the tag gets a 4th item so the pin lock and the router can tell antenna copper from the pad itself
+            stag = tuple(tag) + ("ant",) if tag else None
+            pp = [place_point(q, ox, oy, rot, flip) for q in spts]
+            for a, c in zip(pp, pp[1:]):
+                shapes.append(Cap(a[0], a[1], c[0], c[1], sw / 2.0, net, stag))
     if part.kind == "smd":
         # an SMD pad is exactly its land: no hole, no deadbug tab, whatever the part's pad style
         shapes.append(_shape_from_wh(pad.x, pad.y, pad.w, pad.h, pad.shape, pad.chamfer,
                                      ox, oy, rot, flip, net, tag))
         return shapes, None, centre
-    if style in ("tht", "mixed") or part.kind in ("hole",):
+    if style in ("tht", "mixed") or part.kind in FIXED_STYLE_KINDS:
         shapes.append(_shape_from_wh(pad.x, pad.y, pad.w, pad.h, pad.shape, pad.chamfer,
                                      ox, oy, rot, flip, net, tag))
         if pad.drill > 0:
-            drill = (centre[0], centre[1], pad.drill)
-    if style in ("dead", "mixed") and part.kind not in ("hole",):
+            if pad.holes:
+                h0 = place_point(pad.holes[0], ox, oy, rot, flip)
+                drill = (h0[0], h0[1], pad.drill)
+            else:
+                drill = (centre[0], centre[1], pad.drill)
+    if style in ("dead", "mixed") and part.kind not in FIXED_STYLE_KINDS:
         w, h, dx, dy = dead_geom(part, pad, clearance)
         shapes.append(_shape_from_wh(pad.x + dx, pad.y + dy, w, h, "oval", 0.0,
                                      ox, oy, rot, flip, net, tag))

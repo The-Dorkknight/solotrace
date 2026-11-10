@@ -35,6 +35,8 @@ def _owner(tag: Optional[tuple]) -> tuple:
 
 
 def _label(owner: tuple) -> str:
+    if owner[0] == "pad" and owner[2] == "*":
+        return "the copper of %s" % owner[1]
     if owner[0] == "pad":
         return "pad %s.%s" % (owner[1], owner[2])
     if owner[0] == "trace":
@@ -81,6 +83,8 @@ def check_clearance(board: Board) -> List[Issue]:
                     oa, ob = _owner(si.tag), _owner(sj.tag)
                     if oa == ob:
                         continue
+                    if oa[0] == "pad" and ob[0] == "pad" and oa[1] == ob[1] and "*" in (oa[2], ob[2]):
+                        continue            # a coil's spiral and its own terminals are one part
                     rk = (oa, ob) if oa < ob else (ob, oa)
                     if rk in reported:
                         continue
@@ -93,6 +97,39 @@ def check_clearance(board: Board) -> List[Issue]:
                     else:
                         msg = "%s is %.2f mm from %s (needs %.2f)" % (_label(oa), d, _label(ob), clr)
                     issues.append(Issue("clearance", msg, x, y, "error", (oa, ob)))
+    return issues
+
+
+def check_keepout(board: Board, only: Optional[str] = None) -> List[Issue]:
+    """Copper inside an antenna keep-out area. ``only`` limits it to one part: its own pads and copper
+    against the other parts' keep-outs, and its keep-outs against everyone else's copper."""
+    kos = board.keepouts()
+    if not kos:
+        return []
+    cu = board.copper()
+    issues: List[Issue] = []
+    reported = set()
+    for kref, poly in kos:
+        kb = poly.bbox()
+        for s in cu:
+            o = _owner(s.tag)
+            if o[0] == "pad" and o[1] == kref:
+                continue                    # the antenna's own copper
+            if only is not None and kref != only and not (o[0] == "pad" and o[1] == only):
+                continue
+            if bbox_gap(kb, s.bbox()) > 0:
+                continue
+            if shape_dist(s, poly) > 1e-6:
+                continue
+            key = (kref, o)
+            if key in reported:
+                continue
+            reported.add(key)
+            bb = s.bbox()
+            x = (max(kb[0], bb[0]) + min(kb[2], bb[2])) / 2.0
+            y = (max(kb[1], bb[1]) + min(kb[3], bb[3])) / 2.0
+            issues.append(Issue("keepout", "%s is inside the antenna keep-out of %s (no copper allowed there)"
+                                % (_label(o), kref), x, y, "error", (o, ("pad", kref, "keepout"))))
     return issues
 
 
@@ -129,6 +166,7 @@ def part_collisions(board: Board, ref: str) -> List[Issue]:
                        "%s is %.2f mm from %s (needs %.2f)" % (_label(oa), d, _label(ob), clr))
                 issues.append(Issue("clearance", msg, x, y, "error", (oa, ob)))
     issues.extend(body_on_traces(board, ref))
+    issues.extend(check_keepout(board, ref))
     return issues
 
 
@@ -235,6 +273,7 @@ def run_drc(board: Board, check_unrouted: bool = True) -> List[Issue]:
             issues.append(Issue("edge", "%s is closer than %.2f mm to the board edge" % (_label(o), ec),
                                 (x0 + x1) / 2, (y0 + y1) / 2, "warn", (o, o)))
     issues.extend(check_clearance(board))
+    issues.extend(check_keepout(board))
     for ref in board.parts:
         issues.extend(body_on_traces(board, ref))
     # pad rings
@@ -242,7 +281,7 @@ def run_drc(board: Board, check_unrouted: bool = True) -> List[Issue]:
         d = board.get_def(pl.part_id)
         for pad in d.pads:
             style = pl.pad_styles.get(pad.name, pl.style)
-            if style == "dead" and d.kind != "hole":
+            if style == "dead" and d.kind not in ("hole", "strip", "antenna"):
                 continue
             if pad.drill <= 0:
                 continue

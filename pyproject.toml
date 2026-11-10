@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "solotrace"
-version = "0.8.0"
+version = "0.10.1"
 description = "WORK IN PROGRESS: easy single-sided PCB designer for through-hole parts with chamfered traces, jumper-aware autorouter, Gerber/PDF export and laser G-code for the Elegoo Phecda"
 readme = "README.md"
 requires-python = ">=3.8"

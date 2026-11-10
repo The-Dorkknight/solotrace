@@ -233,6 +233,8 @@ class AutoRouter:
                     nm = n.name
                 sh, _dr, _c = b.pad_copper(ref, pad.name, nm)
                 shapes.extend(sh)
+            if any(k[0] == "*" for k in d.strokes):
+                shapes.extend(b.body_copper(ref))
         for t in b.traces:
             if t.manual or t in keep_auto:
                 for i in range(len(t.points) - 1):
@@ -251,6 +253,11 @@ class AutoRouter:
             nid = self.nid.get(nm, HARD) if nm and not nm.startswith("~") else HARD
             self._stamp_static(s, nid)
         self._stamp_edges()
+        # antenna keep-outs: no route may enter (the antenna's own copper is stamped before this, as fixed copper)
+        for kref, kpoly in b.keepouts():
+            ksh = Poly(list(kpoly.pts), "~keepout", ("fixed",))
+            self.index.add(ksh)
+            self._stamp_static(ksh, HARD)
         # fixed jumper wires (top side) for crossing tests
         self.wires: List[Tuple[Tuple[float, float], Tuple[float, float]]] = []
         for j in b.jumpers:

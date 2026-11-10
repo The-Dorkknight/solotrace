@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from typing import Dict, List, Optional
 
-from . import library
+from . import coil as coilmod, library
 from .board import Board
 from .laser import (LaserOptions, MODES, PHECDA_AREA, frame_gcode, generate, speed_power_card, trace_ladder_card)
 from .parts import PadDef, PartDef
@@ -342,6 +342,83 @@ class BackplaneDialog:
     def countersink(self) -> None:
         self.apply(False)
         self.app.show_countersink_list()
+
+
+class CoilDialog:
+    """The PCB coil generator: outer area plus the inductance wanted, or plus the turns wanted."""
+
+    def __init__(self, app) -> None:
+        self.app = app
+        d = self.d = tk.Toplevel(app.root)
+        d.title("PCB coil generator")
+        d.transient(app.root)
+        f = ttk.Frame(d, padding=10)
+        f.pack(fill="both", expand=True)
+        self.mode = tk.StringVar(value="uh")
+        ttk.Radiobutton(f, text="I know the area and the inductance wanted (find the turns)", value="uh",
+                        variable=self.mode, command=self._mode).grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Radiobutton(f, text="I know the area and the number of turns (work out the inductance)", value="turns",
+                        variable=self.mode, command=self._mode).grid(row=1, column=0, columnspan=2, sticky="w")
+        self.v = {}
+        self.ent = {}
+        rows = (("width", "Outer width (mm)", "30"), ("height", "Outer height (mm)", "20"),
+                ("uh", "Inductance wanted (uH)", "1.5"), ("turns", "Turns wanted", "8"),
+                ("track", "Track width (mm)", "0.5"), ("gap", "Smallest gap between turns (mm)", "0.4"),
+                ("thick", "Copper thickness (um; 35 = 1 oz)", "35"), ("freq", "Frequency (MHz, optional)", ""),
+                ("name", "Part name (optional)", ""))
+        for i, (k, t, val) in enumerate(rows):
+            ttk.Label(f, text=t).grid(row=i + 2, column=0, sticky="w", pady=1)
+            self.v[k] = tk.StringVar(value=val)
+            e = ttk.Entry(f, textvariable=self.v[k], width=22)
+            e.grid(row=i + 2, column=1, pady=1)
+            self.ent[k] = e
+        self.out = tk.StringVar(value="Press Calculate to see the coil.")
+        ttk.Label(f, textvariable=self.out, wraplength=380, justify="left", style="Muted.TLabel").grid(
+            row=12, column=0, columnspan=2, sticky="w", pady=8)
+        ttk.Label(f, text="A flat rectangular spiral on one copper layer, saved under My parts. The inductance is an "
+                          "ESTIMATE for a coil in air: measure the real one. On a single-sided board the inner end needs "
+                          "an insulated wire over the turns (pins 2 and 3 of the part are that wire).",
+                  wraplength=380, justify="left").grid(row=13, column=0, columnspan=2, sticky="w")
+        bf = ttk.Frame(f)
+        bf.grid(row=14, column=0, columnspan=2, pady=8)
+        ttk.Button(bf, text="Calculate", command=self.calc).pack(side="left", padx=3)
+        ttk.Button(bf, text="Save coil and place", command=self.save).pack(side="left", padx=3)
+        ttk.Button(bf, text="Close", command=d.destroy).pack(side="left", padx=3)
+        self._mode()
+
+    def _mode(self) -> None:
+        uh = self.mode.get() == "uh"
+        self.ent["uh"].configure(state="normal" if uh else "disabled")
+        self.ent["turns"].configure(state="disabled" if uh else "normal")
+
+    def values(self) -> dict:
+        v = {k: s.get() for k, s in self.v.items()}
+        v["mode"] = self.mode.get()
+        return v
+
+    def calc(self) -> Optional["coilmod.CoilResult"]:
+        try:
+            res = coilmod.design_from_values(self.values())
+        except ValueError as exc:
+            self.out.set(str(exc))
+            return None
+        self.out.set(res.summary())
+        return res if res.ok else None
+
+    def save(self) -> None:
+        res = self.calc()
+        if res is None:
+            return
+        part = coilmod.coil_part(res, name=self.v["name"].get().strip())
+        try:
+            fn = library.save_user_part(part)
+        except Exception as exc:
+            messagebox.showerror("SoloTrace", "Could not save the coil:\n%s" % exc, parent=self.d)
+            return
+        self.app.reload_library()
+        self.app.arm_part(part.id)
+        self.app.status("Saved %s to %s. It is under My parts and armed: click the board to place it." % (part.name, fn))
+        self.d.destroy()
 
 
 class FootprintWizard:
